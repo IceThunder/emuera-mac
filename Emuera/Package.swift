@@ -16,14 +16,12 @@ let package = Package(
             targets: ["EmueraCore"]
         )
     ],
-    dependencies: [
-    ],
+    dependencies: [],
     targets: [
         // Core Engine - 脚本解析和执行引擎
         .target(
             name: "EmueraCore",
             dependencies: [],
-            path: "Sources/EmueraCore",
             swiftSettings: [
                 .enableUpcomingFeature("BareSlashRegexLiterals"),
                 .enableUpcomingFeature("ConciseMagicFile"),
@@ -35,7 +33,6 @@ let package = Package(
         .executableTarget(
             name: "EmueraApp",
             dependencies: ["EmueraCore"],
-            path: "Sources/EmueraApp",
             swiftSettings: [
                 .enableUpcomingFeature("BareSlashRegexLiterals"),
                 .enableUpcomingFeature("ConciseMagicFile"),
@@ -51,15 +48,13 @@ let package = Package(
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",
-            dependencies: ["EmueraCore"],
-            path: "Tests/EmueraCoreTests"
+            dependencies: ["EmueraCore"]
         ),
 
         .testTarget(
             name: "EmueraAppTests",
-            dependencies: ["EmueraApp"],
-            path: "Tests/EmueraAppTests"
-        )
+            dependencies: ["EmueraApp"]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )
