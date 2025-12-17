@@ -14,7 +14,7 @@
 工具: 选择Swift语言开发
 输出: 提交到 git@github.com:IceThunder/emuera-mac.git
 测试: 在另一台Mac设备上验证
-参考: https://github.com/Zerunokasiar/Emuera
+参考: https://ux.getuploader.com/ninnohito/ (Emuera作者发布源)
 ```
 
 ## ✅ 已完成工作 (总计 ~2,300行代码+文档)

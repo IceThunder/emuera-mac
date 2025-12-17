@@ -11,7 +11,7 @@
 
 ## 🎯 项目概述
 
-本项目基于Windows平台的[Emuera](https://github.com/Zerunokasiar/Emuera)引擎，将其完整移植到macOS原生平台，使用Swift语言重写，目标是提供与原版完全兼容的ERB脚本运行环境。
+本项目基于Windows平台的[Emuera](https://ux.getuploader.com/ninnohito/)引擎，将其完整移植到macOS原生平台，使用Swift语言重写，目标是提供与原版完全兼容的ERB脚本运行环境。
 
 ### 核心目标
 - ✅ **完整脚本兼容**: 支持所有原版ERB/ERH脚本语法
@@ -222,7 +222,7 @@ var err: String = "error"
 
 ## 📚 资源链接
 
-- **原版Emuera**: [GitHub/Zerunokasiar/Emuera](https://github.com/Zerunokasiar/Emuera)
+- **原版Emuera**: [Emuera原版代码](https://ux.getuploader.com/ninnohito/)
 - **完整项目报告**: [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)
 - **详细开发计划**: [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)
 - **快速开始**: [QUICKSTART.md](./QUICKSTART.md)
