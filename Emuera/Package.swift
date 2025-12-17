@@ -37,12 +37,8 @@ let package = Package(
                 .enableUpcomingFeature("BareSlashRegexLiterals"),
                 .enableUpcomingFeature("ConciseMagicFile"),
                 .enableUpcomingFeature("ForwardTrailingClosures"),
-            ],
-            linkerSettings: [
-                .unsafeFlags(["-Xlinker", "-framework", "-Xlinker", "AppKit"]),
-                .unsafeFlags(["-Xlinker", "-framework", "-Xlinker", "Foundation"]),
-                .unsafeFlags(["-Xlinker", "-framework", "-Xlinker", "Cocoa"]),
             ]
+            // Foundation and AppKit are automatically linked on macOS
         ),
 
         // Unit Tests

@@ -22,7 +22,7 @@ public enum VariableType: String, Codable {
 }
 
 /// Emuera变量值
-public enum VariableValue: Codable {
+public enum VariableValue: Codable, Equatable {
     case integer(Int64)
     case string(String)
     case array([VariableValue])
@@ -132,7 +132,12 @@ public enum VariableValue: Codable {
         switch (lhs, rhs) {
         case (.integer(let l), .integer(let r)): return l == r
         case (.string(let l), .string(let r)): return l == r
-        case (.array(let l), .array(let r)): return l == r
+        case (.array(let l), .array(let r)):
+            guard l.count == r.count else { return false }
+            for i in 0..<l.count {
+                if l[i] != r[i] { return false }
+            }
+            return true
         case (.character(let l), .character(let r)): return l.id == r.id
         case (.null, .null): return true
         default: return false
@@ -141,7 +146,7 @@ public enum VariableValue: Codable {
 }
 
 /// Character data structure (simplified, compatible with Emuera)
-public struct CharacterData: Codable, Equatable {
+public struct CharacterData: Codable {
     public let id: Int
     public var name: String
     public var callName: String
@@ -160,5 +165,11 @@ public struct CharacterData: Codable, Equatable {
 
     public func getVariable(_ name: String) -> VariableValue {
         return variables[name] ?? .null
+    }
+
+    // MARK: - Equatable
+    // Simplified to avoid circular dependency issues
+    public static func == (lhs: CharacterData, rhs: CharacterData) -> Bool {
+        return lhs.id == rhs.id
     }
 }

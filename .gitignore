@@ -1,8 +1,7 @@
 # Swift
 .DS_Store
-/.build
 /Packages
-/*.xcodeproj
+*.xcodeproj
 xcuserdata/
 DerivedData/
 *.swp
@@ -10,7 +9,6 @@ DerivedData/
 
 # Build results
 *.log
-*.o
 *.so
 *.dylib
 *.a
@@ -35,6 +33,11 @@ DerivedData/
 # Package.resolved
 Package.resolved
 
-# compiled output
+# SwiftPM build directories
+/.build
 /emuera
-Emuera
+Emuera/.build
+Emuera/.swiftpm
+
+# Compiled object files
+*.o

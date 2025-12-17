@@ -9,7 +9,7 @@
 import Foundation
 
 /// Emuera运行时错误类型
-enum EmueraError: Error, LocalizedError {
+public enum EmueraError: Error, LocalizedError {
     case scriptParseError(message: String, position: ScriptPosition?)
     case runtimeError(message: String, position: ScriptPosition?)
     case fileNotFoundError(path: String)
@@ -20,7 +20,7 @@ enum EmueraError: Error, LocalizedError {
     case divisionByZero
     case invalidOperation(message: String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .scriptParseError(let message, let position):
             if let pos = position {
@@ -59,16 +59,16 @@ enum EmueraError: Error, LocalizedError {
 }
 
 /// 脚本位置信息（兼容原版Emuera）
-struct ScriptPosition: Codable, Equatable {
-    let filename: String
-    let lineNumber: Int
+public struct ScriptPosition: Codable, Equatable {
+    public let filename: String
+    public let lineNumber: Int
 
-    init(filename: String, lineNumber: Int) {
+    public init(filename: String, lineNumber: Int) {
         self.filename = filename
         self.lineNumber = lineNumber
     }
 
-    var description: String {
+    public var description: String {
         return "\(filename):\(lineNumber)"
     }
 }

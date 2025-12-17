@@ -9,9 +9,8 @@
 import Foundation
 import EmueraCore
 
-// MARK: - Main Function
+// MARK: - Main Entrypoint
 
-@main
 struct EmueraApp {
     static func main() {
         print("🚀 Emuera for macOS - Development Build")
@@ -72,3 +71,7 @@ struct EmueraApp {
         print("4. 开发macOS原生UI (AppKit)")
     }
 }
+
+// MARK: - Entry Point
+
+EmueraApp.main()
