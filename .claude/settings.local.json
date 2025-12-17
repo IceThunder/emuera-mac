@@ -9,7 +9,9 @@
       "Bash(swift build -v)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)"
     ]
   }
 }
