@@ -5,7 +5,7 @@
 [![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org)
 [![macOS](https://img.shields.io/badge/macOS-13.0+-blue.svg)](https://developer.apple.com/macos)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
-[![Project](https://img.shields.io/badge/状态-开发中-yellow.svg)](PROJECT_INIT.md)
+[![Project](https://img.shields.io/badge/状态-开发中-yellow.svg)](PROJECT_SUMMARY.md)
 
 ---
 
@@ -97,7 +97,7 @@ Emuera/
 ### 文档目录 (`/`)
 ```
 EmueraJs/
-├── PROJECT_INIT.md  ✅ 完整项目报告 (建议先读这个)
+├── PROJECT_SUMMARY.md  ✅ 完整项目报告 (建议先读这个)
 ├── DEVELOPMENT_PLAN.md ✅ 详细开发计划
 ├── QUICKSTART.md     ✅ 快速开始指南
 ├── STATUS.md         ✅ 实时状态看板
@@ -196,7 +196,7 @@ var err: String = "error"
 ## 🤝 贡献指南
 
 ### 如何贡献
-1. 阅读 `PROJECT_INIT.md` 了解完整背景
+1. 阅读 `PROJECT_SUMMARY.md` 了解完整背景
 2. 查看 `DEVELOPMENT_PLAN.md` 了解详细计划
 3. 在 `STATUS.md` 中认领任务
 4. 提交Pull Request
@@ -223,7 +223,7 @@ var err: String = "error"
 ## 📚 资源链接
 
 - **原版Emuera**: [GitHub/Zerunokasiar/Emuera](https://github.com/Zerunokasiar/Emuera)
-- **完整项目报告**: [PROJECT_INIT.md](./PROJECT_INIT.md)
+- **完整项目报告**: [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)
 - **详细开发计划**: [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)
 - **快速开始**: [QUICKSTART.md](./QUICKSTART.md)
 - **当前状态**: [STATUS.md](./STATUS.md)
@@ -242,4 +242,4 @@ var err: String = "error"
 
 ---
 
-*本README与 PROJECT_INIT.md 保持同步更新，后者包含更详细的信息*
+*本README与 PROJECT_SUMMARY.md 保持同步更新，后者包含更详细的信息*

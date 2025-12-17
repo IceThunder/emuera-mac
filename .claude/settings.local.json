@@ -7,7 +7,9 @@
       "Bash(cat:*)",
       "Bash(git init:*)",
       "Bash(swift build -v)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

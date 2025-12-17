@@ -50,7 +50,7 @@ Emuera/
 ### 3. 文档体系 (文档团队最佳实践)
 | 文件 | 行数 | 内容 | 要点 |
 |------|------|------|------|
-| **PROJECT_INIT.md** | ~450 | 项目全景报告 | 🌟 先读这个 |
+| **PROJECT_SUMMARY.md** | ~450 | 项目全景报告 | 🌟 先读这个 |
 | **DEVELOPMENT_PLAN.md** | ~280 | 详细计划 | 周期4-6周 |
 | **QUICKSTART.md** | ~200 | 快速开始 | 可在Mac运行 |
 | **STATUS.md** | ~180 | 实时状态 | 进度追踪 |
@@ -229,7 +229,7 @@ swift test --filter EmueraCoreTests
 ## 📝 项目文件导航
 
 ### 立即阅读的文件
-1. **PROJECT_INIT.md** - 完整背景报告
+1. **PROJECT_SUMMARY.md** - 完整背景报告
 2. **README.md** - 项目首页
 3. **QUICKSTART.md** - Mac开发指南
 
