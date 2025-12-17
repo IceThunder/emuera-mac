@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start:*)",
+      "Bash(tree \"D:\\Projects\\Emuera\\Emuera\" /F:*)",
+      "Bash(cat \"/d/Projects/Emuera/Emuera.sln\":*)",
+      "Bash(cat:*)",
+      "Bash(git init:*)",
+      "Bash(swift build -v)",
+      "Bash(git add:*)"
+    ]
+  }
+}

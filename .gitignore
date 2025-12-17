@@ -1,0 +1,40 @@
+# Swift
+.DS_Store
+/.build
+/Packages
+/*.xcodeproj
+xcuserdata/
+DerivedData/
+*.swp
+*~.~
+
+# Build results
+*.log
+*.o
+*.so
+*.dylib
+*.a
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Temporary files
+*.tmp
+*.Temp
+
+# Package.resolved
+Package.resolved
+
+# compiled output
+/emuera
+Emuera
