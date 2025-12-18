@@ -156,31 +156,5 @@ public enum VariableValue: Codable, Equatable {
     }
 }
 
-/// Character data structure (simplified, compatible with Emuera)
-public struct CharacterData: Codable {
-    public let id: Int
-    public var name: String
-    public var callName: String
-    public var variables: [String: VariableValue]
-
-    public init(id: Int, name: String, callName: String = "") {
-        self.id = id
-        self.name = name
-        self.callName = callName.isEmpty ? name : callName
-        self.variables = [:]
-    }
-
-    public mutating func setVariable(_ name: String, value: VariableValue) {
-        variables[name] = value
-    }
-
-    public func getVariable(_ name: String) -> VariableValue {
-        return variables[name] ?? .null
-    }
-
-    // MARK: - Equatable
-    // Simplified to avoid circular dependency issues
-    public static func == (lhs: CharacterData, rhs: CharacterData) -> Bool {
-        return lhs.id == rhs.id
-    }
-}
+// Note: CharacterData is now defined in CharacterData.swift as a class for full storage
+// This integrates with the variable token system for per-character data access

@@ -40,7 +40,13 @@
       "Bash(swift /Users/ss/Documents/Project/iOS/emuera-mac/VerifyPersistent.swift)",
       "Bash(cd Emuera echo \"=== 测试Step 1: 变量赋值 ===\" { echo \"A = 100\" sleep 0.5 echo \"quit\" })",
       "Bash(swift:*)",
-      "Bash(bash /Users/ss/Documents/Project/iOS/emuera-mac/test_interactive.sh 2>&1:*)"
+      "Bash(bash /Users/ss/Documents/Project/iOS/emuera-mac/test_interactive.sh 2>&1:*)",
+      "Bash(wc:*)",
+      "Bash(git -C /Users/ss/Documents/Project/Games/Emuera log --oneline -5)",
+      "Bash(swiftc:*)",
+      "Bash(ln -sf:*)",
+      "Bash(ls:*)",
+      "Bash(git status:*)"
     ]
   }
 }

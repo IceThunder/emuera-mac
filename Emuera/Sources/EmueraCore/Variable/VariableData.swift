@@ -9,6 +9,7 @@
 import Foundation
 
 /// Variable storage system compatible with Emuera
+/// Handles basic storage and provides integration with TokenData for variable access
 public class VariableData {
     // Global variables
     private var globals: [String: VariableValue] = [:]
@@ -19,20 +20,50 @@ public class VariableData {
     // Arrays for variables like RESULT, SELECTCOM, etc.
     private var arrays: [String: [Int64]] = [:]
 
+    // Single integer values (system variables)
+    public var dataInteger: [Int64] = Array(repeating: 0, count: 50)
+
+    // Single string values
+    public var dataString: [String?] = Array(repeating: nil, count: 20)
+
+    // 1D Integer arrays (A-Z, FLAG, TFLAG, etc.)
+    public var dataIntegerArray: [[Int64]] = Array(repeating: [], count: 50)
+
+    // 1D String arrays (STR, SAVESTR, etc.)
+    public var dataStringArray: [[String?]] = Array(repeating: [], count: 20)
+
+    // 2D Integer arrays (for future use)
+    public var dataIntegerArray2D: [[[Int64]]] = []
+
+    // 2D String arrays
+    public var dataStringArray2D: [[[String?]]] = []
+
+    // 3D Integer arrays
+    public var dataIntegerArray3D: [[[Int64]]] = []
+
+    // 3D String arrays
+    public var dataStringArray3D: [[[String?]]] = []
+
     // Character data array
-    private var characters: [CharacterData] = []
+    public var characters: [CharacterData] = []
+
+    // Alias for characterList (used by tokens)
+    public var characterList: [CharacterData] { characters }
+
+    // Token manager for variable access
+    private var tokenData: TokenData!
 
     // MARK: - Initialization
 
     public init() {
         setupDefaults()
+        self.tokenData = TokenData(varData: self)
     }
 
     private func setupDefaults() {
-        // Setup default arrays
-        arrays["RESULT"] = Array(repeating: 0, count: 10)
-        arrays["SELECTCOM"] = Array(repeating: 0, count: 50)
+        // Setup legacy arrays (for compatibility)
         arrays["RESULT"] = [0]
+        arrays["SELECTCOM"] = Array(repeating: 0, count: 50)
 
         // Setup default system variables
         globals["RESULT"] = .integer(0)
@@ -41,6 +72,41 @@ public class VariableData {
         globals["MASTER"] = .integer(0)
         globals["TARGET"] = .integer(0)
         globals["ASSI"] = .integer(0)
+
+        // Setup dataInteger (system integer variables) - index 0-21
+        // These match VariableCode base values
+        for i in 0..<dataInteger.count {
+            dataInteger[i] = 0
+        }
+
+        // Setup dataString (system string variables)
+        for i in 0..<dataString.count {
+            dataString[i] = nil
+        }
+
+        // Setup dataIntegerArray - arrayIndex 0-0x14 (21)
+        // Positions: A=0, B=1, ..., Z=25, then system arrays
+        let standardSize = 100
+
+        // A-Z arrays (0-25)
+        for i in 0...25 {
+            dataIntegerArray[i] = Array(repeating: 0, count: standardSize)
+        }
+
+        // System arrays (ITEM=26, FLAG=27, TFLAG=28, UP=29, DOWN=30, etc.)
+        dataIntegerArray[26] = Array(repeating: 0, count: standardSize) // ITEM
+        dataIntegerArray[27] = Array(repeating: 0, count: standardSize) // FLAG
+        dataIntegerArray[28] = Array(repeating: 0, count: standardSize) // TFLAG
+        dataIntegerArray[29] = Array(repeating: 0, count: standardSize) // UP
+        dataIntegerArray[30] = Array(repeating: 0, count: standardSize) // DOWN
+        dataIntegerArray[31] = Array(repeating: 0, count: 50) // SELECTCOM
+        dataIntegerArray[32] = Array(repeating: 0, count: 50) // PREVCOM
+        dataIntegerArray[33] = Array(repeating: 0, count: 50) // NEXTCOM
+
+        // Setup dataStringArray
+        for i in 0..<dataStringArray.count {
+            dataStringArray[i] = Array(repeating: nil, count: 50)
+        }
     }
 
     // MARK: - Variable Access
@@ -142,6 +208,12 @@ public class VariableData {
         characters.append(character)
     }
 
+    public func createCharacter() -> CharacterData {
+        let char = CharacterData()
+        characters.append(char)
+        return char
+    }
+
     public func getCharacter(at index: Int) -> CharacterData? {
         guard index >= 0 && index < characters.count else {
             return nil
@@ -153,17 +225,15 @@ public class VariableData {
         return characters.count
     }
 
+    public func clearCharacters() {
+        characters.removeAll()
+    }
+
     private func getCharacterVariable(_ name: String) -> VariableValue {
         // Format: CHARA_0_NAME, CHARA_0_AGE, etc.
-        let parts = name.split(separator: "_")
-        guard parts.count >= 3,
-              let charIndex = Int(parts[1]),
-              let character = getCharacter(at: charIndex) else {
-            return .null
-        }
-
-        let varName = parts.dropFirst(2).joined(separator: "_")
-        return character.getVariable(varName)
+        // This is a placeholder - ideally should use TokenData for proper variable access
+        // For now, just return .null as this is not yet fully implemented
+        return .null
     }
 
     // MARK: - Helper Methods
@@ -204,6 +274,68 @@ public class VariableData {
         locals.removeAll()
         arrays.removeAll()
         characters.removeAll()
+
+        // Reset data arrays
+        dataInteger = Array(repeating: 0, count: 50)
+        dataString = Array(repeating: nil, count: 20)
+        dataIntegerArray = Array(repeating: [], count: 50)
+        dataStringArray = Array(repeating: [], count: 20)
+        dataIntegerArray2D = []
+        dataStringArray2D = []
+        dataIntegerArray3D = []
+        dataStringArray3D = []
+
         setupDefaults()
+        if tokenData != nil {
+            tokenData.resetAll()
+        }
+    }
+
+    // MARK: - Token-based Access
+
+    /// Get the token data manager
+    public func getTokenData() -> TokenData {
+        return tokenData
+    }
+
+    /// Get integer value using token system
+    public func getIntegerToken(_ name: String, arguments: [Int64] = []) throws -> Int64 {
+        return try tokenData.getIntValue(name, arguments: arguments)
+    }
+
+    /// Get string value using token system
+    public func getStringToken(_ name: String, arguments: [Int64] = []) throws -> String {
+        return try tokenData.getStrValue(name, arguments: arguments)
+    }
+
+    /// Set integer value using token system
+    public func setIntegerToken(_ name: String, value: Int64, arguments: [Int64] = []) throws {
+        try tokenData.setIntValue(name, value: value, arguments: arguments)
+    }
+
+    /// Set string value using token system
+    public func setStringToken(_ name: String, value: String, arguments: [Int64] = []) throws {
+        try tokenData.setStrValue(name, value: value, arguments: arguments)
+    }
+
+    /// Check if variable should be saved
+    public func isSavedVariable(_ name: String) -> Bool {
+        return tokenData.isSavedataVariable(name)
+    }
+
+    // MARK: - Legacy Access Methods (for backward compatibility)
+
+    /// Legacy method: Parse array notation and get value
+    public func getArrayValue(_ name: String, index: Int = 0) -> Int64 {
+        if let colonRange = name.range(of: ":") {
+            let baseName = String(name[..<colonRange.lowerBound])
+            let idxStr = String(name[colonRange.upperBound...])
+            if let idx = Int(idxStr), let array = arrays[baseName] {
+                return array.indices.contains(idx) ? array[idx] : 0
+            }
+        } else if let array = arrays[name] {
+            return array.indices.contains(index) ? array[index] : 0
+        }
+        return 0
     }
 }
