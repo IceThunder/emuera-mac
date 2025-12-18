@@ -2,76 +2,241 @@
 //  main.swift
 //  EmueraApp
 //
-//  Main entry point for Emuera macOS application
-//  Created on 2025-12-18
+//  命令行控制台应用 - 支持脚本文件加载和执行
+//  Created: 2025-12-18
 //
 
 import Foundation
 import EmueraCore
 
-// MARK: - Main Entrypoint
+// MARK: - Console Application
 
-struct EmueraApp {
-    static func main() {
-        print("🚀 Emuera for macOS - Development Build")
-        print("Version: \(EmueraVersion) (Core: \(EmueraCoreVersion))")
-        print("Compatible with Emuera Script Engine")
-        print()
+struct ConsoleApp {
+    private let engine = ScriptEngine()
 
-        // Test core functionality
-        testCoreEngine()
+    /// 主循环 - 交互式控制台
+    func run() {
+        printHeader()
+
+        while true {
+            printPrompt()
+            guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
+                continue
+            }
+
+            if input.isEmpty { continue }
+
+            // 处理命令
+            if handleCommand(input) {
+                break
+            }
+        }
     }
 
-    static func testCoreEngine() {
-        print("🧪 Testing core engine components...")
+    /// 处理内置命令
+    /// - Returns: 是否退出程序
+    private func handleCommand(_ input: String) -> Bool {
+        let parts = input.split(separator: " ", maxSplits: 1).map(String.init)
+        let command = parts[0].uppercased()
 
-        // Test 1: Basic variable system
-        let varData = VariableData()
-        varData.setVariable("RESULT", value: .integer(42))
-        let result = varData.getVariable("RESULT")
+        switch command {
+        case "HELP", "?":
+            showHelp()
+            return false
 
-        if case .integer(let value) = result, value == 42 {
-            print("✓ Variable system: PASS")
-        } else {
-            print("✗ Variable system: FAIL")
+        case "EXIT", "QUIT", "Q":
+            print("👋 再见！")
+            return true
+
+        case "RUN":
+            if parts.count > 1 {
+                let path = String(parts[1])
+                runScriptFile(path)
+            } else {
+                print("❌ 请指定脚本文件路径")
+                print("用法: run <path-to-script>")
+            }
+            return false
+
+        case "TEST":
+            runTestScript()
+            return false
+
+        case "DEMO":
+            runDemo()
+            return false
+
+        case "TOKENS":
+            if parts.count > 1 {
+                let script = String(parts[1])
+                showTokens(script)
+            } else {
+                print("❌ 用法: tokens <script-string>")
+            }
+            return false
+
+        default:
+            // 尝试作为脚本执行
+            if input.contains("=") || input.contains("PRINT") {
+                executeInline(input)
+            } else {
+                print("❌ 未知命令: \(input)")
+                print("输入 'help' 查看帮助")
+            }
+            return false
+        }
+    }
+
+    /// 运行脚本文件
+    private func runScriptFile(_ path: String) {
+        let url = URL(fileURLWithPath: path)
+
+        guard let content = try? String(contentsOf: url, encoding: .utf8) else {
+            print("❌ 无法读取文件: \(path)")
+            return
         }
 
-        // Test 2: Array operations
-        varData.setArrayElement("TEST_ARRAY", index: 0, value: 100)
-        varData.setArrayElement("TEST_ARRAY", index: 5, value: 200)
-        let arrVal = varData.getArrayElement("TEST_ARRAY", index: 5)
+        print("📄 正在执行: \(path)")
+        print("---")
 
-        if arrVal == 200 {
-            print("✓ Array operations: PASS")
-        } else {
-            print("✗ Array operations: FAIL")
+        let outputs = engine.run(content)
+
+        for output in outputs {
+            print(output, terminator: "")
         }
 
-        // Test 3: Character data
-        let chara = CharacterData(id: 0, name: "テストキャラ")
-        varData.addCharacter(chara)
+        print("\n---")
+        print("✅ 执行完成")
+    }
 
-        if varData.getCharacterCount() == 1 {
-            print("✓ Character data: PASS")
-        } else {
-            print("✗ Character data: FAIL")
+    /// 执行内联脚本
+    private func executeInline(_ script: String) {
+        let outputs = engine.run(script)
+
+        for output in outputs {
+            print(output, terminator: "")
         }
-
-        // Test 4: Logger system
-        Logger.info("Core engine test completed")
-        print("✓ Logger system: PASS")
-
         print()
-        print("🎉 All core tests passed!")
+    }
+
+    /// 运行测试脚本
+    private func runTestScript() {
+        let testScript = """
+        PRINTL 测试开始...
+        PRINTL A的值设置为100
+        A = 100
+        PRINT A
+        PRINTL
+        PRINTL B设置为200
+        B = 200
+        PRINT B
+        PRINTL
+        PRINTL 测试完成！
+        QUIT
+        """
+
+        print("🧪 运行MVP测试用例")
+        print("---")
+        print(testScript)
+        print("---")
+
+        let outputs = engine.run(testScript)
+        print("输出结果:")
+        for output in outputs {
+            print(output, terminator: "")
+        }
         print()
-        print("下一步计划:")
-        print("1. 完善脚本解析器 (ScriptParser)")
-        print("2. 实现表达式解析器 (ExpressionParser)")
-        print("3. 创建主执行引擎 (Engine)")
-        print("4. 开发macOS原生UI (AppKit)")
+    }
+
+    /// 运行演示脚本
+    private func runDemo() {
+        let demoScript = """
+        PRINTL 欢迎来到Emuera macOS!
+        PRINTL 这是第一个可运行的MVP版本
+        PRINTL
+        PRINTL 输入测试命令: demo
+        PRINTL 或者运行帮助: help
+        PRINTL
+        PRINTL 现在演示变量赋值:
+        COUNT = 10
+        PRINT 当前数值:
+        PRINTL COUNT
+        WAIT
+        QUIT
+        """
+
+        print("🎨 运行演示脚本")
+        let outputs = engine.run(demoScript)
+        for output in outputs {
+            print(output, terminator: "")
+        }
+        print()
+    }
+
+    /// 显示Token列表
+    private func showTokens(_ script: String) {
+        let tokens = engine.getTokens(script)
+        print("🔍 Token分析结果:")
+        for (idx, token) in tokens.enumerated() {
+            print("  \(idx): \(token.description)")
+        }
+    }
+
+    /// 显示帮助
+    private func showHelp() {
+        print("""
+
+        🚀 Emuera macOS - MVP版本
+
+        可用命令:
+        ──────────────────────────────
+        run <path>      - 运行脚本文件
+        test            - 运行MVP测试脚本
+        demo            - 运行演示脚本
+        tokens <script> - 显示脚本token分析
+        help            - 显示此帮助
+        exit/quit       - 退出程序
+
+        支持的脚本语法:
+        ──────────────────────────────
+        PRINT 文本      - 输出文本（不换行）
+        PRINTL 文本     - 输出文本并换行
+        WAIT            - 等待用户输入
+        QUIT            - 退出程序
+
+        变量语法:
+        变量名 = 值      - 赋值
+        变量名           - 读取值
+
+        示例:
+        ──────────────────────────────
+        PRINTL Hello World!
+        A = 100
+        PRINT A的值是
+        PRINT A
+        QUIT
+
+        """)
+    }
+
+    /// 显示提示符
+    private func printPrompt() {
+        print("emuera> ", terminator: "")
+    }
+
+    /// 显示应用头部
+    private func printHeader() {
+        print("┌────────────────────────────────────────┐")
+        print("│  Emuera for macOS - MVP Version        │")
+        print("│  (c) 2025, based on Emuera Original    │")
+        print("└────────────────────────────────────────┘")
+        print()
+        print("输入 'help' 查看命令帮助")
+        print("输入 'test' 运行内置测试")
+        print()
     }
 }
 
 // MARK: - Entry Point
 
-EmueraApp.main()
+ConsoleApp().run()

@@ -127,6 +127,17 @@ public enum VariableValue: Codable, Equatable {
         }
     }
 
+    // MARK: - CustomStringConvertible / Description
+    public var description: String {
+        switch self {
+        case .integer(let value): return String(value)
+        case .string(let value): return value
+        case .array(let value): return value.map { $0.description }.joined(separator: ", ")
+        case .character(let value): return value.name
+        case .null: return "null"
+        }
+    }
+
     // MARK: - Equatable
     public static func == (lhs: VariableValue, rhs: VariableValue) -> Bool {
         switch (lhs, rhs) {
