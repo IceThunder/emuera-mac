@@ -75,13 +75,35 @@ struct ConsoleApp {
             }
             return false
 
+        case "RESET":
+            engine.reset()
+            print("✅ 已重置所有变量状态")
+            return false
+
+        case "PERSIST":
+            if parts.count > 1 {
+                let mode = parts[1].uppercased()
+                engine.persistentState = (mode == "ON" || mode == "TRUE")
+                print("✅ 持久状态: \(engine.persistentState ? "开启" : "关闭")")
+            } else {
+                print("当前持久状态: \(engine.persistentState ? "开启" : "关闭")")
+                print("用法: persist on|off")
+            }
+            return false
+
         default:
             // 尝试作为脚本执行
-            if input.contains("=") || input.contains("PRINT") {
+            if input.contains("=") || input.contains("PRINT") || input.contains("+") {
                 executeInline(input)
             } else {
-                print("❌ 未知命令: \(input)")
-                print("输入 'help' 查看帮助")
+                // 检查是否是合法的变量名（纯字母或$/%开头的标识符）
+                let trimmed = input.trimmingCharacters(in: .whitespaces)
+                if trimmed.range(of: "^[A-Za-z_$%][A-Za-z0-9_$%]*$", options: .regularExpression) != nil {
+                    executeInline("PRINT " + trimmed)
+                } else {
+                    print("❌ 未知命令: \(input)")
+                    print("输入 'help' 查看帮助")
+                }
             }
             return false
         }

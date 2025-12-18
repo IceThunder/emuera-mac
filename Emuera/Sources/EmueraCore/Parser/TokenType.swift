@@ -40,7 +40,7 @@ public enum TokenType: CustomStringConvertible {
 
     // MARK: - Helper enums
 
-    public enum Operator: String {
+    public enum Operator: String, CaseIterable {
         case add = "+"
         case subtract = "-"
         case multiply = "*"
@@ -67,6 +67,39 @@ public enum TokenType: CustomStringConvertible {
         case bitNot = "~"
         case shiftLeft = "<<"
         case shiftRight = ">>"
+
+        /// 运算符优先级 (数值越大优先级越高)
+        public var precedence: Int {
+            switch self {
+            case .power: return 10  // **
+            case .not, .bitNot: return 9  // !, ~ (一元运算符，暂不实现)
+            case .multiply, .divide, .modulo: return 8  // *, /, %
+            case .add, .subtract: return 7  // +, -
+            case .shiftLeft, .shiftRight: return 6  // <<, >>
+            case .bitAnd: return 5  // &
+            case .bitXor: return 4  // ^
+            case .bitOr: return 3  // |
+            case .equal, .notEqual, .less, .lessEqual, .greater, .greaterEqual: return 2  // 比较
+            case .and: return 1  // &&
+            case .or: return 0  // ||
+            case .assign, .addAssign, .subtractAssign, .multiplyAssign, .divideAssign: return -1  // 赋值
+            }
+        }
+
+        /// 是否是赋值类运算符
+        public var isAssignment: Bool {
+            switch self {
+            case .assign, .addAssign, .subtractAssign, .multiplyAssign, .divideAssign:
+                return true
+            default:
+                return false
+            }
+        }
+
+        /// 是否是二元运算符（需要左右操作数）
+        public var isBinary: Bool {
+            return !isAssignment && self != .not && self != .bitNot
+        }
     }
 
     public enum Comparator: String {
