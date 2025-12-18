@@ -12,10 +12,10 @@ import EmueraCore
 // MARK: - Console Application
 
 struct ConsoleApp {
-    private let engine = ScriptEngine()
+    private var engine = ScriptEngine()
 
     /// 主循环 - 交互式控制台
-    func run() {
+    mutating func run() {
         printHeader()
 
         while true {
@@ -26,8 +26,14 @@ struct ConsoleApp {
 
             if input.isEmpty { continue }
 
+            // 打印用户的输入（在脚本模式下模拟终端回显）
+            // 在真实终端中，这由终端完成，但为了跨模式一致，我们主动打印
+            if !input.isEmpty {
+                print(input)  // 打印输入内容并换行
+            }
+
             // 处理命令
-            if handleCommand(input) {
+            if self.handleCommand(input) {
                 break
             }
         }
@@ -35,7 +41,7 @@ struct ConsoleApp {
 
     /// 处理内置命令
     /// - Returns: 是否退出程序
-    private func handleCommand(_ input: String) -> Bool {
+    private mutating func handleCommand(_ input: String) -> Bool {
         let parts = input.split(separator: " ", maxSplits: 1).map(String.init)
         let command = parts[0].uppercased()
 
@@ -60,6 +66,10 @@ struct ConsoleApp {
 
         case "TEST":
             runTestScript()
+            return false
+
+        case "PERSISTTEST":
+            runPersistenceTest()
             return false
 
         case "DEMO":
@@ -131,14 +141,20 @@ struct ConsoleApp {
         print("✅ 执行完成")
     }
 
-    /// 执行内联脚本
-    private func executeInline(_ script: String) {
+    /// 执行内联脚本 - 防止空行输出的关键修复
+    private mutating func executeInline(_ script: String) {
         let outputs = engine.run(script)
 
-        for output in outputs {
-            print(output, terminator: "")
+        // 核心修复：只有在有实际输出时才进行打印操作
+        // 避免因空的outputs数组导致的换行或空白
+        guard !outputs.isEmpty else {
+            return  // 无输出时，不打印任何内容，避免产生空行
         }
-        print()
+
+        // 打印所有输出结果
+        for output in outputs {
+            print(output)
+        }
     }
 
     /// 运行测试脚本
@@ -168,6 +184,75 @@ struct ConsoleApp {
             print(output, terminator: "")
         }
         print()
+    }
+
+    /// 运行持久化专项测试
+    private func runPersistenceTest() {
+        print("🧪 持久化变量功能专项测试")
+        print("=" * 50)
+        print()
+
+        var pass = 0
+        var fail = 0
+
+        func assertEqual(actual: [String], expected: [String], _ name: String) {
+            if actual == expected {
+                print("✅ \(name)")
+                pass += 1
+            } else {
+                print("❌ \(name)")
+                print("   期望: \(expected)")
+                print("   实际: \(actual)")
+                fail += 1
+            }
+        }
+
+        // 准备新引擎
+        engine.reset()
+        engine.persistentState = true
+
+        print("测试1: A = 100")
+        let o1 = engine.run("A = 100")
+        assertEqual(actual: o1, expected: [], "赋值A=100无输出")
+
+        print("测试2: PRINT A")
+        let o2 = engine.run("PRINT A")
+        assertEqual(actual: o2, expected: ["100"], "输出A=100")
+
+        print("测试3: B = A + 50")
+        let o3 = engine.run("B = A + 50")
+        assertEqual(actual: o3, expected: [], "赋值B=A+50无输出")
+
+        print("测试4: PRINT B")
+        let o4 = engine.run("PRINT B")
+        assertEqual(actual: o4, expected: ["150"], "输出B=150")
+
+        print("测试5: A + B")
+        let o5 = engine.run("A + B")
+        assertEqual(actual: o5, expected: ["250"], "表达式A+B=250")
+
+        print("测试6: RESET")
+        engine.reset()
+        let o6 = engine.run("PRINT A")
+        assertEqual(actual: o6, expected: ["0"], "重置后A=0")
+
+        print("测试7: 多变量持久")
+        let _ = engine.run("X = 30")
+        let o7a = engine.run("PRINT X")
+        assertEqual(actual: o7a, expected: ["30"], "X=30")
+
+        let _ = engine.run("Y = X * 2")
+        let o7b = engine.run("PRINT Y")
+        assertEqual(actual: o7b, expected: ["60"], "Y=X*2=60")
+
+        print("\n" + "=" * 50)
+        print("测试总结：通过 \(pass)，失败 \(fail)")
+        if fail == 0 {
+            print("🎉 所有测试通过！")
+        } else {
+            print("⚠️  部分测试失败")
+        }
+        print("=" * 50)
     }
 
     /// 运行演示脚本
@@ -200,7 +285,7 @@ struct ConsoleApp {
         let tokens = engine.getTokens(script)
         print("🔍 Token分析结果:")
         for (idx, token) in tokens.enumerated() {
-            print("  \(idx): \(token.description)")
+            print("  \\(idx): \\(token.description)")
         }
     }
 
@@ -255,10 +340,19 @@ struct ConsoleApp {
         print()
         print("输入 'help' 查看命令帮助")
         print("输入 'test' 运行内置测试")
+        print("输入 'persisttest' 运行持久化专项测试")
         print()
+    }
+}
+
+// MARK: - String 扩展
+extension String {
+    static func *(left: String, right: Int) -> String {
+        return String(repeating: left, count: right)
     }
 }
 
 // MARK: - Entry Point
 
-ConsoleApp().run()
+var app = ConsoleApp()
+app.run()

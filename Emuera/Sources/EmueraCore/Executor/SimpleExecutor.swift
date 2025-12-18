@@ -35,8 +35,13 @@ public class SimpleExecutor {
     /// - Parameter tokens: Token序列
     /// - Parameter usePersistentEnv: 是否使用持久环境（与上次执行共享变量）
     public func execute(tokens: [TokenType.Token], usePersistentEnv: Bool = false) -> [String] {
-        // 从上次状态恢复或新建
-        var env = usePersistentEnv ? persistentEnv ?? ExecutionEnvironment() : ExecutionEnvironment()
+        // 从上次状态恢复或新建持久环境
+        let savedEnv = usePersistentEnv ? (persistentEnv ?? ExecutionEnvironment()) : ExecutionEnvironment()
+
+        // 创建工作环境（每次执行独立，不影响持久环境）
+        var workEnv = ExecutionEnvironment()
+        workEnv.variables = savedEnv.variables  // 复制变量
+        workEnv.lastResult = savedEnv.lastResult
 
         var i = 0
         while i < tokens.count {
@@ -61,37 +66,37 @@ public class SimpleExecutor {
 
                 switch upperCmd {
                 case "PRINT":
-                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 1, env: env)
-                    env.output.append(resultTuple.value.description)
+                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 1, env: workEnv)
+                    workEnv.output.append(resultTuple.value.description)
                     i = resultTuple.newIndex
                     continue
 
                 case "PRINTL":
-                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 1, env: env)
-                    env.output.append(resultTuple.value.description + "\n")
+                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 1, env: workEnv)
+                    workEnv.output.append(resultTuple.value.description + "\n")
                     i = resultTuple.newIndex
                     continue
 
                 case "PRINTW":
-                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 1, env: env)
-                    env.output.append(resultTuple.value.description)
-                    env.output.append("按回车继续...")
+                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 1, env: workEnv)
+                    workEnv.output.append(resultTuple.value.description)
+                    workEnv.output.append("按回车继续...")
                     i = resultTuple.newIndex
                     continue
 
                 case "WAIT":
-                    env.output.append("按回车继续...")
+                    workEnv.output.append("按回车继续...")
                     i += 1
                     continue
 
                 case "INPUT":
-                    env.output.append("[等待输入]")
+                    workEnv.output.append("[等待输入]")
                     i += 1
                     continue
 
                 case "QUIT":
-                    env.output.append("程序已退出")
-                    env.shouldQuit = true
+                    workEnv.output.append("程序已退出")
+                    workEnv.shouldQuit = true
                     i += 1
                     continue
 
@@ -106,9 +111,9 @@ public class SimpleExecutor {
                    case .operatorSymbol(let op) = tokens[i + 1].type,
                    op == .assign {
 
-                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 2, env: env)
-                    env.variables[varName] = resultTuple.value
-                    env.lastResult = resultTuple.value
+                    let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i + 2, env: workEnv)
+                    workEnv.variables[varName] = resultTuple.value
+                    workEnv.lastResult = resultTuple.value
                     i = resultTuple.newIndex
                     continue
                 }
@@ -123,8 +128,8 @@ public class SimpleExecutor {
                 isExpressionStart = false
             }
             if isExpressionStart {
-                let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i, env: env)
-                env.output.append(resultTuple.value.description)
+                let resultTuple = parseAndExecuteExpression(tokens: tokens, startIndex: i, env: workEnv)
+                workEnv.output.append(resultTuple.value.description)
                 i = resultTuple.newIndex
                 continue
             }
@@ -133,12 +138,16 @@ public class SimpleExecutor {
             i += 1
         }
 
-        // 保存环境状态
+        // 如果使用持久环境，保存工作环境的变量状态到持久环境
         if usePersistentEnv {
-            persistentEnv = env
+            var newPersistent = ExecutionEnvironment()
+            newPersistent.variables = workEnv.variables
+            newPersistent.output = []  // 输出不持久化
+            newPersistent.lastResult = workEnv.lastResult
+            persistentEnv = newPersistent
         }
 
-        return env.output
+        return workEnv.output
     }
 
     /// 解析并执行表达式

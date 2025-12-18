@@ -24,7 +24,23 @@
       "Bash(pkill:*)",
       "Bash(clear:*)",
       "Bash(python3:*)",
-      "Bash(swift test:*)"
+      "Bash(swift test:*)",
+      "Bash(.build/debug/emuera <<'EOF'\ntest\nquit\nEOF)",
+      "Bash(chmod:*)",
+      "Bash(swift ExprTest.swift:*)",
+      "Bash(__NEW_LINE__ cd /Users/ss/Documents/Project/iOS/emuera-mac/Emuera echo 'PRINT A')",
+      "Bash(xargs git status:*)",
+      "Bash(cd /Users/ss/Documents/Project/iOS/emuera-mac/Emuera:*)",
+      "Bash(pwd ls Sources/EmueraCore/Parser/ExpressionParser.swift Sources/EmueraCore/Executor/ExpressionEvaluator.swift Sources/EmueraCore/Executor/SimpleExecutor.swift Sources/EmueraCore/ScriptEngine.swift)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 实现表达式解析器和求值器，支持复杂算术运算\n\n核心功能：\n- ExpressionParser: 递归下降解析器，支持运算符优先级\n- ExpressionEvaluator: 执行AST节点，支持完整算术运算\n- SimpleExecutor: 集成表达式引擎，支持 A = 10 + 20 * 3\n- ScriptEngine: 添加持久状态支持，跨脚本变量保持\n\n新增特性：\n✅ 算术运算: + - * / % ** \\(支持优先级\\)\n✅ 括号优先级: \\(10 + 20\\) * 3\n✅ 变量引用: A = X + Y\n✅ 持久状态: 默认开启，变量跨脚本保持\n✅ 状态管理: reset/persist on/off 命令\n\n周边改进：\n- TokenType: 运算符优先级和类型判断方法\n- main.swift: 支持裸变量读取，新增reset/persist命令\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(__NEW_LINE__ echo \"=== 测试2: 同一执行流程中的变量保持 ===\")",
+      "Bash(__NEW_LINE__ echo \"=== 测试3: 单独输出验证 ===\")",
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(__NEW_LINE__ echo \"=== 测试5: 检查TOKEN序列 ===\")",
+      "Bash(swift /Users/ss/Documents/Project/iOS/emuera-mac/VerifyPersistent.swift)",
+      "Bash(cd Emuera echo \"=== 测试Step 1: 变量赋值 ===\" { echo \"A = 100\" sleep 0.5 echo \"quit\" })",
+      "Bash(swift:*)",
+      "Bash(bash /Users/ss/Documents/Project/iOS/emuera-mac/test_interactive.sh 2>&1:*)"
     ]
   }
 }
