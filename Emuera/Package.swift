@@ -41,6 +41,22 @@ let package = Package(
             // Foundation and AppKit are automatically linked on macOS
         ),
 
+        // Quick Test Target
+        .executableTarget(
+            name: "QuickTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/QuickTest"
+        ),
+
+        // Debug Test Target
+        .executableTarget(
+            name: "DebugTestTarget",
+            dependencies: ["EmueraCore"],
+            path: "Sources/DebugTest",
+            exclude: ["DebugTest.swift", "TraceTest.swift"],
+            sources: ["DebugParser.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

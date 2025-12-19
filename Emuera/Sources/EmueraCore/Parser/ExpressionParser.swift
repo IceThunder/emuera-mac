@@ -15,6 +15,8 @@ public indirect enum ExpressionNode: CustomStringConvertible {
     case integer(Int64)
     case string(String)
     case variable(String)
+    case arrayAccess(base: String, indices: [ExpressionNode])  // A:5, BASE:0, CDFLAG:0:5
+    case functionCall(name: String, arguments: [ExpressionNode])  // RAND(100), ABS(-5)
     case binary(op: TokenType.Operator, left: ExpressionNode, right: ExpressionNode)
 
     public var description: String {
@@ -22,6 +24,12 @@ public indirect enum ExpressionNode: CustomStringConvertible {
         case .integer(let value): return "\(value)"
         case .string(let value): return "\"\(value)\""
         case .variable(let name): return "var(\(name))"
+        case .arrayAccess(let base, let indices):
+            let idxStr = indices.map { $0.description }.joined(separator: ", ")
+            return "\(base)[\(idxStr)]"
+        case .functionCall(let name, let args):
+            let argStr = args.map { $0.description }.joined(separator: ", ")
+            return "\(name)(\(argStr))"
         case .binary(let op, let left, let right):
             return "(\(left.description) \(op.rawValue) \(right.description))"
         }
@@ -33,6 +41,8 @@ public indirect enum ExpressionNode: CustomStringConvertible {
         case .integer: return "integer"
         case .string: return "string"
         case .variable: return "variable"
+        case .arrayAccess: return "arrayAccess"
+        case .functionCall: return "functionCall"
         case .binary: return "binary"
         }
     }
@@ -66,9 +76,9 @@ public class ExpressionParser {
 
         let result = try parseExpression(minPrecedence: 0)
 
-        // 确保所有token都被消耗
-        if currentIndex < tokens.count {
-            throw ExpressionParseError.unexpectedToken(tokens[currentIndex])
+        // 确保所有token都被消耗 - 使用过滤后的tokens进行检查
+        if currentIndex < self.tokens.count {
+            throw ExpressionParseError.unexpectedToken(self.tokens[currentIndex])
         }
 
         return result
@@ -108,7 +118,7 @@ public class ExpressionParser {
         return left
     }
 
-    /// 解析主要表达式 (数值、字符串、变量、括号表达式)
+    /// 解析主要表达式 (数值、字符串、变量、括号表达式、数组访问、函数调用)
     private func parsePrimary() throws -> ExpressionNode {
         guard currentIndex < tokens.count else {
             throw ExpressionParseError.unexpectedEnd
@@ -127,6 +137,27 @@ public class ExpressionParser {
 
         case .variable(let name):
             currentIndex += 1
+
+            // 检查后续token以确定是变量、数组访问还是函数调用
+            if currentIndex < tokens.count {
+                let nextToken = tokens[currentIndex]
+
+                // 函数调用: RAND(100)
+                if case .parenthesisOpen = nextToken.type {
+                    currentIndex += 1
+                    let arguments = try parseArgumentList()
+                    return .functionCall(name: name, arguments: arguments)
+                }
+
+                // 数组访问: A:5 或 BASE:0
+                if case .colon = nextToken.type {
+                    currentIndex += 1
+                    let indices = try parseArrayIndices()
+                    return .arrayAccess(base: name, indices: indices)
+                }
+            }
+
+            // 普通变量
             return .variable(name)
 
         case .parenthesisOpen:
@@ -140,14 +171,67 @@ public class ExpressionParser {
             return expr
 
         case .command(let name):
-            // 可以在这里扩展函数调用，如 ABS(10)
-            // 简单情况下，命令也可能作为变量处理
+            // 命令作为变量处理
             currentIndex += 1
             return .variable(name)
 
         default:
             throw ExpressionParseError.invalidToken(token)
         }
+    }
+
+    /// 解析函数调用的参数列表: (100, 200)
+    private func parseArgumentList() throws -> [ExpressionNode] {
+        var arguments: [ExpressionNode] = []
+
+        // 空参数列表
+        if currentIndex < tokens.count,
+           case .parenthesisClose = tokens[currentIndex].type {
+            currentIndex += 1
+            return arguments
+        }
+
+        // 解析第一个参数
+        arguments.append(try parseExpression(minPrecedence: 0))
+
+        // 解析后续参数
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+
+            if case .comma = token.type {
+                currentIndex += 1
+                arguments.append(try parseExpression(minPrecedence: 0))
+            } else if case .parenthesisClose = token.type {
+                currentIndex += 1
+                break
+            } else {
+                throw ExpressionParseError.unexpectedToken(token)
+            }
+        }
+
+        return arguments
+    }
+
+    /// 解析数组索引: 5, 0:5
+    private func parseArrayIndices() throws -> [ExpressionNode] {
+        var indices: [ExpressionNode] = []
+
+        // 第一个索引
+        indices.append(try parseExpression(minPrecedence: 0))
+
+        // 检查是否有更多索引（2D/3D数组）
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+
+            if case .colon = token.type {
+                currentIndex += 1
+                indices.append(try parseExpression(minPrecedence: 0))
+            } else {
+                break
+            }
+        }
+
+        return indices
     }
 
     // MARK: - 便捷方法

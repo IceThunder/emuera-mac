@@ -12,9 +12,11 @@ import Foundation
 public class ExpressionEvaluator {
 
     private let variableData: VariableData
+    private let tokenData: TokenData
 
     public init(variableData: VariableData) {
         self.variableData = variableData
+        self.tokenData = variableData.getTokenData()
     }
 
     /// 求值表达式AST，返回VariableValue
@@ -29,6 +31,12 @@ public class ExpressionEvaluator {
         case .variable(let name):
             return try resolveVariable(name)
 
+        case .arrayAccess(let base, let indices):
+            return try evaluateArrayAccess(base: base, indices: indices)
+
+        case .functionCall(let name, let arguments):
+            return try evaluateFunctionCall(name: name, arguments: arguments)
+
         case .binary(let op, let left, let right):
             return try evaluateBinary(op: op, left: left, right: right)
         }
@@ -36,30 +44,174 @@ public class ExpressionEvaluator {
 
     // MARK: - 变量解析
 
-    /// 解析变量引用
+    /// 解析变量引用（使用TokenData系统）
     private func resolveVariable(_ name: String) throws -> VariableValue {
-        // 使用VariableData的API获取变量
-        let value = variableData.getVariable(name)
-
-        if value != .null {
-            return value
-        }
-
-        // 如果不存在，尝试解析数组访问格式: A:0 或 ARRAY[0]
-        if name.contains(":") || name.contains("[") {
-            // 简单的数组访问支持
-            if let colonIndex = name.firstIndex(of: ":") {
-                let arrayName = String(name[..<colonIndex])
-                let indexStr = String(name[name.index(after: colonIndex)...])
-                if let index = Int(indexStr) {
-                    let val = variableData.getArrayElement(arrayName, index: index)
-                    return .integer(val)
+        // 处理数组语法: A:5, BASE:0, CHARA_0_NAME等
+        // 格式: VARNAME:INDEX 或 VARNAME:INDEX:INDEX...
+        if name.contains(":") {
+            let parts = name.split(separator: ":")
+            if parts.count == 2 {
+                // 1D数组: A:5, BASE:0
+                let varName = String(parts[0])
+                if let index = Int64(parts[1]) {
+                    do {
+                        let value = try tokenData.getIntValue(varName, arguments: [index])
+                        return .integer(value)
+                    } catch {
+                        // 尝试字符串数组
+                        do {
+                            let strValue = try tokenData.getStrValue(varName, arguments: [index])
+                            return .string(strValue)
+                        } catch {
+                            // 变量不存在，返回0
+                            return .integer(0)
+                        }
+                    }
+                }
+            } else if parts.count == 3 {
+                // 2D数组: CDFLAG:0:5
+                let varName = String(parts[0])
+                if let i1 = Int64(parts[1]), let i2 = Int64(parts[2]) {
+                    do {
+                        let value = try tokenData.getIntValue(varName, arguments: [i1, i2])
+                        return .integer(value)
+                    } catch {
+                        return .integer(0)
+                    }
                 }
             }
         }
 
-        // 变量不存在，返回0（Emuera行为）
-        return .integer(0)
+        // 处理普通变量: DAY, MONEY, A, B等
+        do {
+            // 尝试整数变量
+            let value = try tokenData.getIntValue(name, arguments: [])
+            return .integer(value)
+        } catch {
+            do {
+                // 尝试字符串变量
+                let strValue = try tokenData.getStrValue(name, arguments: [])
+                return .string(strValue)
+            } catch {
+                // 变量不存在，返回0（Emuera行为）
+                return .integer(0)
+            }
+        }
+    }
+
+    // MARK: - 数组访问
+
+    /// 求值数组访问: A[5], BASE[0], CDFLAG[0,5]
+    private func evaluateArrayAccess(base: String, indices: [ExpressionNode]) throws -> VariableValue {
+        // 求值所有索引
+        let indexValues = try indices.map { try evaluate($0).toInt() }
+
+        // 转换为Int64数组
+        let intIndices = indexValues.map { Int64($0) }
+
+        // 根据索引数量调用对应方法
+        switch intIndices.count {
+        case 1:
+            // 1D数组
+            do {
+                let value = try tokenData.getIntValue(base, arguments: intIndices)
+                return .integer(value)
+            } catch {
+                // 尝试字符串数组
+                do {
+                    let strValue = try tokenData.getStrValue(base, arguments: intIndices)
+                    return .string(strValue)
+                } catch {
+                    return .integer(0)
+                }
+            }
+        case 2:
+            // 2D数组
+            do {
+                let value = try tokenData.getIntValue(base, arguments: intIndices)
+                return .integer(value)
+            } catch {
+                return .integer(0)
+            }
+        case 3:
+            // 3D数组
+            do {
+                let value = try tokenData.getIntValue(base, arguments: intIndices)
+                return .integer(value)
+            } catch {
+                return .integer(0)
+            }
+        default:
+            throw EvaluateError.invalidOperation("不支持的数组维度: \(intIndices.count)")
+        }
+    }
+
+    // MARK: - 函数调用
+
+    /// 求值函数调用: RAND(100), ABS(-5)
+    private func evaluateFunctionCall(name: String, arguments: [ExpressionNode]) throws -> VariableValue {
+        // 求值所有参数
+        let argValues = try arguments.map { try evaluate($0) }
+
+        // 处理内置函数
+        switch name.uppercased() {
+        case "RAND":
+            // RAND(max) 或 RAND(min, max)
+            if argValues.count == 1, case .integer(let max) = argValues[0] {
+                return .integer(Int64.random(in: 0..<max))
+            } else if argValues.count == 2,
+                      case .integer(let min) = argValues[0],
+                      case .integer(let max) = argValues[1] {
+                return .integer(Int64.random(in: min..<max))
+            }
+            throw EvaluateError.invalidOperation("RAND需要1或2个整数参数")
+
+        case "ABS":
+            if argValues.count == 1, case .integer(let value) = argValues[0] {
+                return .integer(value < 0 ? -value : value)
+            }
+            throw EvaluateError.invalidOperation("ABS需要1个整数参数")
+
+        case "SQRT":
+            if argValues.count == 1, case .integer(let value) = argValues[0] {
+                return .integer(Int64(sqrt(Double(value))))
+            }
+            throw EvaluateError.invalidOperation("SQRT需要1个整数参数")
+
+        case "MIN":
+            if argValues.count >= 2 {
+                let ints = argValues.compactMap { if case .integer(let v) = $0 { return v }; return nil }
+                if ints.count == argValues.count {
+                    return .integer(ints.min() ?? 0)
+                }
+            }
+            throw EvaluateError.invalidOperation("MIN需要至少2个整数参数")
+
+        case "MAX":
+            if argValues.count >= 2 {
+                let ints = argValues.compactMap { if case .integer(let v) = $0 { return v }; return nil }
+                if ints.count == argValues.count {
+                    return .integer(ints.max() ?? 0)
+                }
+            }
+            throw EvaluateError.invalidOperation("MAX需要至少2个整数参数")
+
+        default:
+            // 尝试从TokenData查找伪变量或函数
+            do {
+                // 尝试作为整数函数调用
+                let value = try tokenData.getIntValue(name, arguments: argValues.map { $0.toInt() })
+                return .integer(value)
+            } catch {
+                // 尝试作为字符串函数调用
+                do {
+                    let strValue = try tokenData.getStrValue(name, arguments: argValues.map { $0.toInt() })
+                    return .string(strValue)
+                } catch {
+                    throw EvaluateError.variableNotFound(name)
+                }
+            }
+        }
     }
 
     // MARK: - 二元运算

@@ -32,17 +32,17 @@ public class VariableData {
     // 1D String arrays (STR, SAVESTR, etc.)
     public var dataStringArray: [[String?]] = Array(repeating: [], count: 20)
 
-    // 2D Integer arrays (for future use)
+    // 2D Integer arrays - indexed by VariableCode baseValue
     public var dataIntegerArray2D: [[[Int64]]] = []
 
-    // 2D String arrays
+    // 2D String arrays - indexed by VariableCode baseValue
     public var dataStringArray2D: [[[String?]]] = []
 
-    // 3D Integer arrays
-    public var dataIntegerArray3D: [[[Int64]]] = []
+    // 3D Integer arrays - indexed by VariableCode baseValue
+    public var dataIntegerArray3D: [[[[Int64]]]] = []
 
-    // 3D String arrays
-    public var dataStringArray3D: [[[String?]]] = []
+    // 3D String arrays - indexed by VariableCode baseValue
+    public var dataStringArray3D: [[[[String?]]]] = []
 
     // Character data array
     public var characters: [CharacterData] = []
@@ -56,8 +56,12 @@ public class VariableData {
     // MARK: - Initialization
 
     public init() {
+        print("VariableData.init start")
         setupDefaults()
+        print("About to create TokenData")
+        print("dataIntegerArray.count = \(dataIntegerArray.count)")
         self.tokenData = TokenData(varData: self)
+        print("VariableData.init complete")
     }
 
     private func setupDefaults() {
@@ -73,40 +77,104 @@ public class VariableData {
         globals["TARGET"] = .integer(0)
         globals["ASSI"] = .integer(0)
 
-        // Setup dataInteger (system integer variables) - index 0-21
-        // These match VariableCode base values
-        for i in 0..<dataInteger.count {
-            dataInteger[i] = 0
-        }
+        // Setup dataInteger (system integer variables)
+        // Following C#: dataInteger has 22 elements (0x00-0x15)
+        // But we'll use larger array to accommodate all base values up to 0x37
+        dataInteger = Array(repeating: 0, count: 0x38)  // 56 elements for 0x00-0x37
 
         // Setup dataString (system string variables)
-        for i in 0..<dataString.count {
-            dataString[i] = nil
+        dataString = Array(repeating: nil, count: 0x03)  // RESULTS, SAVESTR, STR
+
+        // Setup dataIntegerArray - following C# VariableData structure
+        // Each index corresponds to VariableCode baseValue
+        // We need enough slots for all variables up to the highest baseValue we define
+
+        // First, ensure the array has enough capacity
+        let requiredCapacity = 0x41  // Enough for all defined variables (0x00-0x40)
+        if dataIntegerArray.count < requiredCapacity {
+            dataIntegerArray = Array(repeating: [], count: requiredCapacity)
         }
 
-        // Setup dataIntegerArray - arrayIndex 0-0x14 (21)
-        // Positions: A=0, B=1, ..., Z=25, then system arrays
-        let standardSize = 100
+        let standardSize = 100  // Default array size for most variables
 
-        // A-Z arrays (0-25)
-        for i in 0...25 {
+        // Single integer variables that are actually 1D arrays (base 0x00-0x1B)
+        // These are stored in dataIntegerArray, accessed via IntVariableToken
+        dataIntegerArray[0x00] = Array(repeating: 0, count: 1)  // DAY
+        dataIntegerArray[0x01] = Array(repeating: 0, count: 1)  // MONEY
+        dataIntegerArray[0x02] = Array(repeating: 0, count: standardSize)  // ITEM
+        dataIntegerArray[0x03] = Array(repeating: 0, count: standardSize)  // FLAG
+        dataIntegerArray[0x04] = Array(repeating: 0, count: standardSize)  // TFLAG
+        dataIntegerArray[0x05] = Array(repeating: 0, count: standardSize)  // UP
+        dataIntegerArray[0x06] = Array(repeating: 0, count: standardSize)  // PALAMLV
+        dataIntegerArray[0x07] = Array(repeating: 0, count: standardSize)  // EXPLV
+        dataIntegerArray[0x08] = Array(repeating: 0, count: standardSize)  // EJAC
+        dataIntegerArray[0x09] = Array(repeating: 0, count: standardSize)  // DOWN
+        dataIntegerArray[0x0A] = Array(repeating: 0, count: 1)  // RESULT
+        dataIntegerArray[0x0B] = Array(repeating: 0, count: 1)  // COUNT
+        dataIntegerArray[0x0C] = Array(repeating: 0, count: 1)  // TARGET
+        dataIntegerArray[0x0D] = Array(repeating: 0, count: 1)  // ASSI
+        dataIntegerArray[0x0E] = Array(repeating: 0, count: 1)  // MASTER
+        dataIntegerArray[0x0F] = Array(repeating: 0, count: 1)  // NOITEM
+        dataIntegerArray[0x10] = Array(repeating: 0, count: 1)  // LOSEBASE
+        dataIntegerArray[0x11] = Array(repeating: 0, count: standardSize)  // SELECTCOM
+        dataIntegerArray[0x12] = Array(repeating: 0, count: 1)  // ASSIPLAY
+        dataIntegerArray[0x13] = Array(repeating: 0, count: standardSize)  // PREVCOM
+        dataIntegerArray[0x14] = Array(repeating: 0, count: 1)  // NOTUSE
+        dataIntegerArray[0x15] = Array(repeating: 0, count: 1)  // NOTUSE
+        dataIntegerArray[0x16] = Array(repeating: 0, count: 1)  // TIME
+        dataIntegerArray[0x17] = Array(repeating: 0, count: 1)  // ITEMSALES
+        dataIntegerArray[0x18] = Array(repeating: 0, count: 1)  // PLAYER
+        dataIntegerArray[0x19] = Array(repeating: 0, count: standardSize)  // NEXTCOM
+        dataIntegerArray[0x1A] = Array(repeating: 0, count: 1)  // PBAND
+        dataIntegerArray[0x1B] = Array(repeating: 0, count: 1)  // BOUGHT
+        // 0x1C-0x1D: NOTUSE
+
+        // A-Z arrays (0x1E-0x37)
+        for i in 0x1E...0x37 {
             dataIntegerArray[i] = Array(repeating: 0, count: standardSize)
         }
 
-        // System arrays (ITEM=26, FLAG=27, TFLAG=28, UP=29, DOWN=30, etc.)
-        dataIntegerArray[26] = Array(repeating: 0, count: standardSize) // ITEM
-        dataIntegerArray[27] = Array(repeating: 0, count: standardSize) // FLAG
-        dataIntegerArray[28] = Array(repeating: 0, count: standardSize) // TFLAG
-        dataIntegerArray[29] = Array(repeating: 0, count: standardSize) // UP
-        dataIntegerArray[30] = Array(repeating: 0, count: standardSize) // DOWN
-        dataIntegerArray[31] = Array(repeating: 0, count: 50) // SELECTCOM
-        dataIntegerArray[32] = Array(repeating: 0, count: 50) // PREVCOM
-        dataIntegerArray[33] = Array(repeating: 0, count: 50) // NEXTCOM
+        // Extended arrays (0x3C+)
+        dataIntegerArray[0x3C] = Array(repeating: 0, count: standardSize)  // ITEMPRICE
+        dataIntegerArray[0x3D] = Array(repeating: 0, count: standardSize)  // LOCAL
+        dataIntegerArray[0x3E] = Array(repeating: 0, count: standardSize)  // ARG
+        dataIntegerArray[0x3F] = Array(repeating: 0, count: standardSize)  // GLOBAL
+        dataIntegerArray[0x40] = Array(repeating: 0, count: standardSize)  // RANDDATA
 
         // Setup dataStringArray
-        for i in 0..<dataStringArray.count {
-            dataStringArray[i] = Array(repeating: nil, count: 50)
+        if dataStringArray.count < 3 {
+            dataStringArray = Array(repeating: [], count: 3)
         }
+        dataStringArray[0x00] = Array(repeating: nil, count: 50)  // RESULTS
+        dataStringArray[0x01] = Array(repeating: nil, count: 50)  // SAVESTR
+        dataStringArray[0x02] = Array(repeating: nil, count: 50)  // STR
+
+        // Setup 2D Integer Arrays
+        // CDFLAG = 0x0000 | __CHARACTER_DATA__ | __INTEGER__ | __ARRAY_2D__
+        // baseValue = 0x00
+        if dataIntegerArray2D.count < 1 {
+            dataIntegerArray2D = Array(repeating: [], count: 1)
+        }
+        // Default: 10x10 for CDFLAG
+        dataIntegerArray2D[0x00] = Array(repeating: Array(repeating: 0, count: 10), count: 10)
+
+        // Setup 2D String Arrays
+        if dataStringArray2D.count < 1 {
+            dataStringArray2D = Array(repeating: [], count: 1)
+        }
+        dataStringArray2D[0x00] = Array(repeating: Array(repeating: nil, count: 10), count: 10)
+
+        // Setup 3D Integer Arrays (for future expansion)
+        if dataIntegerArray3D.count < 1 {
+            dataIntegerArray3D = Array(repeating: [], count: 1)
+        }
+        dataIntegerArray3D[0x00] = Array(repeating: Array(repeating: Array(repeating: 0, count: 5), count: 5), count: 5)
+
+        // Setup 3D String Arrays
+        if dataStringArray3D.count < 1 {
+            dataStringArray3D = Array(repeating: [], count: 1)
+        }
+        dataStringArray3D[0x00] = Array(repeating: Array(repeating: Array(repeating: nil, count: 5), count: 5), count: 5)
     }
 
     // MARK: - Variable Access
@@ -275,20 +343,65 @@ public class VariableData {
         arrays.removeAll()
         characters.removeAll()
 
-        // Reset data arrays
-        dataInteger = Array(repeating: 0, count: 50)
-        dataString = Array(repeating: nil, count: 20)
-        dataIntegerArray = Array(repeating: [], count: 50)
-        dataStringArray = Array(repeating: [], count: 20)
+        // Reset data arrays to empty
+        dataInteger = []
+        dataString = []
+        dataIntegerArray = []
+        dataStringArray = []
         dataIntegerArray2D = []
         dataStringArray2D = []
         dataIntegerArray3D = []
         dataStringArray3D = []
 
+        // Reinitialize with defaults
         setupDefaults()
         if tokenData != nil {
             tokenData.resetAll()
         }
+    }
+
+    // MARK: - 2D/3D Array Access Methods
+
+    /// Get 2D integer array element
+    public func get2DInt(_ baseValue: Int, _ i: Int, _ j: Int) -> Int64 {
+        guard baseValue >= 0 && baseValue < dataIntegerArray2D.count,
+              i >= 0 && i < dataIntegerArray2D[baseValue].count,
+              j >= 0 && j < dataIntegerArray2D[baseValue][i].count else {
+            return 0
+        }
+        return dataIntegerArray2D[baseValue][i][j]
+    }
+
+    /// Set 2D integer array element
+    public func set2DInt(_ baseValue: Int, _ i: Int, _ j: Int, _ value: Int64) {
+        guard baseValue >= 0 && baseValue < dataIntegerArray2D.count,
+              i >= 0 && i < dataIntegerArray2D[baseValue].count,
+              j >= 0 && j < dataIntegerArray2D[baseValue][i].count else {
+            return
+        }
+        dataIntegerArray2D[baseValue][i][j] = value
+    }
+
+    /// Get 3D integer array element
+    public func get3DInt(_ baseValue: Int, _ i: Int, _ j: Int, _ k: Int) -> Int64 {
+        guard baseValue >= 0 && baseValue < dataIntegerArray3D.count,
+              i >= 0 && i < dataIntegerArray3D[baseValue].count,
+              j >= 0 && j < dataIntegerArray3D[baseValue][i].count,
+              k >= 0 && k < dataIntegerArray3D[baseValue][i][j].count else {
+            return 0
+        }
+        return dataIntegerArray3D[baseValue][i][j][k]
+    }
+
+    /// Set 3D integer array element
+    public func set3DInt(_ baseValue: Int, _ i: Int, _ j: Int, _ k: Int, _ value: Int64) {
+        guard baseValue >= 0 && baseValue < dataIntegerArray3D.count,
+              i >= 0 && i < dataIntegerArray3D[baseValue].count,
+              j >= 0 && j < dataIntegerArray3D[baseValue][i].count,
+              k >= 0 && k < dataIntegerArray3D[baseValue][i][j].count else {
+            return
+        }
+        dataIntegerArray3D[baseValue][i][j][k] = value
     }
 
     // MARK: - Token-based Access

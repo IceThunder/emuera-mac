@@ -211,7 +211,8 @@ class Int1DVariableToken: VariableToken {
     }
 
     public override func getIntValue(exm: ExpressionMediator?, arguments: [Int64]) throws -> Int64 {
-        let index = Int(arguments[0])
+        // Default to index 0 if no arguments provided
+        let index = arguments.count > 0 ? Int(arguments[0]) : 0
         guard index >= 0 && index < array.count else {
             throw CodeEE("配列変数\(varName)の範囲外アクセス: index=\(index), size=\(array.count)")
         }
@@ -219,7 +220,8 @@ class Int1DVariableToken: VariableToken {
     }
 
     public override func setValue(_ value: Int64, arguments: [Int64]) throws {
-        let index = Int(arguments[0])
+        // Default to index 0 if no arguments provided
+        let index = arguments.count > 0 ? Int(arguments[0]) : 0
         guard index >= 0 && index < array.count else {
             throw CodeEE("配列変数\(varName)の範囲外アクセス: index=\(index), size=\(array.count)")
         }
@@ -311,7 +313,8 @@ class Str1DVariableToken: VariableToken {
     }
 
     public override func getStrValue(exm: ExpressionMediator?, arguments: [Int64]) throws -> String {
-        let index = Int(arguments[0])
+        // Default to index 0 if no arguments provided
+        let index = arguments.count > 0 ? Int(arguments[0]) : 0
         guard index >= 0 && index < array.count else {
             throw CodeEE("配列変数\(varName)の範囲外アクセス: index=\(index), size=\(array.count)")
         }
@@ -319,7 +322,8 @@ class Str1DVariableToken: VariableToken {
     }
 
     public override func setValue(_ value: String, arguments: [Int64]) throws {
-        let index = Int(arguments[0])
+        // Default to index 0 if no arguments provided
+        let index = arguments.count > 0 ? Int(arguments[0]) : 0
         guard index >= 0 && index < array.count else {
             throw CodeEE("配列変数\(varName)の範囲外アクセス: index=\(index), size=\(array.count)")
         }

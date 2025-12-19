@@ -17,21 +17,30 @@ public class TokenData {
     private var tokenCache: [String: VariableToken] = [:]
 
     public init(varData: VariableData) {
+        print("TokenData.init start")
         self.varData = varData
+        print("VariableData.dataIntegerArray.count = \(varData.dataIntegerArray.count)")
+        print("About to initialize tokens")
         initializeAllTokens()
+        print("TokenData.init complete")
     }
 
     /// Initialize all built-in variable tokens
     private func initializeAllTokens() {
-        // MARK: - Single Integer Variables
+        // MARK: - Single Integer Variables (stored as 1-element arrays in dataIntegerArray)
+        // These use IntVariableToken which accesses array[0]
         createIntTokens([
             (.DAY, "DAY"), (.MONEY, "MONEY"), (.EJAC, "EJAC"),
             (.RESULT, "RESULT"), (.COUNT, "COUNT"), (.TARGET, "TARGET"),
             (.ASSI, "ASSI"), (.MASTER, "MASTER"), (.NOITEM, "NOITEM"),
-            (.PLAYER, "PLAYER"), (.TIME, "TIME"), (.BOUGHT, "BOUGHT")
+            (.PLAYER, "PLAYER"), (.TIME, "TIME"), (.BOUGHT, "BOUGHT"),
+            (.LOSEBASE, "LOSEBASE"), (.ASSIPLAY, "ASSIPLAY"), (.ITEMSALES, "ITEMSALES"),
+            (.PBAND, "PBAND"), (.NO, "NO"), (.ISASSI, "ISASSI")
         ])
 
         // MARK: - 1D Integer Array Variables (A-Z)
+        // These use Int1DVariableToken which accesses array[index]
+        print("DEBUG: VariableCode.A = \(VariableCode.A), baseValue = \(VariableCode.A.baseValue)")
         createInt1DTokens([
             (.A, "A"), (.B, "B"), (.C, "C"), (.D, "D"), (.E, "E"), (.F, "F"),
             (.G, "G"), (.H, "H"), (.I, "I"), (.J, "J"), (.K, "K"), (.L, "L"),
@@ -44,7 +53,14 @@ public class TokenData {
         createInt1DTokens([
             (.ITEM, "ITEM"), (.FLAG, "FLAG"), (.TFLAG, "TFLAG"),
             (.UP, "UP"), (.DOWN, "DOWN"), (.SELECTCOM, "SELECTCOM"),
-            (.PREVCOM, "PREVCOM"), (.NEXTCOM, "NEXTCOM")
+            (.PREVCOM, "PREVCOM"), (.NEXTCOM, "NEXTCOM"),
+            (.PALAMLV, "PALAMLV"), (.EXPLV, "EXPLV")
+        ])
+
+        // MARK: - Extended 1D Integer Arrays
+        createInt1DTokens([
+            (.ITEMPRICE, "ITEMPRICE"), (.LOCAL, "LOCAL"), (.ARG, "ARG"),
+            (.GLOBAL, "GLOBAL"), (.RANDDATA, "RANDDATA")
         ])
 
         // MARK: - Single String Variables
@@ -58,6 +74,7 @@ public class TokenData {
         ])
 
         // MARK: - Character Data Variables (Single Integer)
+        // These need special handling - placeholder for now
         tokens["NO"] = CharaIntVariableToken(code: .NO, varData: varData)
         tokens["ISASSI"] = CharaIntVariableToken(code: .ISASSI, varData: varData)
 
@@ -249,5 +266,19 @@ public class TokenData {
         for (name, token) in tokens.sorted(by: { $0.key < $1.key }) {
             print("\(name): \(token.code) - type=\(token.code.isInteger ? "int" : "str"), dim=\(token.dimension)")
         }
+    }
+
+    // MARK: - Dynamic Registration Methods
+
+    /// Register a new 2D integer array variable
+    public func register2DIntVariable(_ name: String, baseValue: Int64) {
+        let code = VariableCode(rawValue: baseValue | VariableCode.__INTEGER__ | VariableCode.__ARRAY_2D__)
+        tokens[name] = Int2DVariableToken(varCode: code, varData: varData)
+    }
+
+    /// Register a new character 1D array variable
+    public func registerCharaInt1DVariable(_ name: String, baseValue: Int64) {
+        let code = VariableCode(rawValue: baseValue | VariableCode.__CHARACTER_DATA__ | VariableCode.__INTEGER__ | VariableCode.__ARRAY_1D__)
+        tokens[name] = CharaInt1DVariableToken(code: code, varData: varData)
     }
 }
