@@ -53,7 +53,7 @@ let package = Package(
             name: "DebugTestTarget",
             dependencies: ["EmueraCore"],
             path: "Sources/DebugTest",
-            exclude: ["DebugTest.swift", "TraceTest.swift"],
+            exclude: ["DebugTest.swift", "TraceTest.swift", "DebugBreak.swift", "DebugLexical.swift"],
             sources: ["DebugParser.swift"]
         ),
 

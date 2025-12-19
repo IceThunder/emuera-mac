@@ -38,8 +38,59 @@ public class ExpressionEvaluator {
             return try evaluateFunctionCall(name: name, arguments: arguments)
 
         case .binary(let op, let left, let right):
+            // Handle all assignment operators separately
+            if op.isAssignment {
+                return try evaluateAssignment(op: op, left: left, right: right)
+            }
             return try evaluateBinary(op: op, left: left, right: right)
         }
+    }
+
+    // MARK: - 赋值运算
+
+    /// 求值赋值表达式: variable = value (或 +=, -=, *=, /=)
+    private func evaluateAssignment(op: TokenType.Operator, left: ExpressionNode, right: ExpressionNode) throws -> VariableValue {
+        // 左值必须是变量
+        guard case .variable(let varName) = left else {
+            throw EvaluateError.invalidOperation("赋值左侧必须是变量")
+        }
+
+        // 获取当前变量值（用于复合赋值）
+        let currentValue: VariableValue
+        do {
+            currentValue = try resolveVariable(varName)
+        } catch {
+            currentValue = .integer(0)  // 不存在则为0
+        }
+
+        // 计算新值
+        let newValue: VariableValue
+        let rightValue = try evaluate(right)
+
+        switch op {
+        case .assign:
+            newValue = rightValue
+        case .addAssign:
+            newValue = try add(currentValue, rightValue)
+        case .subtractAssign:
+            newValue = try subtract(currentValue, rightValue)
+        case .multiplyAssign:
+            newValue = try multiply(currentValue, rightValue)
+        case .divideAssign:
+            newValue = try divide(currentValue, rightValue)
+        default:
+            throw EvaluateError.invalidOperation("未知的赋值运算符: \(op.rawValue)")
+        }
+
+        // 设置变量值
+        if case .integer(let intValue) = newValue {
+            try tokenData.setIntValue(varName, value: intValue)
+        } else if case .string(let strValue) = newValue {
+            try tokenData.setStrValue(varName, value: strValue)
+        }
+
+        // 返回新值作为赋值表达式的结果
+        return newValue
     }
 
     // MARK: - 变量解析
@@ -272,9 +323,9 @@ public class ExpressionEvaluator {
         case .not, .bitNot:
             throw EvaluateError.invalidOperation("一元运算符 \(op.rawValue) 暂不支持")
 
-        // 赋值运算（不应该在这里使用）
+        // 赋值运算符（应该在调用前被拦截，但为完整性添加）
         case .assign, .addAssign, .subtractAssign, .multiplyAssign, .divideAssign:
-            throw EvaluateError.invalidOperation("赋值运算符不能在表达式求值中使用")
+            throw EvaluateError.invalidOperation("赋值运算符应在 evaluateAssignment 中处理")
         }
     }
 

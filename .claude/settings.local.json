@@ -35,7 +35,8 @@
       "Bash(lldb:*)",
       "Bash(swift run emuera:*)",
       "Bash(git checkout:*)",
-      "Bash(.build/debug/QuickTest:*)"
+      "Bash(.build/debug/QuickTest:*)",
+      "Bash(echo:*)"
     ]
   }
 }

@@ -80,8 +80,20 @@ struct ConsoleApp {
             DebugTest.run()
             return false
 
+        case "WHILETEST":
+            runWhileTest()
+            return false
+
+        case "GOTOTEST":
+            runGotoTest()
+            return false
+
         case "SCRIPTTEST":
             runScriptParserTest()
+            return false
+
+        case "ADVANCEDTEST":
+            runAdvancedSyntaxTest()
             return false
 
         case "DEMO":
@@ -312,6 +324,7 @@ struct ConsoleApp {
         run <path>      - 运行脚本文件
         test            - 运行MVP测试脚本
         exprtest        - 运行表达式解析器测试
+        advancedtest    - 运行高级语法测试 (WHILE/CALL/GOTO等)
         demo            - 运行演示脚本
         tokens <script> - 显示脚本token分析
         help            - 显示此帮助
@@ -357,6 +370,154 @@ struct ConsoleApp {
         print("输入 'persisttest' 运行持久化专项测试")
         print("输入 'scripttest' 运行语法解析器测试")
         print()
+    }
+
+    /// 运行高级语法测试 (WHILE/CALL/GOTO等)
+    private func runAdvancedSyntaxTest() {
+        print("🧪 高级语法测试 - WHILE/CALL/GOTO/FOR/SELECTCASE")
+        print(String(repeating: "=", count: 60))
+        print()
+
+        var pass = 0
+        var fail = 0
+
+        func test(_ name: String, _ script: String, _ expectedOutput: [String]) {
+            print("测试: \(name)")
+            do {
+                let parser = ScriptParser()
+                let statements = try parser.parse(script)
+                let executor = StatementExecutor()
+                let output = executor.execute(statements)
+
+                if output == expectedOutput {
+                    print("✅ 通过")
+                    pass += 1
+                } else {
+                    print("❌ 失败")
+                    print("  期望: \(expectedOutput)")
+                    print("  实际: \(output)")
+                    fail += 1
+                }
+            } catch {
+                print("❌ 错误: \(error)")
+                fail += 1
+            }
+            print()
+        }
+
+        // 测试1: WHILE循环
+        test("WHILE循环", """
+        COUNT = 0
+        WHILE COUNT < 3
+          PRINT COUNT
+          COUNT = COUNT + 1
+        ENDWHILE
+        """, ["0", "1", "2"])
+
+        // 测试2: FOR循环
+        test("FOR循环", """
+        FOR I, 1, 5
+          PRINT I
+        ENDFOR
+        """, ["1", "2", "3", "4", "5"])
+
+        // 测试3: GOTO跳转
+        test("GOTO跳转", """
+        A = 10
+        GOTO SKIP
+        A = 20
+        SKIP:
+        PRINT A
+        """, ["10"])
+
+        // 测试4: CALL子程序
+        test("CALL子程序", """
+        A = 100
+        CALL SUB
+        PRINT A
+
+        SUB:
+          A = A + 50
+          RETURN
+        """, ["100", "150"])
+
+        // 测试5: RETURN带值
+        test("RETURN带值", """
+        CALL CALC
+        PRINT RESULT
+
+        CALC:
+          RESULT = 100 + 200
+          RETURN RESULT
+        """, ["300"])
+
+        // 测试6: SELECTCASE
+        test("SELECTCASE", """
+        A = 2
+        SELECTCASE A
+          CASE 1
+            PRINTL 一
+          CASE 2
+            PRINTL 二
+          CASE 3
+            PRINTL 三
+          CASEELSE
+            PRINTL 其他
+        ENDSELECT
+        """, ["二\n"])
+
+        // 测试7: BREAK
+        test("BREAK", """
+        FOR I, 1, 10
+          IF I == 5
+            BREAK
+          ENDIF
+          PRINT I
+        ENDFOR
+        """, ["1", "2", "3", "4"])
+
+        // 测试8: CONTINUE
+        test("CONTINUE", """
+        FOR I, 1, 5
+          IF I == 3
+            CONTINUE
+          ENDIF
+          PRINT I
+        ENDFOR
+        """, ["1", "2", "4", "5"])
+
+        // 测试9: 复杂嵌套
+        test("复杂嵌套", """
+        A = 0
+        WHILE A < 2
+          A = A + 1
+          FOR I, 1, 2
+            PRINT A
+            PRINT I
+          ENDFOR
+        ENDWHILE
+        """, ["1", "1", "1", "2", "2", "1", "2", "2"])
+
+        // 测试10: 标签和GOTO
+        test("标签和GOTO", """
+        GOTO START
+        PRINTL 跳过
+        START:
+        PRINTL 开始
+        GOTO END
+        PRINTL 也跳过
+        END:
+        PRINTL 结束
+        """, ["开始\n", "结束\n"])
+
+        print(String(repeating: "=", count: 60))
+        print("测试总结: 通过 (pass)/(pass + fail)")
+        if fail == 0 {
+            print("🎉 所有高级语法测试通过！")
+        } else {
+            print("⚠️  (fail) 个测试失败")
+        }
+        print(String(repeating: "=", count: 60))
     }
 
     /// 运行ScriptParser测试
@@ -455,6 +616,77 @@ struct ConsoleApp {
             print("⚠️  \(fail) 个测试失败")
         }
         print(String(repeating: "=", count: 60))
+    }
+
+    /// 简单WHILE测试
+    private func runWhileTest() {
+        print("🧪 WHILE循环简单测试")
+        let script = """
+        COUNT = 0
+        WHILE COUNT < 3
+          PRINT COUNT
+          COUNT = COUNT + 1
+        ENDWHILE
+        """
+
+        print("脚本:")
+        print(script)
+        print("\n---\n")
+
+        do {
+            let parser = ScriptParser()
+            let statements = try parser.parse(script)
+            print("解析到 \(statements.count) 条语句")
+
+            let executor = StatementExecutor()
+            let output = executor.execute(statements)
+
+            print("输出: \(output)")
+            print("期望: [\"0\", \"1\", \"2\"]")
+            print("结果: \(output == ["0", "1", "2"] ? "✅ 通过" : "❌ 失败")")
+        } catch {
+            print("错误: \(error)")
+        }
+    }
+
+    /// GOTO测试
+    private func runGotoTest() {
+        print("🧪 GOTO跳转测试")
+        let script = """
+        A = 10
+        GOTO SKIP
+        A = 20
+        SKIP:
+        PRINT A
+        """
+
+        print("脚本:")
+        print(script)
+        print("\n---\n")
+
+        do {
+            let parser = ScriptParser()
+            let statements = try parser.parse(script)
+            print("解析到 \(statements.count) 条语句:")
+            for (i, stmt) in statements.enumerated() {
+                print("  \(i): \(type(of: stmt))")
+                if let label = stmt as? LabelStatement {
+                    print("      -> 标签: \(label.name)")
+                }
+                if let goto = stmt as? GotoStatement {
+                    print("      -> GOTO: \(goto.label)")
+                }
+            }
+
+            let executor = StatementExecutor()
+            let output = executor.execute(statements)
+
+            print("\n输出: \(output)")
+            print("期望: [\"10\"]")
+            print("结果: \(output == ["10"] ? "✅ 通过" : "❌ 失败")")
+        } catch {
+            print("错误: \(error)")
+        }
     }
 }
 
