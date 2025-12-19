@@ -35,7 +35,6 @@ Package.resolved
 
 # SwiftPM build directories
 /.build
-/emuera
 Emuera/.build
 Emuera/.swiftpm
 

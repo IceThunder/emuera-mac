@@ -281,4 +281,88 @@ public class TokenData {
         let code = VariableCode(rawValue: baseValue | VariableCode.__CHARACTER_DATA__ | VariableCode.__INTEGER__ | VariableCode.__ARRAY_1D__)
         tokens[name] = CharaInt1DVariableToken(code: code, varData: varData)
     }
+
+    /// Register a user-defined variable from #DIM/#DIMS
+    public func registerUserDefinedVariable(_ data: UserDefinedVariableData) throws {
+        guard let name = data.name else {
+            throw EmueraError.headerFileError(message: "Variable name is nil", position: nil)
+        }
+
+        // Build VariableCode based on properties
+        var rawValue: Int64 = 0
+
+        // Type flags
+        if data.typeIsStr {
+            rawValue |= VariableCode.__STRING__
+        } else {
+            rawValue |= VariableCode.__INTEGER__
+        }
+
+        // Dimension flags
+        if data.dimension == 2 {
+            rawValue |= VariableCode.__ARRAY_2D__
+        } else if data.dimension == 1 {
+            rawValue |= VariableCode.__ARRAY_1D__
+        }
+
+        // Character data flag
+        if data.charaData {
+            rawValue |= VariableCode.__CHARACTER_DATA__
+        }
+
+        // Special flags
+        if data.`const` {
+            rawValue |= VariableCode.__CONSTANT__
+        }
+
+        // Create VariableCode
+        let code = VariableCode(rawValue: rawValue)
+
+        // Create appropriate token based on properties
+        let token: VariableToken
+
+        if data.reference {
+            // Reference token
+            token = ReferenceToken(varData: varData, name: name, isPrivate: data.`private`, isGlobal: data.global, isSavedata: data.save)
+        } else if data.`static` && !data.global && data.dimension == 1 && !data.typeIsStr && !data.charaData {
+            // Static 1D int array
+            token = StaticInt1DVariableToken(varData: varData, name: name, sizes: data.lengths, isGlobal: data.global, isSavedata: data.save)
+        } else if data.charaData {
+            // Character data - use UserDefinedVariableToken base class
+            token = UserDefinedVariableToken(varCode: code, data: varData, name: name, isPrivate: data.`private`, isConst: data.`const`,
+                                           sizes: data.lengths, isGlobal: data.global, isSavedata: data.save)
+            token.isCharacterData = true
+            token.dimension = data.dimension
+        } else if data.typeIsStr {
+            // String variable - use UserDefinedVariableToken
+            token = UserDefinedVariableToken(varCode: code, data: varData, name: name, isPrivate: data.`private`, isConst: data.`const`,
+                                           sizes: data.lengths, isGlobal: data.global, isSavedata: data.save)
+            token.dimension = data.dimension
+        } else {
+            // Integer variable
+            if data.dimension == 2 {
+                // 2D int array
+                token = UserDefinedVariableToken(varCode: code, data: varData, name: name, isPrivate: data.`private`, isConst: data.`const`,
+                                               sizes: data.lengths, isGlobal: data.global, isSavedata: data.save)
+                token.dimension = 2
+            } else if data.dimension == 1 {
+                // 1D int array - use StaticInt1DVariableToken if static, otherwise UserDefinedVariableToken
+                if data.`static` && !data.global {
+                    token = StaticInt1DVariableToken(varData: varData, name: name, sizes: data.lengths, isGlobal: data.global, isSavedata: data.save)
+                } else {
+                    token = UserDefinedVariableToken(varCode: code, data: varData, name: name, isPrivate: data.`private`, isConst: data.`const`,
+                                                   sizes: data.lengths, isGlobal: data.global, isSavedata: data.save)
+                    token.dimension = 1
+                }
+            } else {
+                // Single value
+                token = UserDefinedVariableToken(varCode: code, data: varData, name: name, isPrivate: data.`private`, isConst: data.`const`,
+                                               sizes: [1], isGlobal: data.global, isSavedata: data.save)
+                token.dimension = 0
+            }
+        }
+
+        // Add to dictionary
+        tokens[name] = token
+    }
 }

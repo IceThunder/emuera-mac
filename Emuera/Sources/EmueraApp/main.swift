@@ -330,6 +330,9 @@ struct ConsoleApp {
         exprtest        - 运行表达式解析器测试
         advancedtest    - 运行高级语法测试 (WHILE/CALL/GOTO等)
         processtest     - 运行Process系统测试 (函数调用栈)
+        headertest      - 运行HeaderFileLoader测试 (#FUNCTION/#DIM)
+        csvtest         - 运行CSVParser测试 (CSV数据加载)
+        filetest        - 运行FileService测试 (文件I/O操作)
         demo            - 运行演示脚本
         tokens <script> - 显示脚本token分析
         help            - 显示此帮助
@@ -720,6 +723,53 @@ struct ConsoleApp {
 
         print(String(repeating: "=", count: 60))
     }
+
+    /// HeaderFileLoader测试
+    func runHeaderFileLoaderTest() {
+        print("🧪 HeaderFileLoader测试 - #FUNCTION/#DIM指令")
+        print(String(repeating: "=", count: 60))
+        print()
+
+        let tester = HeaderFileLoaderTest()
+
+        // 运行基本功能测试
+        tester.testFunctionParsing()
+
+        // 运行完整文件加载测试
+        tester.testCompleteERHFile()
+
+        print()
+        print(String(repeating: "=", count: 60))
+        print("✅ HeaderFileLoader测试完成")
+    }
+
+    /// CSVParser测试
+    func runCSVParserTest() {
+        print("🧪 CSVParser测试 - CSV数据加载")
+        print(String(repeating: "=", count: 60))
+        print()
+
+        let tester = CSVParserTest()
+        tester.runAllTests()
+
+        print()
+        print(String(repeating: "=", count: 60))
+        print("✅ CSVParser测试完成")
+    }
+
+    /// FileService测试
+    func runFileServiceTest() {
+        print("🧪 FileService测试 - 文件I/O操作")
+        print(String(repeating: "=", count: 60))
+        print()
+
+        let tester = FileServiceTest()
+        tester.runAllTests()
+
+        print()
+        print(String(repeating: "=", count: 60))
+        print("✅ FileService测试完成")
+    }
 }
 
 // MARK: - String 扩展
@@ -762,9 +812,26 @@ if args.count > 1 {
         app.runScriptParserTest()
         exit(0)
 
+    case "headertest":
+        // Run HeaderFileLoader tests and exit
+        let app = ConsoleApp()
+        app.runHeaderFileLoaderTest()
+        exit(0)
+
+    case "csvtest":
+        // Run CSVParser tests and exit
+        let app = ConsoleApp()
+        app.runCSVParserTest()
+        exit(0)
+
+    case "filetest":
+        // Run FileService tests and exit
+        let app = ConsoleApp()
+        app.runFileServiceTest()
+        exit(0)
     default:
         print("未知命令: \(command)")
-        print("可用命令: processtest, test, exprtest, scripttest")
+        print("可用命令: processtest, test, exprtest, scripttest, headertest, csvtest")
         exit(1)
     }
 }

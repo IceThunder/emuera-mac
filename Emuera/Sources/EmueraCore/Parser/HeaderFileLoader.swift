@@ -1,4 +1,3 @@
-//
 //  HeaderFileLoader.swift
 //  Emuera
 //
@@ -10,11 +9,13 @@ import Foundation
 /// Loads and processes ERH header files
 public final class HeaderFileLoader {
     private let idDic: IdentifierDictionary
+    private let tokenData: TokenData
     private var dimLines: [DimLineData] = []
     private var noError: Bool = true
 
-    public init(idDic: IdentifierDictionary) {
+    public init(idDic: IdentifierDictionary, tokenData: TokenData) {
         self.idDic = idDic
+        self.tokenData = tokenData
     }
 
     /// Load all ERH header files from specified directory
@@ -211,48 +212,96 @@ public final class HeaderFileLoader {
         try idDic.addMacro(mac)
     }
 
-    /// Analyze #FUNCTION directive (not implemented in this version)
+    /// Analyze #FUNCTION directive
     private func analyzeSharpFunction(stream: StringStream, position: ScriptPosition, isFunctions: Bool) throws {
-        // Not implemented - would require FunctionIdentifier support
-        throw EmueraError.headerFileError(message: "#FUNCTION not supported", position: position)
+        // Parse function declaration using FunctionIdentifier
+        let function = try FunctionIdentifier.create(from: stream, isFunctions: isFunctions, position: position)
+
+        // Check for name conflicts
+        var errMes = ""
+        var errLevel = -1
+        idDic.checkUserMacroName(ref: &errMes, ref: &errLevel, name: function.name)
+
+        if errLevel >= 0 {
+            // Warning or error
+            if errLevel >= 2 {
+                noError = false
+                return
+            }
+        }
+
+        // Add function to identifier dictionary
+        try idDic.addFunction(function)
     }
 
     /// Analyze all #DIM lines
     private func analyzeSharpDimLines() throws -> Bool {
         var noError = true
         var tryAgain = true
+        var processedCount = 0
 
         while !dimLines.isEmpty {
             let count = dimLines.count
+            processedCount = 0
 
             for _ in 0..<count {
                 let dimLine = dimLines.removeFirst()
 
-                // Parse DIM line and create user-defined variable
-                // This requires UserDefinedVariableData which we'll implement later
-                // For now, we'll skip this and continue
-                if tryAgain {
-                    dimLines.append(dimLine)
-                } else {
-                    noError = false
+                do {
+                    // Parse DIM line and create user-defined variable
+                    let data = try UserDefinedVariableData.create(from: dimLine)
+
+                    // Add to identifier dictionary
+                    if let varName = data.name {
+                        // Check for name conflicts first
+                        var errMes = ""
+                        var errLevel = -1
+                        idDic.checkUserMacroName(ref: &errMes, ref: &errLevel, name: varName)
+
+                        if errLevel >= 0 {
+                            // Conflict detected
+                            if errLevel >= 2 {
+                                // Error level - don't process
+                                print("Error: \(errMes)")
+                                noError = false
+                                continue
+                            }
+                        }
+
+                        // Register in TokenData
+                        try tokenData.registerUserDefinedVariable(data)
+
+                        // Mark as processed
+                        processedCount += 1
+                        continue
+                    }
+                } catch let e as EmueraError {
+                    if tryAgain {
+                        dimLines.append(dimLine)
+                    } else {
+                        // Report error
+                        print("Error: \(e.errorDescription ?? e.localizedDescription)")
+                        noError = false
+                    }
+                } catch {
+                    if tryAgain {
+                        dimLines.append(dimLine)
+                    } else {
+                        noError = false
+                    }
                 }
             }
 
             if dimLines.count == count {
-                tryAgain = false
+                // No progress made
+                if processedCount == 0 {
+                    tryAgain = false
+                }
             }
         }
 
         return noError
     }
-}
-
-/// Helper struct for DIM line data
-private struct DimLineData {
-    let wc: WordCollection
-    let isString: Bool
-    let isPrivate: Bool
-    let position: ScriptPosition
 }
 
 /// Simplified LexicalAnalyzer for header file parsing

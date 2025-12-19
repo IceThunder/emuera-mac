@@ -21,6 +21,7 @@ public enum EmueraError: Error, LocalizedError {
     case invalidOperation(message: String)
     case duplicateMacro(name: String)
     case duplicateVariable(name: String)
+    case duplicateFunction(name: String)
     case reservedNameUsed(name: String)
     case headerFileError(message: String, position: ScriptPosition?)
 
@@ -62,6 +63,8 @@ public enum EmueraError: Error, LocalizedError {
             return "Duplicate macro definition: \(name)"
         case .duplicateVariable(let name):
             return "Duplicate variable definition: \(name)"
+        case .duplicateFunction(let name):
+            return "Duplicate function definition: \(name)"
         case .reservedNameUsed(let name):
             return "Reserved name used: \(name)"
         case .headerFileError(let message, let position):

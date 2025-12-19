@@ -30,6 +30,7 @@ public final class IdentifierDictionary {
     private var nameDic: [String: DefinedNameType] = [:]
     private var macroDic: [String: DefineMacro] = [:]
     private var userDefinedVariables: [String: VariableToken] = [:]
+    private var functionDic: [String: FunctionIdentifier] = [:]
 
     public init() {
         initializeReservedWords()
@@ -148,11 +149,38 @@ public final class IdentifierDictionary {
         return nameDic[name] != nil
     }
 
+    /// Add user-defined function
+    public func addFunction(_ function: FunctionIdentifier) throws {
+        let name = function.name
+        if let existing = nameDic[name] {
+            if existing == .userRefMethod {
+                throw EmueraError.duplicateFunction(name: name)
+            }
+            if existing == .reserved {
+                throw EmueraError.reservedNameUsed(name: name)
+            }
+            if existing == .userGlobalVariable {
+                throw EmueraError.duplicateVariable(name: name)
+            }
+            if existing == .userMacro {
+                throw EmueraError.duplicateMacro(name: name)
+            }
+        }
+        nameDic[name] = .userRefMethod
+        functionDic[name] = function
+    }
+
+    /// Get a function by name
+    public func getFunction(_ name: String) -> FunctionIdentifier? {
+        return functionDic[name]
+    }
+
     /// Clear all definitions
     public func clear() {
         nameDic.removeAll()
         macroDic.removeAll()
         userDefinedVariables.removeAll()
+        functionDic.removeAll()
         initializeReservedWords()
     }
 }
