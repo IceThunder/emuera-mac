@@ -100,6 +100,10 @@ struct ConsoleApp {
             runDemo()
             return false
 
+        case "PROCESSTEST":
+            runProcessTest()
+            return false
+
         case "TOKENS":
             if parts.count > 1 {
                 let script = String(parts[1])
@@ -182,7 +186,7 @@ struct ConsoleApp {
     }
 
     /// 运行测试脚本
-    private func runTestScript() {
+    func runTestScript() {
         let testScript = """
         PRINTL 测试开始...
         PRINTL A的值设置为100
@@ -308,8 +312,8 @@ struct ConsoleApp {
     private func showTokens(_ script: String) {
         let tokens = engine.getTokens(script)
         print("🔍 Token分析结果:")
-        for (idx, token) in tokens.enumerated() {
-            print("  \\(idx): \\(token.description)")
+        for (idx, _) in tokens.enumerated() {
+            print("  \\(idx): \\(tokens[idx].description)")
         }
     }
 
@@ -325,6 +329,7 @@ struct ConsoleApp {
         test            - 运行MVP测试脚本
         exprtest        - 运行表达式解析器测试
         advancedtest    - 运行高级语法测试 (WHILE/CALL/GOTO等)
+        processtest     - 运行Process系统测试 (函数调用栈)
         demo            - 运行演示脚本
         tokens <script> - 显示脚本token分析
         help            - 显示此帮助
@@ -521,7 +526,7 @@ struct ConsoleApp {
     }
 
     /// 运行ScriptParser测试
-    private func runScriptParserTest() {
+    func runScriptParserTest() {
         print("🧪 ScriptParser + StatementExecutor 完整测试")
         print(String(repeating: "=", count: 60))
         print()
@@ -688,6 +693,33 @@ struct ConsoleApp {
             print("错误: \(error)")
         }
     }
+
+    /// Process系统测试
+    func runProcessTest() {
+        print("🧪 Process系统测试 - 函数调用栈")
+        print(String(repeating: "=", count: 60))
+        print()
+
+        // 使用ProcessTest进行测试
+        let results = processQuickTest()
+        print(results)
+
+        print(String(repeating: "=", count: 60))
+        print()
+
+        // 额外运行集成测试
+        print("🧪 Process系统集成测试（StatementExecutor）")
+        print(String(repeating: "=", count: 60))
+        print()
+
+        let tester = ProcessTest()
+        let integrationResults = tester.runIntegrationTest()
+        for line in integrationResults {
+            print(line)
+        }
+
+        print(String(repeating: "=", count: 60))
+    }
 }
 
 // MARK: - String 扩展
@@ -699,5 +731,44 @@ extension String {
 
 // MARK: - Entry Point
 
+// Check for command-line arguments
+let args = CommandLine.arguments
+
+if args.count > 1 {
+    // Run specific commands without interactive mode
+    let command = args[1].lowercased()
+
+    switch command {
+    case "processtest":
+        // Run Process tests and exit
+        let app = ConsoleApp()
+        app.runProcessTest()
+        exit(0)
+
+    case "test":
+        // Run basic test and exit
+        let app = ConsoleApp()
+        app.runTestScript()
+        exit(0)
+
+    case "exprtest":
+        // Run expression tests and exit
+        ExpressionTest.runTests()
+        exit(0)
+
+    case "scripttest":
+        // Run script parser tests and exit
+        let app = ConsoleApp()
+        app.runScriptParserTest()
+        exit(0)
+
+    default:
+        print("未知命令: \(command)")
+        print("可用命令: processtest, test, exprtest, scripttest")
+        exit(1)
+    }
+}
+
+// Interactive mode (default)
 var app = ConsoleApp()
 app.run()

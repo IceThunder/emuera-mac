@@ -36,7 +36,8 @@
       "Bash(swift run emuera:*)",
       "Bash(git checkout:*)",
       "Bash(.build/debug/QuickTest:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }

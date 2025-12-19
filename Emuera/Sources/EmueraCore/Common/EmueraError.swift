@@ -19,6 +19,10 @@ public enum EmueraError: Error, LocalizedError {
     case typeMismatch(expected: String, actual: String)
     case divisionByZero
     case invalidOperation(message: String)
+    case duplicateMacro(name: String)
+    case duplicateVariable(name: String)
+    case reservedNameUsed(name: String)
+    case headerFileError(message: String, position: ScriptPosition?)
 
     public var errorDescription: String? {
         switch self {
@@ -54,6 +58,17 @@ public enum EmueraError: Error, LocalizedError {
 
         case .invalidOperation(let message):
             return "Invalid operation: \(message)"
+        case .duplicateMacro(let name):
+            return "Duplicate macro definition: \(name)"
+        case .duplicateVariable(let name):
+            return "Duplicate variable definition: \(name)"
+        case .reservedNameUsed(let name):
+            return "Reserved name used: \(name)"
+        case .headerFileError(let message, let position):
+            if let pos = position {
+                return "Header file error at \(pos.description): \(message)"
+            }
+            return "Header file error: \(message)"
         }
     }
 }
@@ -62,13 +77,20 @@ public enum EmueraError: Error, LocalizedError {
 public struct ScriptPosition: Codable, Equatable {
     public let filename: String
     public let lineNumber: Int
+    public let line: String?
+    public let column: Int?
 
-    public init(filename: String, lineNumber: Int) {
+    public init(filename: String, lineNumber: Int, line: String? = nil, column: Int? = nil) {
         self.filename = filename
         self.lineNumber = lineNumber
+        self.line = line
+        self.column = column
     }
 
     public var description: String {
+        if let col = column {
+            return "\(filename):\(lineNumber):\(col)"
+        }
         return "\(filename):\(lineNumber)"
     }
 }
