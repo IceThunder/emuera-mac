@@ -1,8 +1,8 @@
 # 🎯 Emuera macOS移植项目 - 完整进度报告
 
 **日期**: 2025年12月19日
-**状态**: 🟢 ScriptParser基础完成，准备扩展WHILE/CALL
-**当前进度**: **40%** (~5,200行代码)
+**状态**: 🟢 命令系统扩展完成，准备扩展WHILE/CALL/GOTO
+**当前进度**: **45%** (~6,500行代码)
 
 ---
 
@@ -14,7 +14,7 @@
 工具: Swift 5.9 + AppKit
 仓库: git@github.com:IceThunder/emuera-mac.git
 参考: https://ux.getuploader.com/ninnohito/
-当前: MVP v0.3 - 完整变量系统可用
+当前: MVP v0.5 - 完整命令系统 + 内置函数
 ```
 
 ---
