@@ -1,245 +1,470 @@
-# Emuera macOS - 快速开始指南
+# 🚀 Emuera macOS 快速开始指南
 
-## 🏁 立即开始 (在你的Mac上)
+## 5分钟上手教程
 
-### 1. 环境准备
+---
 
-首先确保你的Mac已安装Swift开发环境：
+## 第一步：验证环境
+
+打开终端，运行：
 
 ```bash
-# 检查Swift版本
 swift --version
-
-# 如果没有安装，请访问 https://swift.org/download/
-# 或通过Homebrew安装 (推荐)
-brew install swift
 ```
 
-### 2. 克隆项目
-
-```bash
-# 从GitHub克隆
-git clone https://github.com/IceThunder/emuera-mac.git
-cd emuera-mac/Emuera
-
-# 或如果你想在本地继续开发
-cd /d/Project_js/EmueraJs/Emuera
+你应该看到类似：
+```
+Swift version 5.9 or higher
+Target: arm64-apple-darwin23.3.0
 ```
 
-### 3. 构建项目
-
-```bash
-# 构建所有目标
-swift build
-
-# 或构建特定目标
-swift build --product EmueraCore
-swift build --product emuera
-
-# 释放模式构建 (优化后的版本)
-swift build -c release
-```
-
-### 4. 运行测试
-
-```bash
-# 运行所有测试
-swift test
-
-# 运行特定测试模块
-swift test --filter EmueraCoreTests
-```
-
-### 5. 启动应用
-
-```bash
-# 运行主程序
-swift run emuera
-
-# 或直接运行二进制文件
-swift run -c release emuera
-```
-
-## 📋 现有功能演示
-
-### 变量系统测试
-
-应用启动后会自动运行基础测试：
-
-```swift
-// 你可以看到以下输出:
-// 🚀 Emuera for macOS - Development Build
-// Version: 1.820 (Core: 1.0.0)
-//
-// 🧪 Testing core engine components...
-// ✓ Variable system: PASS
-// ✓ Array operations: PASS
-// ✓ Character data: PASS
-// ✓ Logger system: PASS
-//
-// 🎉 All core tests passed!
-```
-
-### 下一步操作
-
-创建一个简单的测试脚本来验证功能：
-
-```bash
-# 创建测试目录结构
-cd Resources
-mkdir -p csv erb
-
-# 创建基础CSV（测试用）
-cat > csv/GAMEBASE.CSV << EOF
-SCRIPT_TITLE,Test Game
-VERSION,1.0
-EOF
-
-# 创建测试ERB脚本
-cat > erb/TEST.ERB << EOF
-@SYSTEM_START
-PRINTL Welcome to Emuera for macOS!
-INPUT
-RESULT = RESULT * 2
-PRINTL Your doubled result: {RESULT}
-RETURN
-EOF
-```
-
-## 🔧 在Xcode中开发
-
-### 创建Xcode项目
-
-```bash
-# 生成Xcode项目
-swift package generate-xcodeproject
-
-# 直接打开
-open Emuera.xcodeproj
-```
-
-### Xcode开发提示
-1. 使用`Cmd+B`构建
-2. 使用`Cmd+R`运行
-3. 使用`Cmd+U`运行测试
-4. 在Scheme中设置工作目录为项目文件夹
-
-## 📁 项目结构详解
-
-```
-Emuera/
-├── Package.swift              # SwiftPM配置文件
-├── Sources/
-│   ├── EmueraCore/           # 核心引擎库
-│   │   ├── Common/          # 工具类
-│   │   │   ├── Config.swift         # 配置管理
-│   │   │   ├── EmueraError.swift   # 错误类型
-│   │   │   └── Logger.swift        # 日志系统
-│   │   ├── Variable/         # 变量系统
-│   │   │   ├── VariableData.swift  # 数据存储
-│   │   │   └── VariableType.swift  # 类型定义
-│   │   ├── Parser/          # 解析器
-│   │   │   ├── TokenType.swift     # Token定义
-│   │   │   └── (开发中...)
-│   │   ├── Script/          # 脚本处理
-│   │   └── Executor/        # 执行引擎
-│   └── EmueraApp/           # macOS应用
-│       ├── main.swift       # 应用入口
-│       ├── Views/           # UI组件 (待开发)
-│       ├── Render/          # 图形渲染 (待开发)
-│       └── Services/        # 系统服务 (待开发)
-├── Tests/                   # 单元测试
-├── Resources/               # 游戏资源
-│   ├── csv/                # CSV数据
-│   ├── erb/                # ERB脚本
-│   └── resources/          # 图片等资源
-└── README.md               # 项目说明
-```
-
-## 🚀 开发路线
-
-### 立即可以做的贡献
-
-1. **基础解析器实现**
-   - 在`EmueraCore/Parser/`添加逻辑解析器
-   - 测试ERB文件读取
-
-2. **表达式计算**
-   - 实现四则运算引擎
-   - 添加比较运算符支持
-
-3. **UI原型**
-   - 使用Xcode Interface Builder
-   - 创建基础窗口布局
-
-### 示例：添加新命令
-
-在`Sources/EmueraCore/Executor/`中：
-
-```swift
-// Command.swift
-public enum EmueraCommand {
-    case print(String)
-    case input
-    case goto(label: String)
-
-    public func execute(in context: ProcessState) throws {
-        switch self {
-        case .print(let message):
-            context.console.write(message)
-        case .input:
-            // 等待输入...
-            break
-        case .goto(let label):
-            context.jump(to: label)
-        }
-    }
-}
-```
-
-## 🐛 常见问题
-
-### 问题：找不到Swift命令
-**解决**: 安装Xcode Command Line Tools
+如果提示命令未找到，请安装Xcode Command Line Tools：
 ```bash
 xcode-select --install
 ```
 
-### 问题：构建失败
-**解决**: 清理构建缓存
+---
+
+## 第二步：编译项目
+
 ```bash
-rm -rf .build
+cd /Users/ss/Documents/Project/iOS/emuera-mac/Emuera
 swift build
 ```
 
-### 问题：权限错误
-**解决**: 确保有读写权限
+首次编译需要几分钟，后续会很快。
+
+---
+
+## 第三步：运行测试（验证安装）
+
 ```bash
-chmod -R +w .
+swift run emuera integrationtest
 ```
 
-## 📞 获取帮助
-
-- 查看`DEVELOPMENT_PLAN.md`了解详细开发计划
-- 阅读原版Emuera源码理解行为
-- 加入ERA系列游戏开发社区讨论
-
-## ✅ 验证成功
-
-如果看到以下输出，说明环境配置成功：
-
+你应该看到：
 ```
-✅ Swift版本: Swift 5.9+
-✅ 项目结构: 正确
-✅ 核心模块: 可编译
-✅ 测试运行: 通过
+🧪 完整集成测试 - Process + StatementExecutor + UI
+======================================================================
+
+测试1: 基础变量赋值和输出
+--------------------------------------------------
+✅ 通过
+
+测试2: 条件语句和流程控制
+--------------------------------------------------
+✅ 通过
+
+... (更多测试)
+```
+
+如果看到 ✅ 通过，说明安装成功！
+
+---
+
+## 第四步：尝试交互式控制台
+
+```bash
+swift run emuera
+```
+
+你会看到：
+```
+┌────────────────────────────────────────┐
+│  Emuera for macOS - MVP Version        │
+│  (c) 2025, based on Emuera Original    │
+└────────────────────────────────────────┘
+
+输入 'help' 查看命令帮助
+输入 'test' 运行内置测试
+
+emuera>
+```
+
+现在可以输入命令：
+
+### 尝试基础命令
+
+```emuera
+emuera> A = 100
+emuera> PRINT A
+100
+emuera> B = A + 50
+emuera> PRINT B
+150
+```
+
+### 尝试条件语句
+
+```emuera
+emuera> IF A > 50
+emuera>   PRINTL A大于50
+emuera> ENDIF
+A大于50
+```
+
+### 运行内置演示
+
+```emuera
+emuera> demo
+```
+
+### 运行完整测试
+
+```emuera
+emuera> integrationtest
 ```
 
 ---
 
-**准备好开始开发了！** 🎉
+## 第五步：创建你的第一个脚本
 
-下一步建议：
-1. 阅读`DEVELOPMENT_PLAN.md`了解详细功能清单
-2. 在`EmueraCore/Parser/`添加词法分析器
-3. 参与GitHub仓库贡献代码
+### 1. 创建脚本文件
+
+```bash
+# 在任意位置创建文件
+nano ~/Desktop/my_first_script.erb
+```
+
+### 2. 写入以下内容：
+
+```erb
+PRINTL === 我的第一个Emuera脚本 ===
+PRINTL
+
+PRINTL 请输入一个数字:
+WAIT
+
+A = 100
+B = 200
+C = A + B
+
+PRINTL
+PRINTL 计算结果:
+PRINT A + B =
+PRINT C
+PRINTL
+
+IF C > 250
+  PRINTL 结果大于250！
+ELSE
+  PRINTL 结果小于等于250
+ENDIF
+
+PRINTL
+PRINTL 脚本执行完成！
+QUIT
+```
+
+### 3. 运行脚本
+
+**方法A：命令行直接运行**
+```bash
+swift run emuera run ~/Desktop/my_first_script.erb
+```
+
+**方法B：交互模式运行**
+```bash
+swift run emuera
+emuera> run ~/Desktop/my_first_script.erb
+```
+
+---
+
+## 第六步：使用GUI应用
+
+### 启动GUI
+
+```bash
+swift run EmueraGUI
+```
+
+你会看到一个macOS原生应用窗口，包含：
+- **工具栏**：运行、打开、清空、调试、设置
+- **侧边栏**：文件列表和快速操作
+- **主控制台**：显示输出
+- **状态栏**：当前状态和行数
+
+### 在GUI中运行脚本
+
+1. 点击"打开文件"按钮 (文件夹图标)
+2. 选择你的 `.erb` 文件
+3. 点击"运行"按钮 (绿色播放图标)
+4. 查看控制台输出
+
+---
+
+## 📚 常用命令速查
+
+### 交互式控制台命令
+
+| 命令 | 说明 |
+|------|------|
+| `help` | 显示帮助信息 |
+| `test` | 运行基础测试脚本 |
+| `demo` | 运行演示脚本 |
+| `exprtest` | 表达式解析器测试 |
+| `scripttest` | 语法解析器测试 |
+| `processtest` | Process系统测试 |
+| `integrationtest` | 完整集成测试 |
+| `run <path>` | 运行指定脚本文件 |
+| `tokens <script>` | 显示Token分析 |
+| `reset` | 重置变量状态 |
+| `persist on/off` | 开启/关闭持久化 |
+| `exit/quit` | 退出程序 |
+
+### 脚本语法速查
+
+| 语法 | 示例 | 说明 |
+|------|------|------|
+| PRINT | `PRINT Hello` | 输出文本（不换行） |
+| PRINTL | `PRINTL Hello` | 输出文本并换行 |
+| 变量赋值 | `A = 100` | 赋值 |
+| 表达式 | `B = A + 50` | 计算 |
+| IF | `IF A > 5 ... ENDIF` | 条件语句 |
+| WHILE | `WHILE A < 10 ... ENDWHILE` | 循环 |
+| FOR | `FOR I, 1, 5 ... ENDFOR` | 计数循环 |
+| CALL | `CALL MYFUNC` | 调用函数 |
+| GOTO | `GOTO LABEL` | 跳转 |
+| 标签 | `LABEL:` | 定义标签 |
+| RETURN | `RETURN` | 从函数返回 |
+| WAIT | `WAIT` | 等待输入 |
+| QUIT | `QUIT` | 退出 |
+
+---
+
+## 🎯 进阶使用
+
+### 1. 处理中文字符
+
+Emuera macOS完全支持Unicode和中文：
+
+```erb
+PRINTL 你好，世界！
+PRINTL 当前数值:
+A = 100
+PRINT A
+PRINTL
+PRINTL 中文变量名也可以:
+中文变量 = 200
+PRINT 中文变量
+```
+
+### 2. 复杂脚本示例
+
+```erb
+PRINTL === 计算器程序 ===
+PRINTL
+
+COUNT = 0
+WHILE COUNT < 3
+  PRINTL 第
+  PRINT COUNT + 1
+  PRINTL 次计算:
+
+  A = 10
+  B = 20
+  C = A + B
+
+  PRINT A + B =
+  PRINT C
+  PRINTL
+
+  COUNT = COUNT + 1
+ENDWHILE
+
+PRINTL 计算完成！
+QUIT
+```
+
+### 3. 函数和GOTO结合
+
+```erb
+PRINTL === 复杂流程演示 ===
+
+GOTO START
+
+@SUB1
+  PRINTL 子程序1执行
+  RETURN
+
+@SUB2
+  PRINTL 子程序2执行
+  RETURN
+
+@START
+  PRINTL 主程序开始
+  CALL SUB1
+  GOTO NEXT
+
+  PRINTL 这行不会执行
+
+@NEXT
+  CALL SUB2
+  PRINTL 主程序结束
+  QUIT
+```
+
+---
+
+## 🐛 调试技巧
+
+### 1. 查看Token分析
+
+```emuera
+emuera> tokens "A = 100 + 200"
+```
+
+### 2. 开启持久化模式
+
+```emuera
+emuera> persist on
+emuera> A = 100
+emuera> PRINT A  # 输出: 100
+emuera> exit
+emuera> persist on
+emuera> PRINT A  # 仍然输出: 100
+```
+
+### 3. 重置状态
+
+```emuera
+emuera> reset    # 清除所有变量
+```
+
+### 4. GUI调试面板
+
+在GUI应用中：
+1. 点击"调试"按钮 (虫子图标)
+2. 查看控制台状态、Process状态
+3. 使用"打印状态"按钮查看实时信息
+
+---
+
+## 📁 文件管理建议
+
+### 推荐目录结构
+
+```
+~/Emuera/
+├── Games/              # 你的游戏脚本
+│   ├── MyGame/
+│   │   ├── main.erb
+│   │   ├── functions.erb
+│   │   └── data/
+├── Saves/              # 存档文件
+├── Examples/           # 示例脚本
+└── Config/             # 配置文件
+```
+
+### 创建目录
+
+```bash
+mkdir -p ~/Emuera/Games/MyGame
+mkdir -p ~/Emuera/Saves
+mkdir -p ~/Emuera/Examples
+```
+
+---
+
+## 🎓 学习路径
+
+### 阶段1：基础语法（30分钟）
+1. 运行 `demo` 查看示例
+2. 尝试变量赋值和计算
+3. 学习 IF 条件语句
+4. 学习 WHILE 循环
+
+### 阶段2：函数和流程（1小时）
+1. 学习 CALL 和 RETURN
+2. 学习 GOTO 和标签
+3. 尝试 FOR 循环
+4. 组合使用多个函数
+
+### 阶段3：复杂脚本（2小时）
+1. 创建计算器程序
+2. 创建简单菜单系统
+3. 学习 SELECTCASE
+4. 处理用户输入
+
+### 阶段4：GUI应用（30分钟）
+1. 启动 EmueraGUI
+2. 打开和运行脚本
+3. 使用调试面板
+4. 体验完整功能
+
+---
+
+## 💡 实用技巧
+
+### 技巧1：快速测试
+
+创建 `test.erb`：
+```erb
+PRINTL 测试开始
+A = 100
+PRINT A
+QUIT
+```
+
+运行：
+```bash
+swift run emuera run test.erb
+```
+
+### 技巧2：交互式开发
+
+```bash
+swift run emuera
+emuera> A = 100
+emuera> B = 200
+emuera> PRINT A + B
+300
+emuera> # 发现错误？直接重新输入
+emuera> B = 300
+emuera> PRINT A + B
+400
+```
+
+### 技巧3：使用GUI调试
+
+1. 在GUI中运行脚本
+2. 点击"调试"按钮
+3. 查看Process状态和调用栈
+4. 使用"强制清空"重置控制台
+
+---
+
+## 🎉 恭喜！
+
+你已经学会了Emuera macOS的基本使用！
+
+### 下一步建议：
+
+1. **阅读完整文档**：
+   - `README.md` - 项目详情
+   - `STATUS.md` - 功能状态
+   - `运行说明.md` - 详细说明
+
+2. **尝试更多示例**：
+   - 运行 `swift run emuera scripttest` 查看语法测试
+   - 运行 `swift run emuera processtest` 查看Process测试
+
+3. **创建你的项目**：
+   - 在 `~/Emuera/Games/` 创建你的游戏
+   - 逐步添加功能
+   - 使用GUI进行可视化开发
+
+4. **探索源代码**：
+   - `Sources/EmueraCore/` - 核心引擎
+   - `Sources/EmueraCore/UI/` - UI系统
+   - `Sources/EmueraApp/` - 测试代码
+
+---
+
+**有任何问题？** 运行 `help` 命令或查看 `运行说明.md`
+
+**祝你开发愉快！** 🚀✨
+
+---
+*快速开始指南 v1.0 - 2025-12-20*

@@ -1,0 +1,28 @@
+PRINTL === SELECTCASE 测试 ===
+PRINTL
+
+PRINTL 请输入1-4之间的数字:
+WAIT
+INPUT = RESULT
+
+SELECTCASE INPUT
+  CASE 1
+    PRINTL 你选择了: 一
+    PRINTL 这是第一个选项
+  CASE 2
+    PRINTL 你选择了: 二
+    PRINTL 这是第二个选项
+  CASE 3
+    PRINTL 你选择了: 三
+    PRINTL 这是第三个选项
+  CASE 4
+    PRINTL 你选择了: 四
+    PRINTL 这是第四个选项
+  CASEELSE
+    PRINTL 无效的输入！
+    PRINTL 请输入1-4之间的数字
+ENDSELECT
+
+PRINTL
+PRINTL === 测试完成 ===
+QUIT

@@ -1,0 +1,47 @@
+PRINTL === Emuera macOS 计算器示例 ===
+PRINTL 这是一个完整的计算器程序
+PRINTL
+
+PRINTL 请输入第一个数字 (1-100):
+WAIT
+A = RESULT
+
+PRINTL 请输入第二个数字 (1-100):
+WAIT
+B = RESULT
+
+PRINTL
+PRINTL 计算结果:
+PRINT A + B =
+PRINT A + B
+PRINTL
+
+PRINTL A - B =
+PRINT A - B
+PRINTL
+
+PRINTL A * B =
+PRINT A * B
+PRINTL
+
+IF B != 0
+  PRINTL A / B =
+  PRINT A / B
+  PRINTL
+ELSE
+  PRINTL 不能除以0！
+  PRINTL
+ENDIF
+
+PRINTL 比较结果:
+IF A > B
+  PRINTL A 大于 B
+ELSEIF A == B
+  PRINTL A 等于 B
+ELSE
+  PRINTL A 小于 B
+ENDIF
+
+PRINTL
+PRINTL === 计算完成 ===
+QUIT

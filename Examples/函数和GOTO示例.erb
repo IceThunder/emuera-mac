@@ -1,0 +1,35 @@
+PRINTL === 函数和GOTO演示 ===
+PRINTL
+
+GOTO START
+
+@MAINFUNC
+  PRINTL [主函数] 被调用
+  A = 100
+  CALL SUBFUNC
+  PRINTL [主函数] A =
+  PRINT A
+  PRINTL
+  RETURN
+
+@SUBFUNC
+  PRINTL [子函数] 被调用
+  A = A + 50
+  PRINTL [子函数] A修改为
+  PRINT A
+  PRINTL
+  RETURN
+
+@START
+  PRINTL 程序开始
+  PRINTL
+  CALL MAINFUNC
+  GOTO END
+
+@SKIP
+  PRINTL 这行不会执行
+  RETURN
+
+@END
+  PRINTL 程序结束
+  QUIT
