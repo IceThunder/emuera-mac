@@ -532,12 +532,17 @@ public class StatementExecutor: StatementVisitor {
             return .string(value)
 
         case .variable(let name):
-            if context.variables[name] == nil {
-                if name.contains(where: { $0.unicodeScalars.contains(where: { $0.value > 127 }) }) {
-                    return .string(name)
-                }
+            // 如果变量已定义，返回其值
+            if let value = context.variables[name] {
+                return value
             }
-            return context.getVariable(name)
+            // 变量未定义：如果是Unicode字符，返回字符串
+            if name.contains(where: { $0.unicodeScalars.contains(where: { $0.value > 127 }) }) {
+                return .string(name)
+            }
+            // ASCII变量名未定义：返回字符串（而不是0）
+            // 这样 PRINTL equals 会输出 "equals" 而不是 "0"
+            return .string(name)
 
         case .arrayAccess:
             return .integer(0)

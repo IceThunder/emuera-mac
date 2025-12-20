@@ -489,7 +489,9 @@ public class ProcessTest {
 
         do {
             for _ in 0..<1000 {
-                try process?.callFunction("PERF", nil as LogicalLine?)
+                if let process = process {
+                    try process.callFunction("PERF", nil as LogicalLine?)
+                }
             }
             let elapsed = Date().timeIntervalSince(startTime)
             results.append("  1000次调用耗时: \(String(format: "%.3f", elapsed))秒")

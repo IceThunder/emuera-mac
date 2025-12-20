@@ -38,7 +38,24 @@
       "Bash(.build/debug/QuickTest:*)",
       "Bash(echo:*)",
       "Bash(git check-ignore:*)",
-      "Bash(perl -i -0pe:*)"
+      "Bash(perl -i -0pe:*)",
+      "Bash(./emuera_new:*)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/debug/emuera run erb/complex_test.erb)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/debug/emuera run /Users/ss/Documents/Project/iOS/emuera-mac/test_game/erb/complex_test.erb)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/debug/emuera run /Users/ss/Documents/Project/iOS/emuera-mac/test_game/erb/complex_test2.erb)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/debug/emuera run /Users/ss/Documents/Project/iOS/emuera-mac/test_game/erb/complex_test3.erb)",
+      "Bash(.build/debug/TestPrint:*)",
+      "Bash(/usr/bin/time -l .build/debug/TestPrint)",
+      "Bash(.build/debug/SimpleTest:*)",
+      "Bash(.build/debug/EnglishTest:*)",
+      "Bash(.build/debug/DebugCollect:*)",
+      "Bash(nm:*)",
+      "Bash(.build/debug/LoopTest:*)",
+      "Bash(.build/debug/DebugLexical:*)",
+      "Bash(.build/debug/DebugAllTokens:*)",
+      "Bash(.build/debug/ForLoopTest:*)",
+      "Bash(.build/debug/PrintTest:*)",
+      "Bash(.build/debug/DebugForLoop:*)"
     ]
   }
 }

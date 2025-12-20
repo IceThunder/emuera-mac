@@ -8,6 +8,8 @@
 import Foundation
 
 public struct LexicalAnalyzer {
+    public init() {}
+
     public func tokenize(_ source: String) -> [TokenType.Token] {
         var tokens: [TokenType.Token] = []
         var index = source.startIndex

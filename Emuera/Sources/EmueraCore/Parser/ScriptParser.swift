@@ -80,14 +80,18 @@ public class ScriptParser {
 
     /// 解析命令语句 (PRINT, PRINTL, WAIT, QUIT等)
     private func parseCommandStatement(_ cmd: String) throws -> StatementNode {
+        print("DEBUG: parseCommandStatement called with cmd='\(cmd)'")
         let upperCmd = cmd.uppercased()
         let startPos = getCurrentPosition()
 
         currentIndex += 1  // 跳过命令token
+        print("DEBUG: After skipping command, currentIndex=\(currentIndex)")
 
         switch upperCmd {
         case "PRINT", "PRINTL", "PRINTW":
-            let args = try parseArguments()
+            print("DEBUG: PRINT family, calling parsePrintArguments()")
+            let args = try parsePrintArguments()
+            print("DEBUG: parsePrintArguments returned \(args.count) args")
             return CommandStatement(command: cmd, arguments: args, position: startPos)
 
         case "INPUT", "INPUTS":
@@ -689,14 +693,224 @@ public class ScriptParser {
             // 如果括号深度为0且遇到命令或关键字，表达式结束
             if parenDepth == 0 && currentIndex < tokens.count {
                 let nextToken = tokens[currentIndex]
-                if case .command = nextToken.type,
-                   case .keyword = nextToken.type {
+                switch nextToken.type {
+                case .command, .keyword:
+                    return exprTokens
+                default:
                     break
                 }
             }
         }
 
         return exprTokens
+    }
+
+    // MARK: - PRINT参数解析
+
+    /// 解析PRINT命令的参数（特殊处理：连续变量视为字符串字面量）
+    /// PRINTL Start complex test → 输出 "Start complex test"
+    /// PRINTL A → 输出变量A的值
+    /// PRINTL A + B → 输出 A+B 的计算结果
+    /// PRINTL "Hello" → 输出 "Hello"
+    private func parsePrintArguments() throws -> [ExpressionNode] {
+        print("DEBUG: parsePrintArguments() called, currentIndex=\(currentIndex)")
+        skipWhitespaceOnly()  // Only skip whitespace, NOT lineBreaks
+        print("DEBUG: After skipWhitespaceOnly, currentIndex=\(currentIndex)")
+
+        guard currentIndex < tokens.count else {
+            print("DEBUG: No tokens, returning []")
+            return []
+        }
+
+        // 检查是否遇到换行（无参数）
+        if case .lineBreak = tokens[currentIndex].type {
+            print("DEBUG: LineBreak found, returning []")
+            return []
+        }
+
+        // 检查是否以引号开始（显式字符串）
+        if case .string = tokens[currentIndex].type {
+            print("DEBUG: Starts with string, calling parseArguments()")
+            return try parseArguments()
+        }
+
+        // 检查是否以表达式开始（变量、数字、括号、命令/关键字作为文本）
+        let nextToken = tokens[currentIndex]
+        let isExprStart: Bool
+        switch nextToken.type {
+        case .integer, .variable, .parenthesisOpen, .command, .keyword:
+            isExprStart = true
+        default:
+            isExprStart = false
+        }
+
+        if !isExprStart {
+            print("DEBUG: Not expression start, returning []")
+            return []
+        }
+
+        // 记录起始位置
+        let startIndex = currentIndex
+        print("DEBUG: startIndex=\(startIndex)")
+
+        // 收集所有相关的token直到行结束或遇到命令/关键字
+        var exprTokens: [TokenType.Token] = []
+        var parenDepth = 0
+
+        tokenLoop: while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+
+            switch token.type {
+            case .lineBreak:
+                // 换行结束
+                currentIndex += 1
+                break tokenLoop
+
+            case .whitespace, .comment:
+                currentIndex += 1
+                continue tokenLoop
+
+            case .parenthesisOpen:
+                parenDepth += 1
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .parenthesisClose:
+                parenDepth -= 1
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .operatorSymbol, .comparator:
+                // 如果有运算符，说明是表达式，需要完整解析
+                exprTokens.append(token)
+                currentIndex += 1
+                // 继续收集直到行结束
+                continue tokenLoop
+
+            case .comma:
+                // 逗号分隔的参数
+                if parenDepth == 0 {
+                    // 有逗号说明是多个参数，使用正常解析
+                    // 重置到起始位置并使用标准解析
+                    currentIndex = startIndex
+                    print("DEBUG: Found comma, calling parseArguments()")
+                    return try parseArguments()
+                }
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .integer, .string, .variable:
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .colon:
+                // 数组访问
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .function:
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .command:
+                // 在PRINT参数中，command token可能是文本的一部分（如"Loop test:"中的Loop）
+                // 只有当这是第一个token且不是起始位置时，才作为文本处理
+                // 否则，如果遇到真正的下一个命令（在不同行），会由lineBreak处理
+                exprTokens.append(token)
+                currentIndex += 1
+                continue tokenLoop
+
+            case .keyword:
+                // 在PRINT参数中，关键字也可能是文本的一部分
+                // 例如: "Loop test:" 中的 Loop 可能被识别为关键字
+                exprTokens.append(token)
+                currentIndex += 1
+                continue tokenLoop
+
+            default:
+                // 其他token，结束收集
+                break tokenLoop
+            }
+        }
+
+        // 分析收集到的token
+        print("DEBUG: Collected \(exprTokens.count) tokens: \(exprTokens)")
+        guard !exprTokens.isEmpty else { return [] }
+
+        // 检查是否包含运算符（如果有，说明是表达式，使用ExpressionParser）
+        let hasOperator = exprTokens.contains {
+            if case .operatorSymbol = $0.type { return true }
+            if case .comparator = $0.type { return true }
+            return false
+        }
+
+        print("DEBUG: hasOperator=\(hasOperator)")
+
+        if hasOperator {
+            // 是表达式，使用ExpressionParser
+            print("DEBUG: Calling ExpressionParser for operators")
+            let parser = ExpressionParser()
+            do {
+                let expr = try parser.parse(exprTokens)
+                return [expr]
+            } catch {
+                // ExpressionParser失败，说明这不是有效的表达式
+                // 例如: "C greater than 15 is true!" 中的 ! 被误判为运算符
+                // 退回到字符串字面量处理
+                print("DEBUG: ExpressionParser failed, falling back to string literal")
+                let text = exprTokens.map { token -> String in
+                    switch token.type {
+                    case .variable(let v): return v
+                    case .integer(let i): return String(i)
+                    case .string(let s): return s
+                    case .operatorSymbol(let op): return op.rawValue
+                    case .comparator(let comp): return comp.rawValue
+                    case .command(let cmd): return cmd
+                    case .keyword(let kw): return kw
+                    default: return ""
+                    }
+                }.joined(separator: " ")
+                return [.string(text)]
+            }
+        }
+
+        // 没有运算符的情况
+        // 如果只有一个token，直接返回它（可能是变量或整数）
+        if exprTokens.count == 1 {
+            let token = exprTokens[0]
+            switch token.type {
+            case .variable(let name):
+                return [.variable(name)]
+            case .integer(let value):
+                return [.integer(value)]
+            case .string(let value):
+                return [.string(value)]
+            case .command(let cmd):
+                // 单个command token作为变量处理（可能是文本）
+                return [.variable(cmd)]
+            case .keyword(let kw):
+                // 单个keyword token作为变量处理（可能是文本）
+                return [.variable(kw)]
+            default:
+                return []
+            }
+        }
+
+        // 多个token且没有运算符：视为字符串字面量
+        // 例如: PRINTL Start complex test → "Start complex test"
+        let text = exprTokens.map { token -> String in
+            switch token.type {
+            case .variable(let v): return v
+            case .integer(let i): return String(i)
+            case .string(let s): return s
+            case .command(let cmd): return cmd
+            case .keyword(let kw): return kw
+            default: return ""
+            }
+        }.joined(separator: " ")
+
+        print("DEBUG: Returning string literal: '\(text)'")
+        return [.string(text)]
     }
 
     // MARK: - 参数解析
@@ -737,9 +951,11 @@ public class ScriptParser {
 
             let token = tokens[currentIndex]
 
-            // 检查是否遇到命令或关键字
-            if case .command = token.type,
-               case .keyword = token.type {
+            // 检查是否遇到命令或关键字，如果是则停止解析参数
+            switch token.type {
+            case .command, .keyword:
+                return arguments
+            default:
                 break
             }
 
@@ -781,6 +997,18 @@ public class ScriptParser {
             case .comment:
                 currentIndex += 1
             default:
+                return
+            }
+        }
+    }
+
+    /// 仅跳过空白（不跳过换行）- 用于PRINT参数解析
+    private func skipWhitespaceOnly() {
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+            if case .whitespace = token.type {
+                currentIndex += 1
+            } else {
                 return
             }
         }

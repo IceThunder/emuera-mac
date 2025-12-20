@@ -781,6 +781,58 @@ extension String {
     }
 }
 
+/// 显示命令行帮助
+func showHelp() {
+    print("""
+
+    🚀 Emuera macOS - Windows版兼容模式
+
+    基本用法:
+    ──────────────────────────────
+    emuera                    - 启动交互式控制台
+    emuera auto               - 自动模式（检测游戏结构）
+    emuera run <file>         - 运行指定脚本
+    emuera demo               - 运行演示（自动创建测试环境）
+    emuera gui                - 启动GUI应用
+    emuera help               - 显示此帮助
+
+    测试命令:
+    ──────────────────────────────
+    emuera test               - MVP基础测试
+    emuera exprtest           - 表达式解析器测试
+    emuera scripttest         - 语法解析器测试
+    emuera processtest        - Process系统测试
+    emuera integrationtest    - 完整集成测试
+    emuera uitest             - UI集成测试
+
+    Windows版兼容特性:
+    ──────────────────────────────
+    ✅ 自动检测游戏根目录（exe放在游戏目录）
+    ✅ 自动扫描 csv/ 和 erb/ 子目录
+    ✅ 支持 GAMEBASE.CSV 游戏信息
+    ✅ 支持 emuera.config 配置文件
+    ✅ 自动创建必需目录结构
+
+    目录结构要求:
+    ──────────────────────────────
+    游戏根目录/
+    ├── emuera (可执行文件)
+    ├── csv/
+    │   ├── GAMEBASE.CSV (可选)
+    │   └── *.csv (数据文件)
+    └── erb/
+        └── *.erb (脚本文件)
+
+    示例工作流:
+    ──────────────────────────────
+    1. 将 emuera 可执行文件放入游戏目录
+    2. 确保有 csv/ 和 erb/ 子目录
+    3. 运行: ./emuera auto
+    4. 系统自动加载所有脚本并启动游戏
+
+    """)
+}
+
 // MARK: - Entry Point
 
 // Check for command-line arguments
@@ -856,9 +908,44 @@ if args.count > 1 {
         }
         exit(0)
 
+    case "demo":
+        // 运行演示脚本（自动模式）
+        let launcher = Launcher()
+        let success = launcher.launch(mode: .auto)
+        exit(success ? 0 : 1)
+
+    case "run":
+        // 运行指定脚本文件
+        if args.count < 3 {
+            print("❌ 请指定脚本文件路径")
+            print("用法: emuera run <script-file>")
+            exit(1)
+        }
+        let scriptPath = args[2]
+        let launcher = Launcher()
+        let success = launcher.launch(mode: .runScript(scriptPath))
+        exit(success ? 0 : 1)
+
+    case "auto":
+        // 自动模式（检测游戏结构）
+        let launcher = Launcher()
+        let success = launcher.launch(mode: .auto)
+        exit(success ? 0 : 1)
+
+    case "gui":
+        // GUI模式
+        let launcher = Launcher()
+        let success = launcher.launch(mode: .gui)
+        exit(success ? 0 : 1)
+
+    case "help":
+        // 显示帮助
+        showHelp()
+        exit(0)
+
     default:
         print("未知命令: \(command)")
-        print("可用命令: processtest, test, exprtest, scripttest, headertest, csvtest, filetest, integrationtest, uitest")
+        print("可用命令: processtest, test, exprtest, scripttest, headertest, csvtest, filetest, integrationtest, uitest, demo, run, auto, gui, help")
         exit(1)
     }
 }
