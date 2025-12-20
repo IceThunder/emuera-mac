@@ -41,6 +41,18 @@ let package = Package(
             // Foundation and AppKit are automatically linked on macOS
         ),
 
+        // GUI Application
+        .executableTarget(
+            name: "EmueraGUI",
+            dependencies: ["EmueraCore"],
+            path: "Sources/EmueraGUI",
+            swiftSettings: [
+                .enableUpcomingFeature("BareSlashRegexLiterals"),
+                .enableUpcomingFeature("ConciseMagicFile"),
+                .enableUpcomingFeature("ForwardTrailingClosures"),
+            ]
+        ),
+
         // Quick Test Target
         .executableTarget(
             name: "QuickTest",

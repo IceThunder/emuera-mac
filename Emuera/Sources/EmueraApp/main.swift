@@ -333,6 +333,8 @@ struct ConsoleApp {
         headertest      - 运行HeaderFileLoader测试 (#FUNCTION/#DIM)
         csvtest         - 运行CSVParser测试 (CSV数据加载)
         filetest        - 运行FileService测试 (文件I/O操作)
+        integrationtest - 运行完整集成测试 (Process+Executor+UI)
+        uitest          - 运行Process+UI集成测试
         demo            - 运行演示脚本
         tokens <script> - 显示脚本token分析
         help            - 显示此帮助
@@ -829,9 +831,34 @@ if args.count > 1 {
         let app = ConsoleApp()
         app.runFileServiceTest()
         exit(0)
+
+    case "integrationtest":
+        // Run UI integration tests and exit
+        let tester = IntegrationTest()
+        let results = tester.runCompleteIntegrationTest()
+        for line in results {
+            print(line)
+        }
+        print()
+        let processTester = ProcessIntegrationTest()
+        let processResults = processTester.runProcessExecutorIntegration()
+        for line in processResults {
+            print(line)
+        }
+        exit(0)
+
+    case "uitest":
+        // Run Process + UI integration tests
+        let processTester = ProcessIntegrationTest()
+        let results = processTester.runProcessExecutorIntegration()
+        for line in results {
+            print(line)
+        }
+        exit(0)
+
     default:
         print("未知命令: \(command)")
-        print("可用命令: processtest, test, exprtest, scripttest, headertest, csvtest")
+        print("可用命令: processtest, test, exprtest, scripttest, headertest, csvtest, filetest, integrationtest, uitest")
         exit(1)
     }
 }
