@@ -1,11 +1,12 @@
 # Emuera for macOS 🔥
 
-**完整移植Windows Emuera引擎到macOS的原生Swift实现 - Phase 2完成**
+**完整移植Windows Emuera引擎到macOS的原生Swift实现 - Phase 2完成，Phase 3规划中**
 
 [![Swift](https://img.shields.io/badge/Swift-5.10+-orange.svg)](https://swift.org)
 [![macOS](https://img.shields.io/badge/macOS-13.0+-blue.svg)](https://developer.apple.com/macos)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/状态-Beta%20100%25-green.svg)](#)
+[![Status](https://img.shields.io/badge/状态-Phase%202%20✅%20完成-blue.svg)](#)
+[![Phase3](https://img.shields.io/badge/Phase3-规划中-yellow.svg)](#)
 
 ---
 
@@ -22,19 +23,20 @@
 
 | 阶段 | 完成度 | 状态 |
 |------|--------|-------|
-| **需求分析** | ✅ 100% | 完成 |
-| **架构设计** | ✅ 100% | 完成 |
-| **项目骨架** | ✅ 100% | 完成 |
-| **核心引擎** | ✅ 100% | **Phase 2完成** |
-| **内置函数库** | ✅ 100% | 50+函数实现 |
-| **函数系统** | ✅ 100% | 完整函数定义/调用/栈管理 |
-| **UI开发** | 🟡 50% | 基础控制台完成 |
-| **测试验证** | ✅ 100% | **所有调试测试通过** |
+| **Phase 2 核心引擎** | ✅ 100% | **已完成** |
+| **Phase 2 内置函数** | ✅ 100% | 50+函数实现 |
+| **Phase 2 函数系统** | ✅ 100% | 完整支持 |
+| **Phase 2 测试验证** | ✅ 100% | 全部通过 |
+| **Phase 3 语法扩展** | ⚪ 0% | 待开始 |
+| **Phase 3 保存系统** | ⚪ 0% | 待开始 |
+| **Phase 3 图形UI** | ⚪ 0% | 待开始 |
+| **Phase 3 游戏系统** | ⚪ 0% | 待开始 |
 
-**当前进度**: **100%** (Phase 2完整完成)
-**最新里程碑**: **2025-12-20** - Phase 2完成，所有测试通过
-**代码量**: ~19,000行
-**测试状态**: ✅ **全部通过** (64/64 FunctionTest, 6/6 DebugTest)
+**当前状态**: ✅ **Phase 2 完成** → 🎯 **Phase 3 规划中**
+**最新里程碑**: **2025-12-20** - Phase 2 完成，所有测试通过
+**总代码量**: ~19,000行 (Phase 2)
+**测试状态**: ✅ **64/64 通过** (FunctionTest)
+**代码仓库**: ✅ 已清理 (git history cleanup complete)
 
 ---
 
@@ -44,20 +46,18 @@
 
 | 模块 | 状态 | 说明 |
 |------|------|------|
-| **词法分析器** | ✅ 100% | 支持Unicode/中文，完整Token系统，支持0x十六进制 |
-| **表达式解析器** | ✅ 100% | 算术、比较、逻辑运算，支持括号，支持一元运算符 |
-| **语法解析器** | ✅ 100% | IF/WHILE/FOR/CALL/GOTO/SELECTCASE等 |
-| **语句执行器** | ✅ 100% | 完整AST遍历，变量管理，数组访问支持 |
-| **Process系统** | ✅ 100% | 调用栈、函数管理、GOTO跳转 |
-| **内置函数库** | ✅ 100% | 50+内置函数，覆盖数学、字符串、数组、系统操作 |
-| **函数系统** | ✅ 100% | @function定义、RETURNF、参数传递、局部变量 |
-| **HeaderFileLoader** | ✅ 100% | #FUNCTION/#DIM/#DEFINE支持 |
-| **CSVParser** | ✅ 100% | 完整CSV解析，支持引号和编码 |
-| **FileService** | ✅ 100% | 文件I/O、加密、编码转换 |
-| **UI系统** | ✅ 100% | SwiftUI控制台、窗口、工具栏 |
-| **Windows兼容** | ✅ 100% | 自动游戏检测 + Launcher + EmueraEngine |
-| **英文文本解析** | ✅ 100% | 修复PRINT命令处理英文文本 |
-| **集成测试** | ✅ 100% | 所有调试测试全部通过 |
+| **词法分析器** | ✅ 100% | Unicode/中文支持，0x十六进制，下划线标识符 |
+| **表达式解析器** | ✅ 100% | 算术、比较、逻辑、位运算，括号优先级，一元运算符 |
+| **语法解析器** | ✅ 100% | IF/WHILE/FOR/CALL/GOTO/PRINT等核心命令 |
+| **语句执行器** | ✅ 100% | 完整AST遍历，变量管理，数组访问 |
+| **Process系统** | ✅ 100% | 调用栈、函数管理、GOTO跳转、递归支持 |
+| **内置函数库** | ✅ 100% | 50+函数：数学、字符串、数组、系统 |
+| **函数系统** | ✅ 100% | @function定义、RETURNF、参数、局部变量 |
+| **文件服务** | ✅ 100% | ERB加载、CSV解析、配置管理 |
+| **UI系统** | ✅ 100% | SwiftUI控制台、基础输出 |
+| **测试验证** | ✅ 100% | 64项测试全部通过 |
+
+**Phase 2 总体完成度**: **100%** ✅
 
 ---
 
@@ -365,18 +365,45 @@ var err: String = "error"
 
 ---
 
+## 🎯 Phase 3 开发计划 (2025-12-21 规划)
+
+### 核心目标
+实现与原版 Emuera **100% 功能兼容**，支持完整游戏运行
+
+### 主要模块
+
+| 模块 | 优先级 | 预计工时 | 关键功能 |
+|------|--------|----------|----------|
+| **语法扩展** | P0 | 7天 | SELECTCASE, TRY/CATCH, PRINTDATA |
+| **保存/加载** | P0 | 10天 | SAVEGAME, LOADGAME, 变量持久化 |
+| **ERH头文件** | P1 | 8天 | #FUNCTION, #DIM, #DEFINE |
+| **图形UI** | P1 | 15天 | 窗口管理, 图形绘制, 颜色控制 |
+| **字符管理** | P2 | 10天 | ADDCHARA, 角色数据, 字符变量 |
+| **游戏系统** | P2 | 15天 | SHOP, TRAIN, 事件处理 |
+| **高级功能** | P3 | 10天 | 动画, 声音, 调试优化 |
+
+### 详细计划
+查看完整 Phase 3 开发计划: [PHASE3_DEVELOPMENT_PLAN.md](./PHASE3_DEVELOPMENT_PLAN.md)
+
+---
+
 ## 🏁 项目里程碑时间线
 
 - **2025-12-18**: 项目启动，完成架构设计
 - **2025-12-19**: 变量系统完成，表达式引擎完成
 - **2025-12-20**: Phase 2完成，50+内置函数实现，所有测试通过
-- **2025-12-21**: 文档合并，准备Beta发布
+- **2025-12-21**: 文档合并，git历史清理，Phase 3规划完成
 
-**开发者**: IceThunder + Claude Code AI
-**许可证**: 与原版Emuera保持一致 (MIT-like)
+**下一步**: 开始 Phase 3 开发，预计 60-90 天完成
 
 ---
 
-*本README与 PROJECT_SUMMARY.md 和 STATUS.md 保持同步*
+**开发者**: IceThunder + Claude Code AI
+**许可证**: 与原版Emuera保持一致 (MIT-like)
+**当前阶段**: Phase 2 ✅ 完成 → Phase 3 🎯 规划中
+
+---
+
+*本README与 PHASE3_DEVELOPMENT_PLAN.md 保持同步*
 *最后更新: 2025-12-21*
-*Phase: 2 ✅ 完成*
+*Phase: 2 ✅ 完成 | Phase 3: 📋 规划完成*
