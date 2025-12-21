@@ -40,3 +40,21 @@ Emuera/.swiftpm
 
 # Compiled object files
 *.o
+
+# Test game data and compiled binaries
+test_game/
+*.tar.gz
+*.exe
+*.dmg
+*.app
+
+# Local build artifacts
+Emuera/.build/
+Emuera/.swiftpm/
+.build/
+.swiftpm/
+
+# Compiled executables
+emuera
+emuera_new
+Emuera/emuera
