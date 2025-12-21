@@ -80,6 +80,7 @@ public class StatementExecutor: StatementVisitor {
         self.currentStatementIndex = 0
 
         collectLabels()
+        collectFunctions()  // Phase 2: 收集函数定义
 
         while currentStatementIndex < statements.count {
             let statement = statements[currentStatementIndex]
@@ -316,29 +317,29 @@ public class StatementExecutor: StatementVisitor {
 
         switch cmdType {
         case .PRINT:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value)
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
 
         case .PRINTL:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value + "\n")
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
 
         case .PRINTW:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value)
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
             context.output.append("按回车继续...\n")
 
         case .PRINTFORM:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value)
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
 
         case .PRINTFORML:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value + "\n")
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
 
         case .PRINTFORMW:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value)
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
             context.output.append("按回车继续...\n")
 
         case .INPUT:
@@ -371,7 +372,14 @@ public class StatementExecutor: StatementVisitor {
             context.shouldQuit = true
 
         case .RESET:
-            context.variables.removeAll()
+            // 重置所有变量为默认值（整数为0，字符串为空）
+            for key in context.variables.keys {
+                if case .string = context.variables[key] {
+                    context.variables[key] = .string("")
+                } else {
+                    context.variables[key] = .integer(0)
+                }
+            }
             context.lastResult = .null
             context.output.append("[变量已重置]\n")
 
@@ -382,13 +390,13 @@ public class StatementExecutor: StatementVisitor {
             context.output.append(String(repeating: "-", count: 60) + "\n")
 
         case .CUSTOMDRAWLINE:
-            let value = try evaluateArguments(statement.arguments)
-            let lineChar = value.isEmpty ? "-" : value
+            let values = try evaluateArguments(statement.arguments)
+            let lineChar = values.first ?? "-"
             context.output.append(String(repeating: lineChar, count: 60) + "\n")
 
         case .DRAWLINEFORM:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append(value + "\n")
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
 
         case .BAR:
             if statement.arguments.count >= 3 {
@@ -423,8 +431,8 @@ public class StatementExecutor: StatementVisitor {
             context.output.append("[字体设置: \(statement.command)]\n")
 
         case .DEBUGPRINT:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append("[DEBUG] \(value)")
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[DEBUG] \(values.joined(separator: " "))")
 
         case .DEBUGPRINTL:
             let value = try evaluateArguments(statement.arguments)
@@ -442,8 +450,8 @@ public class StatementExecutor: StatementVisitor {
             }
 
         case .THROW:
-            let value = try evaluateArguments(statement.arguments)
-            throw EmueraError.runtimeError(message: "抛出异常: \(value)", position: nil)
+            let values = try evaluateArguments(statement.arguments)
+            throw EmueraError.runtimeError(message: "抛出异常: \(values.joined(separator: " "))", position: nil)
 
         case .SKIPDISP:
             context.output.append("[跳过显示]\n")
@@ -512,7 +520,14 @@ public class StatementExecutor: StatementVisitor {
     }
 
     public func visitResetStatement(_ statement: ResetStatement) throws {
-        context.variables.removeAll()
+        // 重置所有变量为默认值（整数为0，字符串为空）
+        for key in context.variables.keys {
+            if case .string = context.variables[key] {
+                context.variables[key] = .string("")
+            } else {
+                context.variables[key] = .integer(0)
+            }
+        }
         context.lastResult = .null
     }
 
@@ -544,8 +559,11 @@ public class StatementExecutor: StatementVisitor {
             // 这样 PRINTL equals 会输出 "equals" 而不是 "0"
             return .string(name)
 
-        case .arrayAccess:
-            return .integer(0)
+        case .scopedVariable(let scope, let name, let indices):
+            return try resolveScopedVariable(scope: scope, name: name, indices: indices)
+
+        case .arrayAccess(let base, let indices):
+            return try evaluateArrayAccess(base: base, indices: indices)
 
         case .functionCall(let name, let arguments):
             return try evaluateFunctionCall(name: name, arguments: arguments)
@@ -562,6 +580,48 @@ public class StatementExecutor: StatementVisitor {
             arguments: evaluatedArgs,
             context: context
         )
+    }
+
+    /// 求值数组访问: B:0, A:1:2
+    private func evaluateArrayAccess(base: String, indices: [ExpressionNode]) throws -> VariableValue {
+        // 求值所有索引
+        let indexValues = try indices.map { try evaluateExpression($0) }
+
+        // 检查数组是否存在
+        guard let arrayValue = context.variables[base] else {
+            return .integer(0)  // 数组不存在，返回0
+        }
+
+        // 确保是数组类型
+        guard case .array(let arr) = arrayValue else {
+            return .integer(0)  // 不是数组，返回0
+        }
+
+        // 处理一维数组访问
+        if indexValues.count == 1, case .integer(let idx) = indexValues[0] {
+            let intIdx = Int(idx)
+            if intIdx >= 0 && intIdx < arr.count {
+                return arr[intIdx]
+            }
+            return .integer(0)  // 索引越界
+        }
+
+        // 二维数组访问 (A:0:1)
+        if indexValues.count == 2,
+           case .integer(let idx1) = indexValues[0],
+           case .integer(let idx2) = indexValues[1] {
+            let intIdx1 = Int(idx1)
+            if intIdx1 >= 0 && intIdx1 < arr.count,
+               case .array(let innerArr) = arr[intIdx1] {
+                let intIdx2 = Int(idx2)
+                if intIdx2 >= 0 && intIdx2 < innerArr.count {
+                    return innerArr[intIdx2]
+                }
+            }
+            return .integer(0)
+        }
+
+        return .integer(0)
     }
 
     private func evaluateBinary(op: TokenType.Operator, left: ExpressionNode, right: ExpressionNode) throws -> VariableValue {
@@ -748,17 +808,15 @@ public class StatementExecutor: StatementVisitor {
         }
     }
 
-    private func evaluateArguments(_ arguments: [ExpressionNode]) throws -> String {
-        if arguments.isEmpty {
-            return ""
-        }
-
-        var result = ""
+    /// 评估参数列表，返回每个参数的字符串值数组
+    /// 用于PRINT等命令，每个参数单独输出
+    private func evaluateArguments(_ arguments: [ExpressionNode]) throws -> [String] {
+        var results: [String] = []
         for arg in arguments {
             let value = try evaluateExpression(arg)
-            result += value.description
+            results.append(value.description)
         }
-        return result
+        return results
     }
 
     // MARK: - 标签收集
@@ -769,5 +827,134 @@ public class StatementExecutor: StatementVisitor {
                 context.labels[labelStmt.name] = index
             }
         }
+    }
+
+    // MARK: - Phase 2: 函数系统支持
+
+    /// 收集函数定义
+    private func collectFunctions() {
+        for statement in statements {
+            if let funcDefStmt = statement as? FunctionDefinitionStatement {
+                let definition = funcDefStmt.definition
+                context.functionRegistry.registerFunction(definition)
+            }
+        }
+    }
+
+    /// 访问函数调用语句
+    public func visitFunctionCallStatement(_ statement: FunctionCallStatement) throws {
+        let evaluatedArgs = try statement.arguments.map { try evaluateExpression($0) }
+
+        // 首先尝试内置函数
+        if let builtInResult = try? BuiltInFunctions.execute(
+            name: statement.functionName,
+            arguments: evaluatedArgs,
+            context: context
+        ) {
+            context.lastResult = builtInResult
+            return
+        }
+
+        // 然后尝试用户定义函数
+        if let functionDefinition = context.functionRegistry.resolveFunction(statement.functionName) {
+            // 执行用户定义函数
+            let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+            context.lastResult = result
+            return
+        }
+
+        // 函数未找到
+        if statement.tryMode {
+            // TRYCALL模式：失败时不抛出错误
+            context.lastResult = .integer(0)
+            context.output.append("[TRYCALL \(statement.functionName) 失败]\n")
+        } else {
+            throw EmueraError.functionNotFound(name: statement.functionName)
+        }
+    }
+
+    /// 执行用户定义函数
+    private func executeUserFunction(_ definition: FunctionDefinition, arguments: [VariableValue]) throws -> VariableValue {
+        // 创建新的执行上下文
+        let oldContext = context
+        let newContext = ExecutionContext()
+        newContext.functionRegistry = oldContext.functionRegistry
+        newContext.callStack = oldContext.callStack
+
+        // 设置参数
+        for (index, param) in definition.parameters.enumerated() {
+            if index < arguments.count {
+                let argValue = arguments[index]
+                newContext.variables[param.name] = argValue
+                newContext.currentParameters[param.name] = argValue
+            }
+        }
+
+        // 执行函数体
+        let bodyStatements = definition.body
+        for stmt in bodyStatements {
+            try stmt.accept(visitor: self)
+
+            // 检查是否有返回值
+            if let returnValue = context.returnValue {
+                context.returnValue = nil  // 清除返回值
+                return returnValue
+            }
+
+            // 检查是否需要退出
+            if context.shouldQuit {
+                break
+            }
+        }
+
+        // 默认返回0
+        return .integer(0)
+    }
+
+    /// 访问函数定义语句
+    public func visitFunctionDefinitionStatement(_ statement: FunctionDefinitionStatement) throws {
+        // 函数定义在collectFunctions阶段已注册，这里不需要做任何事
+        // 保持方法完整性以符合协议
+    }
+
+    /// 访问变量声明语句
+    public func visitVariableDeclarationStatement(_ statement: VariableDeclarationStatement) throws {
+        // 变量声明在解析阶段处理，执行阶段不需要特殊操作
+        // 这里可以添加初始化逻辑
+        if let initialValue = statement.initialValue {
+            let value = try evaluateExpression(initialValue)
+            let fullName = "\(statement.scope.rawValue)\(statement.name)"
+            context.variables[fullName] = value
+        }
+    }
+
+    /// 解析作用域变量
+    private func resolveScopedVariable(scope: String, name: String, indices: [ExpressionNode]) throws -> VariableValue {
+        let scopeEnum = VariableScope.fromVariableName("\(scope)\(name)").scope
+        let fullName = "\(scope)\(name)"
+
+        // 处理数组索引
+        if !indices.isEmpty {
+            let indexValues = try indices.map { try evaluateExpression($0) }
+            // 简化处理：只使用第一个索引
+            if case .integer(let idx) = indexValues[0] {
+                let arrayKey = "\(fullName)[\(idx)]"
+                if let value = context.variables[arrayKey] {
+                    return value
+                }
+                return .integer(0)
+            }
+        }
+
+        // 普通作用域变量
+        if let value = context.variables[fullName] {
+            return value
+        }
+
+        // 未定义的变量
+        if scopeEnum.variableType == .string {
+            return .string("")
+        }
+        return .integer(0)
     }
 }

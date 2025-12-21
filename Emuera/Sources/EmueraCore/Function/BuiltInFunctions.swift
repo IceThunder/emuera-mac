@@ -1,4 +1,3 @@
-//
 //  BuiltInFunctions.swift
 //  EmueraCore
 //
@@ -22,6 +21,8 @@ public enum FunctionType: String, CaseIterable {
     case LOG            // 对数
     case LOG10          // 以10为底的对数
     case EXP            // 指数
+    case CBRT           // 立方根
+    case SIGN           // 符号函数
     case POWER          // 幂运算
     case MIN            // 最小值
     case MAX            // 最大值
@@ -39,15 +40,20 @@ public enum FunctionType: String, CaseIterable {
     case STRLENS        // 字符串长度（字符数）
     case STRLEN         // 字符串长度（字节数）
     case STRLENU        // 字符串长度（Unicode）
+    case STRLENFORM     // 字符串长度（格式化）
     case SUBSTRING      // 子字符串
+    case SUBSTRINGU     // 子字符串（Unicode）
     case REPLACE        // 替换
     case SPLIT          // 分割
     case FIND           // 查找
+    case STRFIND        // 查找（Unicode）
+    case STRCOUNT       // 统计出现次数
     case UPPER          // 转大写
     case LOWER          // 转小写
     case TRIM           // 去除空白
     case UNICODE        // Unicode转字符
     case ENCODETOUNI    // 编码到Unicode
+    case ESCAPE         // 转义字符
 
     // MARK: - 数组函数
     case FINDELEMENT    // 查找元素
@@ -59,6 +65,9 @@ public enum FunctionType: String, CaseIterable {
     case ARRAYREMOVE    // 数组删除
     case ARRAYSORT      // 数组排序
     case ARRAYCOPY      // 数组复制
+    case ARRAYMULTISORT // 多数组排序
+    case INRANGE        // 范围检查
+    case INRANGEARRAY   // // 数组范围检查
 
     // MARK: - 位运算
     case GETBIT         // 获取位
@@ -66,6 +75,8 @@ public enum FunctionType: String, CaseIterable {
     case CLEARBIT       // 清除位
     case INVERTBIT      // 反转位
     case SUMARRAYS      // 数组求和
+    case GETNUM         // 获取数值（位运算）
+    case GETNUMB        // 获取数值（位运算，字节）
 
     // MARK: - 系统函数
     case GAMEBASE       // 游戏基础信息
@@ -75,6 +86,11 @@ public enum FunctionType: String, CaseIterable {
     case CHARANUM       // 角色数量
     case RESULT         // 结果变量
     case RESULTS        // 结果字符串变量
+    case CHECKFONT      // 检查字体
+    case CHECKDATA      // 检查数据
+    case ISSKIP         // 是否跳过
+    case GETCOLOR       // 获取颜色
+    case BARSTRING      // 条形字符串
 
     // MARK: - 特殊变量
     case __INT_MAX__    // 最大整数
@@ -99,6 +115,12 @@ public enum FunctionType: String, CaseIterable {
     case ISNUMERIC      // 是否数字
     case ISNULL         // 是否空值
     case TYPEOF         // 类型
+    case GETPALLV       // 获取PALAM数值
+    case GETEXPLV       // 获取EXP数值
+    case MATCH          // 匹配
+    case GROUPMATCH     // 组匹配
+    case NOSAMES        // 不相同
+    case ALLSAMES       // 全相同
 
     /// 从字符串创建函数类型（不区分大小写）
     public static func fromString(_ str: String) -> FunctionType? {
@@ -185,6 +207,57 @@ public class BuiltInFunctions {
             if case .integer(let value) = arg {
                 let result = exp(Double(value))
                 return .integer(Int64(result))
+            }
+            return .integer(0)
+
+        case "ASIN":
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                // ASIN参数需要在-1到1之间
+                let doubleValue = Double(value) / 1000.0
+                if doubleValue < -1.0 || doubleValue > 1.0 {
+                    return .integer(0)
+                }
+                let result = asin(doubleValue)
+                return .integer(Int64(result * 180.0 / .pi))  // 弧度转角度
+            }
+            return .integer(0)
+
+        case "ACOS":
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                // ACOS参数需要在-1到1之间
+                let doubleValue = Double(value) / 1000.0
+                if doubleValue < -1.0 || doubleValue > 1.0 {
+                    return .integer(0)
+                }
+                let result = acos(doubleValue)
+                return .integer(Int64(result * 180.0 / .pi))  // 弧度转角度
+            }
+            return .integer(0)
+
+        case "ATAN":
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                let doubleValue = Double(value) / 1000.0
+                let result = atan(doubleValue)
+                return .integer(Int64(result * 180.0 / .pi))  // 弧度转角度
+            }
+            return .integer(0)
+
+        case "CBRT":
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                return .integer(Int64(cbrt(Double(value))))
+            }
+            return .integer(0)
+
+        case "SIGN":
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                if value > 0 { return .integer(1) }
+                if value < 0 { return .integer(-1) }
+                return .integer(0)
             }
             return .integer(0)
 
@@ -356,6 +429,78 @@ public class BuiltInFunctions {
             }
             return .string("")
 
+        case "STRLENFORM":
+            // STRLENFORM与STRLENS相同，都返回字符数
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .string(let str) = arg {
+                return .integer(Int64(str.count))
+            }
+            return .integer(0)
+
+        case "SUBSTRINGU":
+            // Unicode版本的SUBSTRING
+            guard arguments.count >= 2 else { return .string("") }
+            if case .string(let str) = arguments[0],
+               case .integer(let start) = arguments[1] {
+                let scalars = Array(str.unicodeScalars)
+                let startIndex = max(0, Int(start))
+                guard startIndex < scalars.count else { return .string("") }
+
+                if arguments.count >= 3 {
+                    if case .integer(let length) = arguments[2] {
+                        let endIndex = min(startIndex + Int(length), scalars.count)
+                        let result = scalars[startIndex..<endIndex]
+                        return .string(String(String.UnicodeScalarView(result)))
+                    }
+                }
+                let result = scalars[startIndex...]
+                return .string(String(String.UnicodeScalarView(result)))
+            }
+            return .string("")
+
+        case "STRFIND":
+            // 查找子串位置（Unicode感知）
+            guard arguments.count >= 2 else { return .integer(-1) }
+            if case .string(let str) = arguments[0],
+               case .string(let search) = arguments[1] {
+                if let range = str.range(of: search) {
+                    let offset = str.unicodeScalars.distance(from: str.unicodeScalars.startIndex, to: range.lowerBound)
+                    return .integer(Int64(offset))
+                }
+                return .integer(-1)
+            }
+            return .integer(-1)
+
+        case "STRCOUNT":
+            // 统计子串出现次数
+            guard arguments.count >= 2 else { return .integer(0) }
+            if case .string(let str) = arguments[0],
+               case .string(let search) = arguments[1] {
+                if search.isEmpty { return .integer(0) }
+                let count = str.components(separatedBy: search).count - 1
+                return .integer(Int64(count))
+            }
+            return .integer(0)
+
+        case "ESCAPE":
+            // 转义特殊字符 - 将控制字符转换为转义序列
+            // 注意：不转义反斜杠本身，只转义控制字符和引号
+            guard let arg = arguments.first else { return .string("") }
+            if case .string(let str) = arg {
+                var result = ""
+                for char in str {
+                    switch char {
+                    case "\"": result += "\\\""
+                    case "\n": result += "\\n"
+                    case "\r": result += "\\r"
+                    case "\t": result += "\\t"
+                    default: result.append(char)
+                    }
+                }
+                return .string(result)
+            }
+            return .string("")
+
         // MARK: - 数组函数
         case "FINDELEMENT":
             guard arguments.count >= 2 else { return .integer(-1) }
@@ -390,12 +535,54 @@ public class BuiltInFunctions {
 
         case "REPEAT":
             guard arguments.count >= 2 else { return .array([]) }
-            if case .integer(let count) = arguments[0],
-               case .integer(let value) = arguments[1] {
+            if case .integer(let value) = arguments[0],
+               case .integer(let count) = arguments[1] {
                 let arr = Array(repeating: value, count: Int(count))
                 return .array(arr.map { .integer($0) })
             }
             return .array([])
+
+        case "ARRAYMULTISORT":
+            // 多数组排序（简化实现：只排序第一个数组，其他数组跟随）
+            guard arguments.count >= 1 else { return .null }
+            if case .array(let arr) = arguments[0] {
+                let sorted = arr.sorted { a, b in
+                    switch (a, b) {
+                    case (.integer(let ia), .integer(let ib)): return ia < ib
+                    case (.string(let sa), .string(let sb)): return sa < sb
+                    default: return false
+                    }
+                }
+                return .array(sorted)
+            }
+            return .null
+
+        case "INRANGE":
+            // 检查值是否在范围内
+            guard arguments.count >= 3 else { return .integer(0) }
+            if case .integer(let value) = arguments[0],
+               case .integer(let min) = arguments[1],
+               case .integer(let max) = arguments[2] {
+                return .integer(value >= min && value <= max ? 1 : 0)
+            }
+            return .integer(0)
+
+        case "INRANGEARRAY":
+            // 检查数组元素是否在范围内
+            guard arguments.count >= 3 else { return .integer(0) }
+            if case .array(let arr) = arguments[0],
+               case .integer(let min) = arguments[1],
+               case .integer(let max) = arguments[2] {
+                for item in arr {
+                    if case .integer(let value) = item {
+                        if value < min || value > max {
+                            return .integer(0)
+                        }
+                    }
+                }
+                return .integer(1)
+            }
+            return .integer(0)
 
         // MARK: - 位运算
         case "GETBIT":
@@ -442,6 +629,26 @@ public class BuiltInFunctions {
                 }
             }
             return .integer(sum)
+
+        case "GETNUM":
+            // GETNUM(value, bitPos, bitCount) - 从value中提取从bitPos开始的bitCount位
+            guard arguments.count >= 3 else { return .integer(0) }
+            if case .integer(let value) = arguments[0],
+               case .integer(let bitPos) = arguments[1],
+               case .integer(let bitCount) = arguments[2] {
+                let mask = (Int64(1) << bitCount) - 1
+                return .integer((value >> bitPos) & mask)
+            }
+            return .integer(0)
+
+        case "GETNUMB":
+            // GETNUMB(value, bytePos) - 获取value中指定字节位置的字节值
+            guard arguments.count >= 2 else { return .integer(0) }
+            if case .integer(let value) = arguments[0],
+               case .integer(let bytePos) = arguments[1] {
+                return .integer((value >> (bytePos * 8)) & 0xFF)
+            }
+            return .integer(0)
 
         // MARK: - 系统函数
         case "CHARANUM":
@@ -548,6 +755,10 @@ public class BuiltInFunctions {
             if case .null = arg {
                 return .integer(1)
             }
+            // Also check for string "NULL" as a special case
+            if case .string(let str) = arg, str.uppercased() == "NULL" {
+                return .integer(1)
+            }
             return .integer(0)
 
         case "TYPEOF":
@@ -559,6 +770,105 @@ public class BuiltInFunctions {
             case .character: return .string("CHARACTER")
             case .null: return .string("NULL")
             }
+
+        // MARK: - 新增系统函数（简化实现）
+        case "CHECKFONT":
+            // 检查字体是否存在 - 总是返回1（存在）
+            return .integer(1)
+
+        case "CHECKDATA":
+            // 检查数据文件是否存在 - 总是返回1（存在）
+            return .integer(1)
+
+        case "ISSKIP":
+            // 检查是否跳过 - 返回0（不跳过）
+            return .integer(0)
+
+        case "GETCOLOR":
+            // 获取当前颜色 - 返回默认值
+            return .integer(0)
+
+        case "BARSTRING":
+            // BARSTRING(value, max, length, char1, char2) - 自定义条形图
+            if arguments.count >= 3,
+               case .integer(let val) = arguments[0],
+               case .integer(let max) = arguments[1],
+               case .integer(let len) = arguments[2] {
+                let ratio = max > 0 ? Double(val) / Double(max) : 0
+                let filled = Int(ratio * Double(len))
+
+                // Get fill and empty characters (default: * and .)
+                var fillChar: Character = "*"
+                var emptyChar: Character = "."
+
+                if arguments.count >= 4, case .string(let str) = arguments[3], !str.isEmpty {
+                    fillChar = str.first!
+                }
+                if arguments.count >= 5, case .string(let str) = arguments[4], !str.isEmpty {
+                    emptyChar = str.first!
+                }
+
+                let bar = String(repeating: fillChar, count: filled) +
+                         String(repeating: emptyChar, count: Int(len) - filled)
+                return .string("[\(bar)]")
+            }
+            return .string("")
+
+        // MARK: - 特殊数学函数
+        case "GETPALLV":
+            // GETPALLV(数值) - 获取PALAM相关数值（简化：返回输入值）
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                return .integer(value)
+            }
+            return .integer(0)
+
+        case "GETEXPLV":
+            // GETEXPLV(数值) - 获取EXP相关数值（简化：返回输入值）
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .integer(let value) = arg {
+                return .integer(value)
+            }
+            return .integer(0)
+
+        case "MATCH":
+            // MATCH(变量, 值) - 检查变量是否匹配值
+            guard arguments.count >= 2 else { return .integer(0) }
+            return .integer(arguments[0] == arguments[1] ? 1 : 0)
+
+        case "GROUPMATCH":
+            // GROUPMATCH(变量, 值1, 值2, ...) - 检查变量是否匹配任意值
+            guard arguments.count >= 2 else { return .integer(0) }
+            let target = arguments[0]
+            for i in 1..<arguments.count {
+                if target == arguments[i] {
+                    return .integer(1)
+                }
+            }
+            return .integer(0)
+
+        case "NOSAMES":
+            // NOSAMES(值1, 值2, ...) - 检查所有值是否都不相同
+            guard arguments.count >= 2 else { return .integer(1) }
+            for i in 0..<arguments.count - 1 {
+                for j in i+1..<arguments.count {
+                    if arguments[i] == arguments[j] {
+                        return .integer(0)
+                    }
+                }
+            }
+            return .integer(1)
+
+        case "ALLSAMES":
+            // ALLSAMES(值1, 值2, ...) - 检查所有值是否都相同
+            guard arguments.count >= 2 else { return .integer(1) }
+            let first = arguments[0]
+            for i in 1..<arguments.count {
+                if arguments[i] != first {
+                    return .integer(0)
+                }
+            }
+            return .integer(1)
 
         // MARK: - 未实现的函数
         case "GAMEBASE", "VERSION", "FORM":

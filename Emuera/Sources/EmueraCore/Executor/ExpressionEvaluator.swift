@@ -31,6 +31,9 @@ public class ExpressionEvaluator {
         case .variable(let name):
             return try resolveVariable(name)
 
+        case .scopedVariable(let scope, let name, let indices):
+            return try resolveScopedVariable(scope: scope, name: name, indices: indices)
+
         case .arrayAccess(let base, let indices):
             return try evaluateArrayAccess(base: base, indices: indices)
 
@@ -408,6 +411,39 @@ public class ExpressionEvaluator {
         default:
             throw EvaluateError.typeMismatch("不支持的比较操作")
         }
+    }
+
+    /// 解析作用域变量
+    private func resolveScopedVariable(scope: String, name: String, indices: [ExpressionNode]) throws -> VariableValue {
+        let scopeEnum = VariableScope.fromVariableName("\(scope)\(name)").scope
+        let fullName = "\(scope)\(name)"
+
+        // 处理数组索引
+        if !indices.isEmpty {
+            let indexValues = try indices.map { try evaluate($0) }
+            // 简化处理：只使用第一个索引
+            if case .integer(let idx) = indexValues[0] {
+                let arrayKey = "\(fullName)[\(idx)]"
+                let value = variableData.getVariable(arrayKey)
+                if value != .integer(0) || arrayKey.contains(where: { $0.isLetter || $0.isNumber }) {
+                    return value
+                }
+                return .integer(0)
+            }
+        }
+
+        // 普通作用域变量
+        let value = variableData.getVariable(fullName)
+        // 如果变量已定义（非默认值），返回它
+        if value != .integer(0) || fullName.contains(where: { $0.isLetter || $0.isNumber }) {
+            return value
+        }
+
+        // 未定义的变量
+        if scopeEnum.variableType == .string {
+            return .string("")
+        }
+        return .integer(0)
     }
 }
 

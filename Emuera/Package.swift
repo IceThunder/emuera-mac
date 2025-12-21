@@ -149,6 +149,151 @@ let package = Package(
             sources: ["DebugAllTokens.swift"]
         ),
 
+        // Debug Hex Literal Target
+        .executableTarget(
+            name: "DebugHex",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugHex.swift"]
+        ),
+
+        // Debug Hex Conversion Target
+        .executableTarget(
+            name: "DebugHexConv",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugHexConv.swift"]
+        ),
+
+        // Debug BARSTRING Target
+        .executableTarget(
+            name: "DebugBARSTRING",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugBARSTRING.swift"]
+        ),
+
+        // Debug Constants Target
+        .executableTarget(
+            name: "DebugConstants",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugConstants.swift"]
+        ),
+
+        // Debug Constants Execution Target
+        .executableTarget(
+            name: "DebugConstantsExec",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugConstantsExec.swift"]
+        ),
+
+        // Debug Constants Execution Target 2
+        .executableTarget(
+            name: "DebugConstantsExec2",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugConstantsExec2.swift"]
+        ),
+
+        // Phase 2 Function System Test Target
+        .executableTarget(
+            name: "Phase2Test",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            exclude: ["FunctionSystemTest.swift", "MinimalTest.swift", "main.swift"],
+            sources: ["ParseTest.swift"]
+        ),
+
+        // Phase 2 Built-in Functions Test Target
+        .executableTarget(
+            name: "FunctionTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["FunctionTest.swift"]
+        ),
+
+        // Debug ISNULL Target
+        .executableTarget(
+            name: "DebugISNULL",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugISNULL.swift"]
+        ),
+
+        // Debug ESCAPE Target
+        .executableTarget(
+            name: "DebugESCAPE",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugESCAPE.swift"]
+        ),
+
+        // Debug ESCAPE 2 Target
+        .executableTarget(
+            name: "DebugESCAPE2",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugESCAPE2.swift"]
+        ),
+
+        // Debug ESCAPE 3 Target
+        .executableTarget(
+            name: "DebugESCAPE3",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugESCAPE3.swift"]
+        ),
+
+        // Debug Array Target
+        .executableTarget(
+            name: "DebugArray",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugArray.swift"]
+        ),
+
+        // Debug Constants Exec 3 Target
+        .executableTarget(
+            name: "DebugConstantsExec3",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugConstantsExec3.swift"]
+        ),
+
+        // Debug Array 2 Target
+        .executableTarget(
+            name: "DebugArray2",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugArray2.swift"]
+        ),
+
+        // Debug REPEAT Target
+        .executableTarget(
+            name: "DebugRepeat",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugRepeat.swift"]
+        ),
+
+        // Debug ARRAYMULTISORT Target
+        .executableTarget(
+            name: "DebugArraySort",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugArraySort.swift"]
+        ),
+
+        // Debug Print Tokens Target
+        .executableTarget(
+            name: "DebugPrintTokens",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugPrintTokens.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

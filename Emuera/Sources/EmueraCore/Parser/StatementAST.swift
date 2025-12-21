@@ -186,12 +186,76 @@ public class CallStatement: StatementNode {
     }
 }
 
+/// 函数调用语句 (Phase 2)
+public class FunctionCallStatement: StatementNode {
+    public let functionName: String
+    public let arguments: [ExpressionNode]
+    public let tryMode: Bool
+
+    public init(functionName: String,
+                arguments: [ExpressionNode] = [],
+                tryMode: Bool = false,
+                position: ScriptPosition? = nil) {
+        self.functionName = functionName
+        self.arguments = arguments
+        self.tryMode = tryMode
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitFunctionCallStatement(self)
+    }
+}
+
+/// 函数定义语句 (Phase 2)
+public class FunctionDefinitionStatement: StatementNode {
+    public let definition: FunctionDefinition
+
+    public init(definition: FunctionDefinition, position: ScriptPosition? = nil) {
+        self.definition = definition
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        // 函数定义在解析阶段处理，执行阶段不需要
+    }
+}
+
+/// 变量声明语句 (Phase 2)
+public class VariableDeclarationStatement: StatementNode {
+    public let scope: VariableScope
+    public let name: String
+    public let isArray: Bool
+    public let size: ExpressionNode?
+    public let initialValue: ExpressionNode?
+
+    public init(scope: VariableScope,
+                name: String,
+                isArray: Bool = false,
+                size: ExpressionNode? = nil,
+                initialValue: ExpressionNode? = nil,
+                position: ScriptPosition? = nil) {
+        self.scope = scope
+        self.name = name
+        self.isArray = isArray
+        self.size = size
+        self.initialValue = initialValue
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitVariableDeclarationStatement(self)
+    }
+}
+
 /// RETURN语句
 public class ReturnStatement: StatementNode {
     public let value: ExpressionNode?
+    public let isFunctionReturn: Bool  // true: RETURNF, false: RETURN
 
-    public init(value: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+    public init(value: ExpressionNode? = nil, position: ScriptPosition? = nil, isFunctionReturn: Bool = false) {
         self.value = value
+        self.isFunctionReturn = isFunctionReturn
         super.init(position: position)
     }
 
@@ -283,6 +347,9 @@ public protocol StatementVisitor {
     func visitSelectCaseStatement(_ statement: SelectCaseStatement) throws
     func visitGotoStatement(_ statement: GotoStatement) throws
     func visitCallStatement(_ statement: CallStatement) throws
+    func visitFunctionCallStatement(_ statement: FunctionCallStatement) throws  // Phase 2
+    func visitFunctionDefinitionStatement(_ statement: FunctionDefinitionStatement) throws  // Phase 2
+    func visitVariableDeclarationStatement(_ statement: VariableDeclarationStatement) throws  // Phase 2
     func visitReturnStatement(_ statement: ReturnStatement) throws
     func visitBreakStatement(_ statement: BreakStatement) throws
     func visitContinueStatement(_ statement: ContinueStatement) throws

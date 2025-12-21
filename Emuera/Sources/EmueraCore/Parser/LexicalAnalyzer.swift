@@ -53,19 +53,45 @@ public struct LexicalAnalyzer {
             }
 
             // 数字（只匹配阿拉伯数字0-9，避免中文数字如"一"被错误处理）
+            // 支持十六进制（0x前缀）和十进制
             // 但如果数字后紧跟非ASCII字符，整个作为字符串处理
             if c.isNumber && c.isASCII {
                 var current = index
                 var digits = ""
-                while current < source.endIndex && source[current].isNumber && source[current].isASCII {
-                    digits.append(source[current])
-                    current = source.index(after: current)
+
+                // 检查是否是十六进制字面量 (0x...)
+                var isHex = false
+                if c == "0" && source.index(after: index) < source.endIndex {
+                    let nextChar = source[source.index(after: index)]
+                    if nextChar == "x" || nextChar == "X" {
+                        isHex = true
+                        current = source.index(after: index) // 跳过0
+                        current = source.index(after: current) // 跳过x/X
+                        // 读取十六进制数字
+                        while current < source.endIndex {
+                            let ch = source[current]
+                            if ch.isNumber || (ch >= "a" && ch <= "f") || (ch >= "A" && ch <= "F") {
+                                digits.append(ch)
+                                current = source.index(after: current)
+                            } else {
+                                break
+                            }
+                        }
+                    }
+                }
+
+                // 如果不是十六进制，读取十进制数字
+                if !isHex {
+                    while current < source.endIndex && source[current].isNumber && source[current].isASCII {
+                        digits.append(source[current])
+                        current = source.index(after: current)
+                    }
                 }
 
                 // 检查数字后是否紧跟非ASCII字符
                 if current < source.endIndex && source[current].isASCII == false {
                     // 数字后有中文，作为字符串处理
-                    var str = digits
+                    var str = isHex ? "0x\(digits)" : digits
                     while current < source.endIndex {
                         let ch = source[current]
                         if ch.isASCII == false {
@@ -83,16 +109,25 @@ public struct LexicalAnalyzer {
                     continue
                 }
 
-                if let value = Int64(digits) {
-                    tokens.append(TokenType.Token(type: .integer(value), value: digits, position: ScriptPosition(filename: "script", lineNumber: line)))
-                    index = current
-                    continue
+                // 转换为整数值
+                if isHex {
+                    if let value = Int64(digits, radix: 16) {
+                        tokens.append(TokenType.Token(type: .integer(value), value: "0x\(digits)", position: ScriptPosition(filename: "script", lineNumber: line)))
+                        index = current
+                        continue
+                    }
+                } else {
+                    if let value = Int64(digits) {
+                        tokens.append(TokenType.Token(type: .integer(value), value: digits, position: ScriptPosition(filename: "script", lineNumber: line)))
+                        index = current
+                        continue
+                    }
                 }
             }
 
             // 标识符（支持Unicode字符如中文作为变量名）
             // 或者处理混合内容如"5到15之间"
-            if c.isLetter || c.isASCII == false || c == "$" || c == "%" || c == "@" {
+            if c.isLetter || c.isASCII == false || c == "$" || c == "%" || c == "@" || c == "_" {
                 var current = index
                 var identifier = ""
                 var hasNonASCII = false
@@ -104,8 +139,8 @@ public struct LexicalAnalyzer {
                         identifier.append(ch)
                         hasNonASCII = true
                         current = source.index(after: current)
-                    } else if ch.isLetter || ch.isNumber || ch == "_" || ch == "$" || ch == "%" {
-                        // ASCII字母、数字、符号
+                    } else if ch.isLetter || ch.isNumber || ch == "_" || ch == "$" || ch == "%" || ch == "@" {
+                        // ASCII字母、数字、符号（包括@用于标签）
                         identifier.append(ch)
                         current = source.index(after: current)
                     } else {
@@ -123,8 +158,12 @@ public struct LexicalAnalyzer {
                 let tokenType: TokenType
                 let upper = identifier.uppercased()
 
+                // 检查是否是函数指令 (#DIM, #FUNCTIONS等)
+                if identifier.hasPrefix("#") {
+                    tokenType = .directive(identifier)
+                }
                 // 检查是否是命令
-                if CommandType.fromString(identifier) != .UNKNOWN {
+                else if CommandType.fromString(identifier) != .UNKNOWN {
                     tokenType = .command(identifier)
                 }
                 // 检查是否是关键字
@@ -132,15 +171,15 @@ public struct LexicalAnalyzer {
                          "WHILE", "ENDWHILE",
                          "FOR", "ENDFOR",
                          "SELECTCASE", "CASE", "CASEELSE", "ENDSELECT",
-                         "BREAK", "CONTINUE", "RETURN", "RESTART",
-                         "GOTO", "CALL", "JUMP", "TRYCALL"].contains(upper) {
+                         "BREAK", "CONTINUE", "RETURN", "RESTART", "RETURNF",
+                         "GOTO", "CALL", "JUMP", "TRYCALL", "TRYCALLFORM"].contains(upper) {
                     tokenType = .keyword(identifier)
                 }
                 // 检查是否是内置函数
                 else if BuiltInFunctions.exists(identifier) {
                     tokenType = .function(identifier)
                 }
-                // 检查标签
+                // 检查标签（函数定义）
                 else if identifier.hasPrefix("@") {
                     tokenType = .label(identifier)
                 }

@@ -55,7 +55,29 @@
       "Bash(.build/debug/DebugAllTokens:*)",
       "Bash(.build/debug/ForLoopTest:*)",
       "Bash(.build/debug/PrintTest:*)",
-      "Bash(.build/debug/DebugForLoop:*)"
+      "Bash(.build/debug/DebugForLoop:*)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/release/emuera run test.erb)",
+      "Bash(tar:*)",
+      "Bash(./emuera run:*)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/release/emuera run /Users/ss/Documents/Project/iOS/emuera-mac/Examples/计算器示例.erb)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Emuera/.build/release/emuera run /tmp/simple_test/erb/simple.ERB)",
+      "Bash(xargs:*)",
+      "Bash(/Users/ss/Documents/Project/iOS/emuera-mac/Release/emuera --version)",
+      "Bash(.build/debug/Phase2Test:*)",
+      "Bash(gtimeout:*)",
+      "Bash(bash:*)",
+      "Bash(time timeout 2 .build/debug/Phase2Test:*)",
+      "Bash(.build/debug/DebugTestTarget:*)",
+      "Bash(.build/debug/FunctionTest:*)",
+      "Bash(.build/debug/DebugTokens:*)",
+      "Bash(.build/debug/DebugISNULL:*)",
+      "Bash(grep:*)",
+      "Bash(.build/debug/DebugHex:*)",
+      "Bash(.build/debug/DebugConstants:*)",
+      "Bash(.build/debug/DebugConstantsExec:*)",
+      "Bash(.build/debug/DebugConstantsExec2:*)",
+      "Bash(.build/debug/DebugArraySort:*)",
+      "Bash(.build/debug/DebugPrintTokens:*)"
     ]
   }
 }

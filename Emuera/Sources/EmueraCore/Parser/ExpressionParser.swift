@@ -15,6 +15,7 @@ public indirect enum ExpressionNode: CustomStringConvertible {
     case integer(Int64)
     case string(String)
     case variable(String)
+    case scopedVariable(scope: String, name: String, indices: [ExpressionNode])  // LOCAL:5, TALENT:TARGET:恋慕
     case arrayAccess(base: String, indices: [ExpressionNode])  // A:5, BASE:0, CDFLAG:0:5
     case functionCall(name: String, arguments: [ExpressionNode])  // RAND(100), ABS(-5)
     case binary(op: TokenType.Operator, left: ExpressionNode, right: ExpressionNode)
@@ -24,6 +25,12 @@ public indirect enum ExpressionNode: CustomStringConvertible {
         case .integer(let value): return "\(value)"
         case .string(let value): return "\"\(value)\""
         case .variable(let name): return "var(\(name))"
+        case .scopedVariable(let scope, let name, let indices):
+            if indices.isEmpty {
+                return "\(scope):\(name)"
+            }
+            let idxStr = indices.map { $0.description }.joined(separator: ", ")
+            return "\(scope):\(name):[\(idxStr)]"
         case .arrayAccess(let base, let indices):
             let idxStr = indices.map { $0.description }.joined(separator: ", ")
             return "\(base)[\(idxStr)]"
@@ -41,6 +48,7 @@ public indirect enum ExpressionNode: CustomStringConvertible {
         case .integer: return "integer"
         case .string: return "string"
         case .variable: return "variable"
+        case .scopedVariable: return "scopedVariable"
         case .arrayAccess: return "arrayAccess"
         case .functionCall: return "functionCall"
         case .binary: return "binary"
@@ -171,9 +179,70 @@ public class ExpressionParser {
             return expr
 
         case .command(let name):
-            // 命令作为变量处理
+            // 命令在表达式中：检查是否是函数调用（如POWER(2, 3)）
+            currentIndex += 1
+
+            // 检查后续token以确定是函数调用还是变量引用
+            if currentIndex < tokens.count {
+                let nextToken = tokens[currentIndex]
+
+                // 函数调用: POWER(2, 3)
+                if case .parenthesisOpen = nextToken.type {
+                    currentIndex += 1
+                    let arguments = try parseArgumentList()
+                    return .functionCall(name: name, arguments: arguments)
+                }
+            }
+
+            // 普通变量引用
+            return .variable(name)
+
+        case .function(let name):
+            currentIndex += 1
+
+            // 特殊常量：__INT_MAX__, __INT_MIN__ (不需要括号)
+            if name.uppercased() == "__INT_MAX__" {
+                return .integer(Int64.max)
+            }
+            if name.uppercased() == "__INT_MIN__" {
+                return .integer(Int64.min)
+            }
+
+            // 检查后续token以确定是函数调用还是变量引用
+            if currentIndex < tokens.count {
+                let nextToken = tokens[currentIndex]
+
+                // 函数调用: RESULT()
+                if case .parenthesisOpen = nextToken.type {
+                    currentIndex += 1
+                    let arguments = try parseArgumentList()
+                    return .functionCall(name: name, arguments: arguments)
+                }
+            }
+
+            // 普通变量引用（如 RESULT 在 A = RESULT 中）
+            return .variable(name)
+
+        case .keyword(let name):
+            // 关键字作为变量处理（在表达式中）
             currentIndex += 1
             return .variable(name)
+
+        case .operatorSymbol(let op):
+            // 处理一元运算符（如 -5, +10）
+            // 只支持 + 和 - 作为一元运算符
+            if op == .subtract || op == .add {
+                currentIndex += 1
+                let operand = try parsePrimary()  // 递归解析操作数
+                if op == .subtract {
+                    // 转换为二元表达式: 0 - operand
+                    return .binary(op: .subtract, left: .integer(0), right: operand)
+                } else {
+                    // + 直接返回操作数
+                    return operand
+                }
+            }
+            throw ExpressionParseError.invalidToken(token)
 
         default:
             throw ExpressionParseError.invalidToken(token)
