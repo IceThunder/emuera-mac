@@ -125,6 +125,31 @@ public struct LexicalAnalyzer {
                 }
             }
 
+            // Check for modulo operator (%) before identifier parsing
+            // This must come before identifier check because % is also a variable prefix
+            if c == "%" {
+                // Check if this is modulo operator (%) or variable prefix (%VAR)
+                // Modulo operator: % followed by space, digit, operator, parenthesis, or end
+                // Variable prefix: % followed by letter
+                let nextIndex = source.index(after: index)
+                if nextIndex < source.endIndex {
+                    let nextChar = source[nextIndex]
+                    if nextChar.isLetter {
+                        // This is a variable prefix like %VAR - fall through to identifier parsing
+                    } else {
+                        // This is modulo operator
+                        tokens.append(TokenType.Token(type: .operatorSymbol(.modulo), value: "%", position: ScriptPosition(filename: "script", lineNumber: line)))
+                        index = nextIndex
+                        continue
+                    }
+                } else {
+                    // % at end of source - treat as modulo operator
+                    tokens.append(TokenType.Token(type: .operatorSymbol(.modulo), value: "%", position: ScriptPosition(filename: "script", lineNumber: line)))
+                    index = nextIndex
+                    continue
+                }
+            }
+
             // 标识符（支持Unicode字符如中文作为变量名）
             // 或者处理混合内容如"5到15之间"
             if c.isLetter || c.isASCII == false || c == "$" || c == "%" || c == "@" || c == "_" {

@@ -92,9 +92,11 @@ public class StatementExecutor: StatementVisitor {
                     break
                 }
 
+                // BREAK and CONTINUE are handled by loop statements (WHILE, FOR, REPEAT)
+                // SELECTCASE doesn't propagate them, so they remain set
+                // Clear them here to prevent issues with subsequent statements
                 if self.context.shouldBreak {
                     self.context.shouldBreak = false
-                    break
                 }
 
                 if self.context.shouldContinue {
@@ -228,20 +230,28 @@ public class StatementExecutor: StatementVisitor {
 
     public func visitSelectCaseStatement(_ statement: SelectCaseStatement) throws {
         let testValue = try evaluateExpression(statement.test)
+        var executed = false
 
         for caseClause in statement.cases {
             for valueExpr in caseClause.values {
                 let caseValue = try evaluateExpression(valueExpr)
                 if valuesEqual(testValue, caseValue) {
                     try caseClause.body.accept(visitor: self)
-                    return
+                    executed = true
+                    break
                 }
             }
+            if executed { break }
         }
 
-        if let defaultCase = statement.defaultCase {
+        if !executed, let defaultCase = statement.defaultCase {
             try defaultCase.accept(visitor: self)
         }
+
+        // BREAK inside SELECTCASE should exit the SELECTCASE
+        // The flag remains set so outer loops can handle it
+        // CONTINUE also remains set for outer loops
+        // SELECTCASE itself doesn't consume these flags
     }
 
     public func visitGotoStatement(_ statement: GotoStatement) throws {
@@ -533,7 +543,7 @@ public class StatementExecutor: StatementVisitor {
 
     public func visitPersistStatement(_ statement: PersistStatement) throws {
         context.persistEnabled = statement.enabled
-        context.output.append("[持久状态: \(statement.enabled ? "ON" : "OFF")]\n")
+        // PERSIST statements don't produce visible output
     }
 
     // MARK: - 表达式求值
@@ -624,6 +634,71 @@ public class StatementExecutor: StatementVisitor {
         return .integer(0)
     }
 
+    /// 设置数组元素的值: A:0 = 3
+    private func setArrayValue(base: String, indices: [ExpressionNode], value: VariableValue) throws {
+        // 求值所有索引
+        let indexValues = try indices.map { try evaluateExpression($0) }
+
+        // 检查数组是否存在，如果不存在则创建
+        var arrayValue = context.variables[base] ?? .array([])
+
+        // 确保是数组类型
+        guard case .array(var arr) = arrayValue else {
+            throw EmueraError.typeMismatch(expected: "array", actual: "other")
+        }
+
+        // 处理一维数组赋值: A:0 = 3
+        if indexValues.count == 1, case .integer(let idx) = indexValues[0] {
+            let intIdx = Int(idx)
+            if intIdx >= 0 {
+                // 扩展数组如果需要
+                while arr.count <= intIdx {
+                    arr.append(.integer(0))
+                }
+                arr[intIdx] = value
+                context.variables[base] = .array(arr)
+                return
+            }
+            throw EmueraError.runtimeError(message: "数组索引不能为负数: \(intIdx)", position: nil)
+        }
+
+        // 二维数组赋值: A:0:1 = 3
+        if indexValues.count == 2,
+           case .integer(let idx1) = indexValues[0],
+           case .integer(let idx2) = indexValues[1] {
+            let intIdx1 = Int(idx1)
+            let intIdx2 = Int(idx2)
+
+            if intIdx1 >= 0 && intIdx2 >= 0 {
+                // 扩展外层数组如果需要
+                while arr.count <= intIdx1 {
+                    arr.append(.array([]))
+                }
+
+                // 获取或创建内层数组
+                var innerArr: [VariableValue]
+                if case .array(let existingInner) = arr[intIdx1] {
+                    innerArr = existingInner
+                } else {
+                    innerArr = []
+                }
+
+                // 扩展内层数组如果需要
+                while innerArr.count <= intIdx2 {
+                    innerArr.append(.integer(0))
+                }
+
+                innerArr[intIdx2] = value
+                arr[intIdx1] = .array(innerArr)
+                context.variables[base] = .array(arr)
+                return
+            }
+            throw EmueraError.runtimeError(message: "数组索引不能为负数: (\(intIdx1), \(intIdx2))", position: nil)
+        }
+
+        throw EmueraError.runtimeError(message: "不支持的数组维度", position: nil)
+    }
+
     private func evaluateBinary(op: TokenType.Operator, left: ExpressionNode, right: ExpressionNode) throws -> VariableValue {
         let leftVal = try evaluateExpression(left)
         let rightVal = try evaluateExpression(right)
@@ -633,8 +708,12 @@ public class StatementExecutor: StatementVisitor {
             if case .variable(let name) = left {
                 context.setVariable(name, value: rightVal)
                 return rightVal
+            } else if case .arrayAccess(let base, let indices) = left {
+                // Handle array assignment: A:0 = 3
+                try setArrayValue(base: base, indices: indices, value: rightVal)
+                return rightVal
             }
-            throw EmueraError.invalidOperation(message: "赋值左侧必须是变量")
+            throw EmueraError.invalidOperation(message: "赋值左侧必须是变量或数组元素")
 
         case .add:
             return try addValues(leftVal, rightVal)

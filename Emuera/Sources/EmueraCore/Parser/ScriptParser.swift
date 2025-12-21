@@ -69,6 +69,13 @@ public class ScriptParser {
         case .keyword(let keyword):
             return try parseKeywordStatement(keyword)
 
+        case .caseKeyword, .caseElse, .endSelect:
+            // 这些应该在SELECTCASE解析时处理，不应该单独出现
+            throw EmueraError.scriptParseError(
+                message: "未匹配的SELECTCASE关键字: \(token.value)",
+                position: getCurrentPosition()
+            )
+
         case .label:
             // 检查是否是函数定义 (@函数名)
             if case .label(let name) = token.type, name.hasPrefix("@") {
@@ -138,15 +145,21 @@ public class ScriptParser {
     private func parsePersistStatement() throws -> PersistStatement {
         let startPos = getCurrentPosition()
 
-        // 跳过PERSIST
-        currentIndex += 1
-
-        // 跳过空白
+        // parseCommandStatement已经跳过了PERSIST token，currentIndex现在指向ON/OFF
+        // 只需要跳过空白
         skipWhitespaceAndNewlines()
 
-        // 检查下一个token是否为变量名（ON/OFF）
-        guard currentIndex < tokens.count,
-              case .variable(let value) = tokens[currentIndex].type else {
+        // 检查当前token是否为变量名（ON/OFF）
+        guard currentIndex < tokens.count else {
+            throw EmueraError.scriptParseError(
+                message: "PERSIST后需要ON或OFF",
+                position: getCurrentPosition()
+            )
+        }
+
+        let token = tokens[currentIndex]
+
+        guard case .variable(let value) = token.type else {
             throw EmueraError.scriptParseError(
                 message: "PERSIST后需要ON或OFF",
                 position: getCurrentPosition()
@@ -204,7 +217,7 @@ public class ScriptParser {
         case "GOTO":
             return try parseGotoStatement()
 
-        case "ELSE", "ENDIF", "ENDWHILE", "ENDFOR", "ENDSELECT":
+        case "ELSE", "ENDIF", "ENDWHILE", "ENDFOR", "CASE", "CASEELSE", "ENDSELECT":
             // 这些应该在解析对应结构时处理，不应该单独出现
             throw EmueraError.scriptParseError(
                 message: "未匹配的结束关键字: \(keyword)",
@@ -394,28 +407,49 @@ public class ScriptParser {
 
             let token = tokens[currentIndex]
 
-            if case .keyword(let k) = token.type {
-                let upperK = k.uppercased()
+            switch token.type {
+            case .keyword(let k) where k.uppercased() == "CASE":
+                currentIndex += 1
+                let values = try parseArgumentList()
+                let body = try parseBlock(until: ["CASE", "CASEELSE", "ENDSELECT"])
+                cases.append(CaseClause(values: values, body: body))
 
-                if upperK == "CASE" {
-                    currentIndex += 1
-                    let values = try parseArgumentList()
-                    let body = try parseBlock(until: ["CASE", "CASEELSE", "ENDSELECT"])
-                    cases.append(CaseClause(values: values, body: body))
+            case .keyword(let k) where k.uppercased() == "CASEELSE":
+                currentIndex += 1
+                defaultCase = try parseBlock(until: ["ENDSELECT"])
 
-                } else if upperK == "CASEELSE" {
-                    currentIndex += 1
-                    defaultCase = try parseBlock(until: ["ENDSELECT"])
+            case .keyword(let k) where k.uppercased() == "ENDSELECT":
+                currentIndex += 1
+                return SelectCaseStatement(  // 直接返回，退出整个方法
+                    test: test,
+                    cases: cases,
+                    defaultCase: defaultCase,
+                    position: startPos
+                )
 
-                } else if upperK == "ENDSELECT" {
-                    currentIndex += 1
-                    break
+            // Handle legacy token types if they exist
+            case .caseKeyword:
+                currentIndex += 1
+                let values = try parseArgumentList()
+                let body = try parseBlock(until: ["CASE", "CASEELSE", "ENDSELECT"])
+                cases.append(CaseClause(values: values, body: body))
 
-                } else {
-                    break
-                }
-            } else {
-                break
+            case .caseElse:
+                currentIndex += 1
+                defaultCase = try parseBlock(until: ["ENDSELECT"])
+
+            case .endSelect:
+                currentIndex += 1
+                return SelectCaseStatement(
+                    test: test,
+                    cases: cases,
+                    defaultCase: defaultCase,
+                    position: startPos
+                )
+
+            default:
+                // 跳过无法识别的token，防止无限循环
+                currentIndex += 1
             }
         }
 
@@ -542,13 +576,71 @@ public class ScriptParser {
     private func parseAssignmentOrExpression() throws -> StatementNode {
         let startPos = getCurrentPosition()
 
-        // 检查是否是标签定义: variable:
-        if currentIndex + 1 < tokens.count,
+        // 优先检查数组赋值: A:0 = 3 或 A:0:1 = 3
+        // 必须在标签定义检查之前，因为两者都以 variable: 开头
+        if currentIndex + 3 < tokens.count,
            case .variable(let varName) = tokens[currentIndex].type,
            case .colon = tokens[currentIndex + 1].type {
 
-            currentIndex += 2  // 跳过变量和冒号
-            return LabelStatement(name: varName, position: startPos)
+            // 收集数组索引: A:0:1:2...
+            var indices: [ExpressionNode] = []
+            var tempIndex = currentIndex + 2
+
+            // 收集所有索引（用冒号分隔）
+            while tempIndex < tokens.count {
+                // 从当前tempIndex开始，收集到下一个冒号或等号之前的内容
+                let startIndex = tempIndex
+                var endIndex = startIndex
+
+                collectLoop: while endIndex < tokens.count {
+                    let token = tokens[endIndex]
+                    switch token.type {
+                    case .colon, .operatorSymbol, .lineBreak:
+                        // 遇到冒号、等号或换行，停止收集
+                        break collectLoop
+                    default:
+                        endIndex += 1
+                    }
+                }
+
+                // 提取索引token
+                if endIndex > startIndex {
+                    let indexTokens = Array(tokens[startIndex..<endIndex])
+                    let parser = ExpressionParser()
+                    if let indexExpr = try? parser.parse(indexTokens) {
+                        indices.append(indexExpr)
+                    }
+                }
+
+                // 移动到下一个位置
+                tempIndex = endIndex
+
+                // 检查是否还有冒号（下一个索引）
+                if tempIndex < tokens.count,
+                   case .colon = tokens[tempIndex].type {
+                    tempIndex += 1  // 跳过冒号，继续下一个索引
+                } else {
+                    break  // 没有更多索引
+                }
+            }
+
+            // 检查是否以等号结束（赋值）
+            if tempIndex < tokens.count,
+               case .operatorSymbol(let op) = tokens[tempIndex].type,
+               op == .assign {
+
+                currentIndex = tempIndex + 1  // 跳过等号
+                let expr = try parseExpression()
+
+                return ExpressionStatement(
+                    expression: .binary(
+                        op: .assign,
+                        left: .arrayAccess(base: varName, indices: indices),
+                        right: expr
+                    ),
+                    position: startPos
+                )
+            }
         }
 
         // 尝试解析为赋值: variable = expression
@@ -571,6 +663,57 @@ public class ScriptParser {
             )
         }
 
+        // 检查是否是标签定义: variable: (后面是换行，不是表达式)
+        // 只有当 variable: 后面不是有效的表达式/赋值时，才是标签
+        if currentIndex + 1 < tokens.count,
+           case .variable(let varName) = tokens[currentIndex].type,
+           case .colon = tokens[currentIndex + 1].type {
+
+            // 检查冒号后面的内容
+            let afterColonIndex = currentIndex + 2
+            if afterColonIndex >= tokens.count {
+                // 冒号后没有内容，是标签
+                currentIndex += 2
+                return LabelStatement(name: varName, position: startPos)
+            }
+
+            // 检查冒号后面是否是换行或空白（标签定义）
+            let nextToken = tokens[afterColonIndex]
+            switch nextToken.type {
+            case .lineBreak, .whitespace, .comment:
+                currentIndex += 2
+                return LabelStatement(name: varName, position: startPos)
+            default:
+                // 否则是数组访问，但上面的数组检查没匹配，说明格式不对
+                // 继续执行，让后面的表达式解析处理
+                break
+            }
+        }
+
+        // 检查是否是无冒号标签: variable 后面直接是换行
+        // 这种情况在Emuera中是合法的标签定义
+        if currentIndex < tokens.count,
+           case .variable(let varName) = tokens[currentIndex].type {
+
+            // 检查下一个token
+            if currentIndex + 1 >= tokens.count {
+                // 文件末尾，是标签
+                currentIndex += 1
+                return LabelStatement(name: varName, position: startPos)
+            }
+
+            let nextToken = tokens[currentIndex + 1]
+            switch nextToken.type {
+            case .lineBreak, .whitespace, .comment:
+                // 后面是空白/换行，是标签
+                currentIndex += 1
+                return LabelStatement(name: varName, position: startPos)
+            default:
+                // 否则是表达式
+                break
+            }
+        }
+
         // 否则是表达式语句
         return try parseExpressionStatement()
     }
@@ -584,32 +727,45 @@ public class ScriptParser {
     // MARK: - 块解析
 
     /// 解析代码块，直到遇到指定的结束关键字
+    /// 这个函数会正确处理嵌套的 IF/WHILE/FOR/SELECTCASE 结构
     private func parseBlock(until endKeywords: [String]) throws -> StatementNode {
         var statements: [StatementNode] = []
 
         while currentIndex < tokens.count {
-            // 跳过空白和换行（在检查前）
+            // 跳过空白和换行
             skipWhitespaceAndNewlines()
 
             if currentIndex >= tokens.count {
                 break
             }
 
-            // 检查是否遇到结束关键字
-            if case .keyword(let k) = tokens[currentIndex].type,
+            let token = tokens[currentIndex]
+
+            // 首先检查是否是当前块的结束关键字
+            // 这些检查必须在 parseStatement 之前，否则会错误地消耗结束标记
+
+            // 检查标准关键字结束符 (ENDIF, ENDWHILE, ENDFOR, ELSE, CASE, CASEELSE, ENDSELECT)
+            if case .keyword(let k) = token.type,
                endKeywords.contains(k.uppercased()) {
                 break
             }
 
-            // 检查是否遇到其他块结束关键字（防止越界）
-            if case .keyword(let k) = tokens[currentIndex].type {
-                let upperK = k.uppercased()
-                if ["ENDIF", "ENDWHILE", "ENDFOR", "ENDSELECT", "ELSE", "CASE", "CASEELSE"].contains(upperK) {
-                    break
-                }
+            // 检查 SELECTCASE 相关结束符 (legacy token types)
+            if case .endSelect = token.type,
+               endKeywords.contains("ENDSELECT") {
+                break
+            }
+            if case .caseKeyword = token.type,
+               endKeywords.contains("CASE") {
+                break
+            }
+            if case .caseElse = token.type,
+               endKeywords.contains("CASEELSE") {
+                break
             }
 
-            // 解析语句
+            // 如果不是结束符，解析语句
+            // parseStatement 会处理嵌套块（IF/WHILE/FOR/SELECTCASE）
             if let statement = try parseStatement() {
                 statements.append(statement)
             }
@@ -1208,6 +1364,7 @@ public class ScriptParser {
     /// 解析函数定义 (@函数名, 参数)
     private func parseFunctionDefinition() throws -> FunctionDefinitionStatement {
         let startPos = getCurrentPosition()
+        let debugStartIndex = currentIndex
 
         // 获取函数名
         guard currentIndex < tokens.count,
@@ -1220,6 +1377,7 @@ public class ScriptParser {
 
         let funcName = String(name.dropFirst())  // 移除@前缀
         currentIndex += 1
+        print("[DEBUG] parseFunctionDefinition '\(funcName)' start: token \(debugStartIndex), now at \(currentIndex)")
 
         // 解析参数列表
         var parameters: [FunctionParameter] = []
@@ -1316,8 +1474,7 @@ public class ScriptParser {
             if let stmt = try parseStatement() {
                 body.append(stmt)
             } else {
-                // 跳过无法解析的语句
-                currentIndex += 1
+                // parseStatement() already handled incrementing currentIndex for unknown tokens
             }
         }
 

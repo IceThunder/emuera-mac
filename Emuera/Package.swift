@@ -294,6 +294,62 @@ let package = Package(
             sources: ["DebugPrintTokens.swift"]
         ),
 
+        // Debug SELECTCASE Target
+        .executableTarget(
+            name: "DebugSelectCase",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugSelectCase.swift", "RunSelectCaseTests.swift"]
+        ),
+
+        // Debug BitAnd Target
+        .executableTarget(
+            name: "DebugBitAnd",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugBitAnd.swift"]
+        ),
+
+        // Debug Parse Target
+        .executableTarget(
+            name: "DebugParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugParse.swift"]
+        ),
+
+        // Simple debug target
+        .executableTarget(
+            name: "DebugSimpleSelect",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugSimpleSelect.swift"]
+        ),
+
+        // Debug Test 25 Target
+        .executableTarget(
+            name: "DebugTest25",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugTest25.swift"]
+        ),
+
+        // Debug Test 34-35 Target
+        .executableTarget(
+            name: "DebugTest34_35",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugTest34_35.swift"]
+        ),
+
+        // Debug PERSIST Target
+        .executableTarget(
+            name: "DebugPersist",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugPersist.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",
