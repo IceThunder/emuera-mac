@@ -454,6 +454,54 @@ let package = Package(
             sources: ["DebugPrintDataFinal.swift"]
         ),
 
+        // DO-LOOP Test Target (Phase 3)
+        .executableTarget(
+            name: "DoLoopTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DoLoopTest.swift"]
+        ),
+
+        // Debug DO-LOOP Simple Target
+        .executableTarget(
+            name: "DebugDoLoop",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugDoLoop.swift"]
+        ),
+
+        // Debug Tokens Target
+        .executableTarget(
+            name: "DebugTokens",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugTokens.swift"]
+        ),
+
+        // Debug Test 6 Target
+        .executableTarget(
+            name: "DebugTest6",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugTest6.swift"]
+        ),
+
+        // Debug Assignment Target
+        .executableTarget(
+            name: "DebugAssignment",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugAssignment.swift"]
+        ),
+
+        // Debug Tokens 2 Target
+        .executableTarget(
+            name: "DebugTokens2",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugTokens2.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

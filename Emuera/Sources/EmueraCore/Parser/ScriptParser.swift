@@ -66,6 +66,10 @@ public class ScriptParser {
         case .variable:
             return try parseAssignmentOrExpression()
 
+        case .function:
+            // 函数名在语句开头可能是赋值（如 LIMIT = 5）或表达式
+            return try parseAssignmentOrExpression()
+
         case .keyword(let keyword):
             return try parseKeywordStatement(keyword)
 
@@ -198,6 +202,9 @@ public class ScriptParser {
 
         case "FOR":
             return try parseForStatement()
+
+        case "DO":
+            return try parseDoLoopStatement()
 
         case "SELECTCASE":
             return try parseSelectCaseStatement()
@@ -575,65 +582,112 @@ public class ScriptParser {
         let startPos = getCurrentPosition()
 
         // 优先检查数组赋值: A:0 = 3 或 A:0:1 = 3
+        // 也支持 function:0 = 3 (因为函数名可能被误识别为函数)
         // 必须在标签定义检查之前，因为两者都以 variable: 开头
         if currentIndex + 3 < tokens.count,
-           case .variable(let varName) = tokens[currentIndex].type,
            case .colon = tokens[currentIndex + 1].type {
 
-            // 收集数组索引: A:0:1:2...
-            var indices: [ExpressionNode] = []
-            var tempIndex = currentIndex + 2
+            var varName: String? = nil
 
-            // 收集所有索引（用冒号分隔）
-            while tempIndex < tokens.count {
-                // 从当前tempIndex开始，收集到下一个冒号或等号之前的内容
-                let startIndex = tempIndex
-                var endIndex = startIndex
-
-                collectLoop: while endIndex < tokens.count {
-                    let token = tokens[endIndex]
-                    switch token.type {
-                    case .colon, .operatorSymbol, .lineBreak:
-                        // 遇到冒号、等号或换行，停止收集
-                        break collectLoop
-                    default:
-                        endIndex += 1
-                    }
-                }
-
-                // 提取索引token
-                if endIndex > startIndex {
-                    let indexTokens = Array(tokens[startIndex..<endIndex])
-                    let parser = ExpressionParser()
-                    if let indexExpr = try? parser.parse(indexTokens) {
-                        indices.append(indexExpr)
-                    }
-                }
-
-                // 移动到下一个位置
-                tempIndex = endIndex
-
-                // 检查是否还有冒号（下一个索引）
-                if tempIndex < tokens.count,
-                   case .colon = tokens[tempIndex].type {
-                    tempIndex += 1  // 跳过冒号，继续下一个索引
-                } else {
-                    break  // 没有更多索引
-                }
+            switch tokens[currentIndex].type {
+            case .variable(let name):
+                varName = name
+            case .function(let name):
+                varName = name
+            default:
+                varName = nil
             }
 
-            // 检查是否以等号结束（赋值）
-            if tempIndex < tokens.count,
-               case .operatorSymbol(let op) = tokens[tempIndex].type,
-               op == .assign {
+            if let name = varName {
+                // 收集数组索引: A:0:1:2...
+                var indices: [ExpressionNode] = []
+                var tempIndex = currentIndex + 2
 
-                currentIndex = tempIndex + 1  // 跳过等号
+                // 收集所有索引（用冒号分隔）
+                while tempIndex < tokens.count {
+                    // 从当前tempIndex开始，收集到下一个冒号或等号之前的内容
+                    let startIndex = tempIndex
+                    var endIndex = startIndex
+
+                    collectLoop: while endIndex < tokens.count {
+                        let token = tokens[endIndex]
+                        switch token.type {
+                        case .colon, .operatorSymbol, .lineBreak:
+                            // 遇到冒号、等号或换行，停止收集
+                            break collectLoop
+                        default:
+                            endIndex += 1
+                        }
+                    }
+
+                    // 提取索引token
+                    if endIndex > startIndex {
+                        let indexTokens = Array(tokens[startIndex..<endIndex])
+                        let parser = ExpressionParser()
+                        if let indexExpr = try? parser.parse(indexTokens) {
+                            indices.append(indexExpr)
+                        }
+                    }
+
+                    // 移动到下一个位置
+                    tempIndex = endIndex
+
+                    // 检查是否还有冒号（下一个索引）
+                    if tempIndex < tokens.count,
+                       case .colon = tokens[tempIndex].type {
+                        tempIndex += 1  // 跳过冒号，继续下一个索引
+                    } else {
+                        break  // 没有更多索引
+                    }
+                }
+
+                // 检查是否以等号结束（赋值）
+                if tempIndex < tokens.count,
+                   case .operatorSymbol(let op) = tokens[tempIndex].type,
+                   op == .assign {
+
+                    currentIndex = tempIndex + 1  // 跳过等号
+                    let expr = try parseExpression()
+
+                    return ExpressionStatement(
+                        expression: .binary(
+                            op: .assign,
+                            left: .arrayAccess(base: name, indices: indices),
+                            right: expr
+                        ),
+                        position: startPos
+                    )
+                }
+            }
+        }
+
+        // 尝试解析为赋值: variable = expression
+        // 也支持 function = expression (因为函数名可能被误识别为函数，如 LIMIT = 5)
+        if currentIndex + 2 < tokens.count,
+           case .operatorSymbol(let op) = tokens[currentIndex + 1].type,
+           op == .assign {
+
+            var varName: String? = nil
+
+            // 检查是否是变量或函数（函数名在赋值上下文中应作为变量处理）
+            switch tokens[currentIndex].type {
+            case .variable(let name):
+                varName = name
+            case .function(let name):
+                varName = name
+            default:
+                varName = nil
+            }
+
+            if let name = varName {
+                currentIndex += 2  // 跳过变量和=
+
                 let expr = try parseExpression()
 
                 return ExpressionStatement(
                     expression: .binary(
                         op: .assign,
-                        left: .arrayAccess(base: varName, indices: indices),
+                        left: .variable(name),
                         right: expr
                     ),
                     position: startPos
@@ -641,74 +695,79 @@ public class ScriptParser {
             }
         }
 
-        // 尝试解析为赋值: variable = expression
-        if currentIndex + 2 < tokens.count,
-           case .variable(let varName) = tokens[currentIndex].type,
-           case .operatorSymbol(let op) = tokens[currentIndex + 1].type,
-           op == .assign {
-
-            currentIndex += 2  // 跳过变量和=
-
-            let expr = try parseExpression()
-
-            return ExpressionStatement(
-                expression: .binary(
-                    op: .assign,
-                    left: .variable(varName),
-                    right: expr
-                ),
-                position: startPos
-            )
-        }
-
         // 检查是否是标签定义: variable: (后面是换行，不是表达式)
+        // 也支持 function: (因为函数名可能被误识别为函数)
         // 只有当 variable: 后面不是有效的表达式/赋值时，才是标签
         if currentIndex + 1 < tokens.count,
-           case .variable(let varName) = tokens[currentIndex].type,
            case .colon = tokens[currentIndex + 1].type {
 
-            // 检查冒号后面的内容
-            let afterColonIndex = currentIndex + 2
-            if afterColonIndex >= tokens.count {
-                // 冒号后没有内容，是标签
-                currentIndex += 2
-                return LabelStatement(name: varName, position: startPos)
+            var varName: String? = nil
+
+            switch tokens[currentIndex].type {
+            case .variable(let name):
+                varName = name
+            case .function(let name):
+                varName = name
+            default:
+                varName = nil
             }
 
-            // 检查冒号后面是否是换行或空白（标签定义）
-            let nextToken = tokens[afterColonIndex]
-            switch nextToken.type {
-            case .lineBreak, .whitespace, .comment:
-                currentIndex += 2
-                return LabelStatement(name: varName, position: startPos)
-            default:
-                // 否则是数组访问，但上面的数组检查没匹配，说明格式不对
-                // 继续执行，让后面的表达式解析处理
-                break
+            if let name = varName {
+                // 检查冒号后面的内容
+                let afterColonIndex = currentIndex + 2
+                if afterColonIndex >= tokens.count {
+                    // 冒号后没有内容，是标签
+                    currentIndex += 2
+                    return LabelStatement(name: name, position: startPos)
+                }
+
+                // 检查冒号后面是否是换行或空白（标签定义）
+                let nextToken = tokens[afterColonIndex]
+                switch nextToken.type {
+                case .lineBreak, .whitespace, .comment:
+                    currentIndex += 2
+                    return LabelStatement(name: name, position: startPos)
+                default:
+                    // 否则是数组访问，但上面的数组检查没匹配，说明格式不对
+                    // 继续执行，让后面的表达式解析处理
+                    break
+                }
             }
         }
 
         // 检查是否是无冒号标签: variable 后面直接是换行
+        // 也支持 function 后面直接是换行
         // 这种情况在Emuera中是合法的标签定义
-        if currentIndex < tokens.count,
-           case .variable(let varName) = tokens[currentIndex].type {
+        if currentIndex < tokens.count {
+            var varName: String? = nil
 
-            // 检查下一个token
-            if currentIndex + 1 >= tokens.count {
-                // 文件末尾，是标签
-                currentIndex += 1
-                return LabelStatement(name: varName, position: startPos)
+            switch tokens[currentIndex].type {
+            case .variable(let name):
+                varName = name
+            case .function(let name):
+                varName = name
+            default:
+                varName = nil
             }
 
-            let nextToken = tokens[currentIndex + 1]
-            switch nextToken.type {
-            case .lineBreak, .whitespace, .comment:
-                // 后面是空白/换行，是标签
-                currentIndex += 1
-                return LabelStatement(name: varName, position: startPos)
-            default:
-                // 否则是表达式
-                break
+            if let name = varName {
+                // 检查下一个token
+                if currentIndex + 1 >= tokens.count {
+                    // 文件末尾，是标签
+                    currentIndex += 1
+                    return LabelStatement(name: name, position: startPos)
+                }
+
+                let nextToken = tokens[currentIndex + 1]
+                switch nextToken.type {
+                case .lineBreak, .whitespace, .comment:
+                    // 后面是空白/换行，是标签
+                    currentIndex += 1
+                    return LabelStatement(name: name, position: startPos)
+                default:
+                    // 否则是表达式
+                    break
+                }
             }
         }
 
@@ -1878,6 +1937,57 @@ public class ScriptParser {
         }
 
         return values
+    }
+
+    // MARK: - DO-LOOP语句解析 (Phase 3)
+
+    /// 解析DO-LOOP循环语句
+    /// DO
+    ///     statements
+    /// LOOP [WHILE condition | UNTIL condition]
+    private func parseDoLoopStatement() throws -> DoLoopStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过DO
+        currentIndex += 1
+
+        // 解析循环体
+        let body = try parseBlock(until: ["LOOP"])
+
+        // 检查LOOP关键字
+        guard currentIndex < tokens.count,
+              case .keyword(let k) = tokens[currentIndex].type,
+              k.uppercased() == "LOOP" else {
+            throw EmueraError.scriptParseError(
+                message: "DO语句缺少LOOP",
+                position: getCurrentPosition()
+            )
+        }
+
+        currentIndex += 1  // 跳过LOOP
+
+        // 检查是否有WHILE或UNTIL条件
+        skipWhitespaceAndNewlines()
+
+        var condition: ExpressionNode? = nil
+        var isWhile: Bool? = nil
+
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type {
+            let upper = k.uppercased()
+            if upper == "WHILE" || upper == "UNTIL" {
+                currentIndex += 1  // 跳过WHILE/UNTIL
+                condition = try parseExpression()
+                isWhile = (upper == "WHILE")
+            }
+        }
+
+        return DoLoopStatement(
+            body: body,
+            condition: condition,
+            isWhile: isWhile,
+            position: startPos
+        )
     }
 
     // MARK: - PRINTDATA/DATALIST语句解析 (Phase 3)

@@ -1275,4 +1275,45 @@ public class StatementExecutor: StatementVisitor {
         // 执行选中的DATALIST块
         try selectedList.body.accept(visitor: self)
     }
+
+    /// 访问DO-LOOP循环语句
+    /// DO
+    ///     statements
+    /// LOOP [WHILE condition | UNTIL condition]
+    public func visitDoLoopStatement(_ statement: DoLoopStatement) throws {
+        // 循环执行
+        while true {
+            // 执行循环体
+            try statement.body.accept(visitor: self)
+
+            // 检查是否需要跳出循环
+            if context.shouldBreak {
+                context.shouldBreak = false
+                break
+            }
+
+            // 检查是否需要继续（跳过本次剩余部分，直接进入下一次迭代）
+            if context.shouldContinue {
+                context.shouldContinue = false
+                continue  // 继续下一次迭代
+            }
+
+            // 检查循环条件（如果有）
+            if let condition = statement.condition,
+               let isWhile = statement.isWhile {
+                let result = try evaluateExpression(condition)
+
+                // LOOP WHILE: 条件为true时继续
+                // LOOP UNTIL: 条件为false时继续
+                let shouldContinue = isWhile ? toBool(result) : !toBool(result)
+
+                if !shouldContinue {
+                    break
+                }
+            } else {
+                // 无条件的DO-LOOP，需要BREAK才能退出
+                // 这里我们不自动退出，继续等待BREAK
+            }
+        }
+    }
 }

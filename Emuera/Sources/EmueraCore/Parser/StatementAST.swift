@@ -120,6 +120,30 @@ public class ForStatement: StatementNode {
     }
 }
 
+/// DO-LOOP循环语句
+/// DO
+///     statements
+/// LOOP [WHILE condition | UNTIL condition]
+public class DoLoopStatement: StatementNode {
+    public let body: StatementNode
+    public let condition: ExpressionNode?  // WHILE或UNTIL条件
+    public let isWhile: Bool?              // true: LOOP WHILE, false: LOOP UNTIL, nil: 无条件
+
+    public init(body: StatementNode,
+                condition: ExpressionNode? = nil,
+                isWhile: Bool? = nil,
+                position: ScriptPosition? = nil) {
+        self.body = body
+        self.condition = condition
+        self.isWhile = isWhile
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitDoLoopStatement(self)
+    }
+}
+
 /// SELECTCASE语句
 public class SelectCaseStatement: StatementNode {
     public let test: ExpressionNode
@@ -471,6 +495,7 @@ public protocol StatementVisitor {
     func visitIfStatement(_ statement: IfStatement) throws
     func visitWhileStatement(_ statement: WhileStatement) throws
     func visitForStatement(_ statement: ForStatement) throws
+    func visitDoLoopStatement(_ statement: DoLoopStatement) throws
     func visitSelectCaseStatement(_ statement: SelectCaseStatement) throws
     func visitGotoStatement(_ statement: GotoStatement) throws
     func visitCallStatement(_ statement: CallStatement) throws

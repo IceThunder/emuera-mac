@@ -85,7 +85,12 @@
       "Bash(.build/debug/QuickTryCatch:*)",
       "Bash(./.build/debug/ParseOnlyTest:*)",
       "Bash(.build/debug/ParseOnlyTest:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(./.build/debug/DebugDoLoop:*)",
+      "Bash(.build/debug/DoLoopTest:*)",
+      "Bash(.build/debug/DebugTokens2:*)",
+      "Bash(.build/debug/DebugTest6:*)",
+      "Bash(.build/debug/DebugAssignment:*)"
     ]
   }
 }

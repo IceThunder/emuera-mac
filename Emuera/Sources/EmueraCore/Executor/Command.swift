@@ -151,10 +151,6 @@ public enum CommandType: String, CaseIterable {
     case DATAFORM       // 格式化数据
     case STRDATA        // 字符串数据
 
-    // MARK: - DO-LOOP循环
-    case DO             // DO开始
-    case LOOP           // LOOP结束
-
     // MARK: - 其他特殊
     case OUTPUTLOG      // 输出日志
     case SAVEDATA       // 保存数据

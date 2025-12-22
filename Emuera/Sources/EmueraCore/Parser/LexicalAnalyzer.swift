@@ -195,6 +195,7 @@ public struct LexicalAnalyzer {
                 else if ["IF", "ELSE", "ELSEIF", "ENDIF",
                          "WHILE", "ENDWHILE",
                          "FOR", "ENDFOR",
+                         "DO", "LOOP", "UNTIL",
                          "SELECTCASE", "CASE", "CASEELSE", "ENDSELECT",
                          "BREAK", "CONTINUE", "RETURN", "RESTART", "RETURNF",
                          "GOTO", "CALL", "JUMP", "TRYCALL", "TRYCALLFORM",
