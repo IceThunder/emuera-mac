@@ -26,7 +26,7 @@
 
 ### 阶段 1: 语法扩展 (7天)
 
-#### 1.1 SELECTCASE 语句 (2天)
+#### 1.1 SELECTCASE 语句 (2天) ⏳
 **目标**: 实现完整的多分支选择结构
 
 ```swift
@@ -54,23 +54,35 @@ ENDSELECT
 - `EmueraCore/Parser/StatementAST.swift`
 - `EmueraCore/Executor/StatementExecutor.swift`
 
-#### 1.2 TRY/CATCH 异常处理 (2天)
+**状态**: ⏳ 待开始
+
+#### 1.2 TRY/CATCH 异常处理 (2天) ✅
 **目标**: 实现错误捕获和处理机制
 
 ```swift
-// 需要支持的语法
+// 支持的语法
 TRY
     CALL 可能失败的函数
 CATCH
     PRINT "发生错误"
 ENDTRY
+
+TRYGOTO @Target CATCH @Error
+TRYCALL @Function CATCH @Error
+TRYJUMP Target, arg1, arg2 CATCH @Error
 ```
 
 **实现步骤**:
-- [ ] 添加异常类型和错误处理机制
-- [ ] 在 `ScriptParser.swift` 添加 `parseTryCatch()`
-- [ ] 在 `StatementExecutor.swift` 添加异常捕获逻辑
-- [ ] 实现错误信息传递
+- ✅ 添加异常类型和错误处理机制
+- ✅ 在 `ScriptParser.swift` 添加 `parseTryCatch()`
+- ✅ 在 `StatementExecutor.swift` 添加异常捕获逻辑
+- ✅ 实现错误信息传递
+- ✅ 支持TRYGOTO/TRYCALL/TRYJUMP
+- ✅ 支持嵌套TRY/CATCH
+- ✅ 异常向上传播
+
+**测试状态**: ✅ 12/12 通过
+**完成日期**: 2025-12-23
 
 #### 1.3 PRINTDATA/DATALIST (1天)
 **目标**: 随机选择输出内容
@@ -433,10 +445,10 @@ TRAIN
 ## 📅 Phase 3 时间线
 
 ### 第 1-2 周: 语法扩展
-- Day 1-2: SELECTCASE
-- Day 3-4: TRY/CATCH
-- Day 5: PRINTDATA
-- Day 6-7: 其他命令
+- Day 1-2: SELECTCASE ⏳
+- Day 3-4: TRY/CATCH ✅ (2025-12-23 完成)
+- Day 5: PRINTDATA ⏳
+- Day 6-7: 其他命令 ⏳
 
 ### 第 3-4 周: 保存/加载系统
 - Day 8-10: 变量持久化
@@ -471,10 +483,10 @@ TRAIN
 ## 🎯 Phase 3 里程碑
 
 ### M1: 语法完整 (第2周)
-- ✅ SELECTCASE 支持
-- ✅ TRY/CATCH 异常处理
-- ✅ PRINTDATA 数据块
-- ✅ 所有基础命令扩展
+- ⏳ SELECTCASE 支持
+- ✅ TRY/CATCH 异常处理 (2025-12-23)
+- ⏳ PRINTDATA 数据块
+- ⏳ 所有基础命令扩展
 
 ### M2: 数据持久化 (第4周)
 - ✅ SAVE/LOAD 系统
@@ -518,10 +530,12 @@ TRAIN
 
 ### 功能完成度
 ```
-Phase 2: 75%  ✅ 已完成
-Phase 3: 95%  🎯 目标
+Phase 2: 100% ✅ 已完成 (2025-12-20)
+Phase 3: 25%  ⏳ 进行中 (TRY/CATCH完成)
 完整版: 100%  🏁 最终目标
 ```
+
+**当前进度**: 78% (100% × 0.75 + 25% × 0.25)
 
 ### 代码指标
 - **总代码量**: ~25,000 行
@@ -540,17 +554,24 @@ Phase 3: 95%  🎯 目标
 ## 🚀 下一步行动
 
 ### 立即开始 (P0)
-1. **SELECTCASE 语法解析** - 2天
-2. **SAVE/LOAD 基础架构** - 3天
+1. **SELECTCASE 语法解析** - 2天 ⏳
+2. **SAVE/LOAD 基础架构** - 3天 ⏳
 
-### 本周目标
-- 完成 SELECTCASE 实现和测试
-- 开始保存系统设计
-- 更新 README 反映 Phase 3 计划
+### 本周目标 (12/23-12/29)
+- ⏳ 完成 SELECTCASE 实现和测试
+- ⏳ 开始保存系统设计
+- ⏳ 更新 README 反映最新进度
+
+### 优先级排序
+1. **SELECTCASE** - 语法扩展核心
+2. **SAVE/LOAD** - 数据持久化基础
+3. **PRINTDATA** - 随机文本输出
+4. **其他命令扩展** - 完善语法
 
 ---
 
-**文档版本**: v1.0
+**文档版本**: v1.1
 **创建日期**: 2025-12-21
+**最后更新**: 2025-12-23 (TRY/CATCH完成)
 **作者**: IceThunder + Claude Code AI
-**状态**: 规划中
+**状态**: 进行中 (已完成1/7阶段)

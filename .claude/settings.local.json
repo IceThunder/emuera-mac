@@ -77,7 +77,15 @@
       "Bash(.build/debug/DebugConstantsExec:*)",
       "Bash(.build/debug/DebugConstantsExec2:*)",
       "Bash(.build/debug/DebugArraySort:*)",
-      "Bash(.build/debug/DebugPrintTokens:*)"
+      "Bash(.build/debug/DebugPrintTokens:*)",
+      "Bash(.build/debug/TryCatchTest:*)",
+      "Bash(.build/debug/DebugTryCatchParse:*)",
+      "Bash(.build/debug/DebugTryGotoParse:*)",
+      "Bash(/usr/bin/time -l .build/debug/TryCatchTest)",
+      "Bash(.build/debug/QuickTryCatch:*)",
+      "Bash(./.build/debug/ParseOnlyTest:*)",
+      "Bash(.build/debug/ParseOnlyTest:*)",
+      "WebSearch"
     ]
   }
 }

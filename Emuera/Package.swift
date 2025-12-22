@@ -350,6 +350,62 @@ let package = Package(
             sources: ["DebugPersist.swift"]
         ),
 
+        // Try/CATCH Test Target (Phase 3)
+        .executableTarget(
+            name: "TryCatchTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["TryCatchTest.swift"]
+        ),
+
+        // Debug TRY/CATCH Parsing
+        .executableTarget(
+            name: "DebugTryCatchParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugTryCatchParse.swift"]
+        ),
+
+        // Debug TRYGOTO Parsing
+        .executableTarget(
+            name: "DebugTryGotoParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugTryGotoParse.swift"]
+        ),
+
+        // Quick Try/Catch Test
+        .executableTarget(
+            name: "QuickTryCatch",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["QuickTryCatch.swift"]
+        ),
+
+        // Parse Only Test
+        .executableTarget(
+            name: "ParseOnlyTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["ParseOnlyTest.swift"]
+        ),
+
+        // Debug Simple Test
+        .executableTarget(
+            name: "DebugSimple",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugSimple.swift"]
+        ),
+
+        // Debug TRYCALL Parsing
+        .executableTarget(
+            name: "DebugTryCallParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Debug",
+            sources: ["DebugTryCallParse.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

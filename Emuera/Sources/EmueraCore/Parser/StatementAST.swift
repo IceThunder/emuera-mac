@@ -335,6 +335,100 @@ public class PersistStatement: StatementNode {
     }
 }
 
+// MARK: - TRY/CATCH异常处理 (Phase 3)
+
+/// TRY/CATCH异常处理语句
+/// TRY
+///   statements
+/// CATCH
+///   statements
+/// ENDTRY
+public class TryCatchStatement: StatementNode {
+    public let tryBlock: StatementNode
+    public let catchBlock: StatementNode?
+    public let catchLabel: String?  // CATCH标签，用于TRYCALL等
+
+    public init(tryBlock: StatementNode,
+                catchBlock: StatementNode? = nil,
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.tryBlock = tryBlock
+        self.catchBlock = catchBlock
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryCatchStatement(self)
+    }
+}
+
+/// TRYCALL语句 - 带异常处理的函数调用
+public class TryCallStatement: StatementNode {
+    public let functionName: String
+    public let arguments: [ExpressionNode]
+    public let catchLabel: String?  // 异常时跳转的标签
+
+    public init(functionName: String,
+                arguments: [ExpressionNode] = [],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.functionName = functionName
+        self.arguments = arguments
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryCallStatement(self)
+    }
+}
+
+/// TRYJUMP语句 - 带异常处理的跳转
+public class TryJumpStatement: StatementNode {
+    public let target: String
+    public let arguments: [ExpressionNode]
+    public let catchLabel: String?
+
+    public init(target: String,
+                arguments: [ExpressionNode] = [],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.target = target
+        self.arguments = arguments
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryJumpStatement(self)
+    }
+}
+
+/// TRYGOTO语句 - 带异常处理的GOTO
+public class TryGotoStatement: StatementNode {
+    public let label: String
+    public let catchLabel: String?
+
+    public init(label: String,
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.label = label
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryGotoStatement(self)
+    }
+}
+
+/// 异常处理结果 - 用于在执行时传递异常信息
+public struct ExceptionContext {
+    public let error: EmueraError
+    public let catchLabel: String
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -357,6 +451,11 @@ public protocol StatementVisitor {
     func visitCommandStatement(_ statement: CommandStatement) throws
     func visitResetStatement(_ statement: ResetStatement) throws
     func visitPersistStatement(_ statement: PersistStatement) throws
+    // Phase 3: TRY/CATCH异常处理
+    func visitTryCatchStatement(_ statement: TryCatchStatement) throws
+    func visitTryCallStatement(_ statement: TryCallStatement) throws
+    func visitTryJumpStatement(_ statement: TryJumpStatement) throws
+    func visitTryGotoStatement(_ statement: TryGotoStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

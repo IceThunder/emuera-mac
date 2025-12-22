@@ -42,6 +42,17 @@ public enum TokenType: CustomStringConvertible {
     case caseElse
     case endSelect
 
+    // TRY/CATCH exception handling (Phase 3)
+    case tryKeyword
+    case catchKeyword
+    case endTry
+    case tryCall
+    case tryJump
+    case tryGoto
+    case tryCallList
+    case tryJumpList
+    case tryGotoList
+
     // Special
     case lineBreak
     case comment
@@ -181,6 +192,15 @@ public enum TokenType: CustomStringConvertible {
         case .caseKeyword: return "caseKeyword"
         case .caseElse: return "caseElse"
         case .endSelect: return "endSelect"
+        case .tryKeyword: return "tryKeyword"
+        case .catchKeyword: return "catchKeyword"
+        case .endTry: return "endTry"
+        case .tryCall: return "tryCall"
+        case .tryJump: return "tryJump"
+        case .tryGoto: return "tryGoto"
+        case .tryCallList: return "tryCallList"
+        case .tryJumpList: return "tryJumpList"
+        case .tryGotoList: return "tryGotoList"
         case .lineBreak: return "lineBreak"
         case .comment: return "comment"
         case .whitespace: return "whitespace"

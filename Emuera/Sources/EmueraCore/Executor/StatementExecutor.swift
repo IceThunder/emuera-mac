@@ -24,6 +24,10 @@ public class ExecutionContext {
     public var labels: [String: Int]
     public var persistEnabled: Bool
 
+    // Phase 3: 异常处理相关
+    public var currentCatchLabel: String?  // 当前CATCH标签
+    public var shouldCatch: Bool           // 是否应该捕获异常
+
     public init() {
         variables = [:]
         output = []
@@ -35,6 +39,8 @@ public class ExecutionContext {
         callStack = []
         labels = [:]
         persistEnabled = false
+        currentCatchLabel = nil
+        shouldCatch = false
     }
 
     public func copy() -> ExecutionContext {
@@ -45,6 +51,8 @@ public class ExecutionContext {
         newContext.callStack = callStack
         newContext.labels = labels
         newContext.persistEnabled = persistEnabled
+        newContext.currentCatchLabel = currentCatchLabel
+        newContext.shouldCatch = shouldCatch
         return newContext
     }
 
@@ -112,6 +120,11 @@ public class StatementExecutor: StatementVisitor {
         }
 
         return self.context.output
+    }
+
+    /// Debug: Get the current context after execution (for debugging labels/functions)
+    public func getContext() -> ExecutionContext {
+        return self.context
     }
 
     // MARK: - StatementVisitor 协议实现
@@ -957,7 +970,6 @@ public class StatementExecutor: StatementVisitor {
         // 创建新的执行上下文
         let oldContext = context
         let newContext = ExecutionContext()
-        newContext.functionRegistry = oldContext.functionRegistry
         newContext.callStack = oldContext.callStack
 
         // 设置参数
@@ -1035,5 +1047,189 @@ public class StatementExecutor: StatementVisitor {
             return .string("")
         }
         return .integer(0)
+    }
+
+    // MARK: - TRY/CATCH异常处理 (Phase 3)
+
+    /// 访问TRY/CATCH语句
+    public func visitTryCatchStatement(_ statement: TryCatchStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 执行TRY块
+            try statement.tryBlock.accept(visitor: self)
+        } catch {
+            // 发生异常时执行CATCH块
+            if let catchBlock = statement.catchBlock {
+                // 设置异常处理上下文
+                context.currentCatchLabel = statement.catchLabel
+                context.shouldCatch = true
+
+                // 执行CATCH块
+                try catchBlock.accept(visitor: self)
+            }
+            // 如果没有CATCH块，异常会向上传播
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYCALL语句
+    public func visitTryCallStatement(_ statement: TryCallStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 尝试执行函数调用
+            let evaluatedArgs = try statement.arguments.map { try evaluateExpression($0) }
+
+            // 首先尝试内置函数
+            if let builtInResult = try? BuiltInFunctions.execute(
+                name: statement.functionName,
+                arguments: evaluatedArgs,
+                context: context
+            ) {
+                context.lastResult = builtInResult
+            } else if let functionDefinition = context.functionRegistry.resolveFunction(statement.functionName) {
+                // 执行用户定义函数
+                let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                context.lastResult = result
+            } else {
+                // 函数未找到，抛出异常
+                throw EmueraError.functionNotFound(name: statement.functionName)
+            }
+        } catch {
+            // 发生异常时跳转到CATCH标签
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            } else {
+                // 没有CATCH标签或标签未找到，异常向上传播
+                throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYJUMP语句
+    public func visitTryJumpStatement(_ statement: TryJumpStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 尝试执行JUMP
+            if let targetIndex = context.labels[statement.target] {
+                // 设置参数（如果有）
+                if !statement.arguments.isEmpty {
+                    for (index, arg) in statement.arguments.enumerated() {
+                        let value = try evaluateExpression(arg)
+                        context.setVariable("ARG:\(index)", value: value)
+                    }
+                }
+
+                // 保存当前调用栈
+                context.callStack.append("\(currentStatementIndex)")
+                currentStatementIndex = targetIndex
+
+                // 执行目标函数
+                while currentStatementIndex < statements.count {
+                    let stmt = statements[currentStatementIndex]
+                    try stmt.accept(visitor: self)
+
+                    if context.returnValue != nil {
+                        // 获取返回地址
+                        let returnAddress = context.callStack.removeLast()
+                        if let callerIndex = Int(returnAddress) {
+                            currentStatementIndex = callerIndex
+                        }
+                        return
+                    }
+
+                    if context.shouldQuit {
+                        context.callStack.removeLast()
+                        return
+                    }
+
+                    currentStatementIndex += 1
+                }
+
+                context.callStack.removeLast()
+            } else {
+                throw EmueraError.runtimeError(
+                    message: "标签未找到: \\(statement.target)",
+                    position: statement.position
+                )
+            }
+        } catch {
+            // 发生异常时跳转到CATCH标签
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            } else {
+                // 没有CATCH标签或标签未找到，异常向上传播
+                throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYGOTO语句
+    public func visitTryGotoStatement(_ statement: TryGotoStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 尝试执行GOTO
+            if let targetIndex = context.labels[statement.label] {
+                currentStatementIndex = targetIndex
+            } else {
+                throw EmueraError.runtimeError(
+                    message: "标签未找到: \\(statement.label)",
+                    position: statement.position
+                )
+            }
+        } catch {
+            // 发生异常时跳转到CATCH标签
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            } else {
+                // 没有CATCH标签或标签未找到，异常向上传播
+                throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
     }
 }

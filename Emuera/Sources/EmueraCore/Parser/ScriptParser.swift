@@ -79,12 +79,21 @@ public class ScriptParser {
         case .label:
             // 检查是否是函数定义 (@函数名)
             if case .label(let name) = token.type, name.hasPrefix("@") {
-                // 检查下一个token是否是逗号（函数参数）或换行（无参数函数）
+                // 检查下一个token
                 if currentIndex + 1 < tokens.count {
                     let nextToken = tokens[currentIndex + 1]
                     switch nextToken.type {
-                    case .comma, .lineBreak:
+                    case .comma:
+                        // @Func, param1, param2 ... 是函数定义
                         return try parseFunctionDefinition()
+                    case .lineBreak:
+                        // @Func\n 后面跟 #DIM 或 RETURN 等是函数定义
+                        // @Label\n 后面跟 PRINT/GOTO/TRYGOTO 等是标签
+                        // 需要向前看更多token来判断
+                        if let remainingTokens = getTokensAfter(currentIndex + 2),
+                           isFunctionDefinitionStart(remainingTokens) {
+                            return try parseFunctionDefinition()
+                        }
                     default:
                         break
                     }
@@ -216,6 +225,22 @@ public class ScriptParser {
 
         case "GOTO":
             return try parseGotoStatement()
+
+        case "TRY":
+            return try parseTryCatchStatement()
+
+        case "TRYJUMP":
+            return try parseTryJumpStatement()
+
+        case "TRYGOTO":
+            return try parseTryGotoStatement()
+
+        case "CATCH", "ENDTRY", "TRYJUMPLIST", "TRYGOTOLIST":
+            // 这些应该在TRY/CATCH解析时处理，不应该单独出现
+            throw EmueraError.scriptParseError(
+                message: "未匹配的TRY/CATCH关键字: \\(keyword)",
+                position: getCurrentPosition()
+            )
 
         case "ELSE", "ENDIF", "ENDWHILE", "ENDFOR", "CASE", "CASEELSE", "ENDSELECT":
             // 这些应该在解析对应结构时处理，不应该单独出现
@@ -503,7 +528,17 @@ public class ScriptParser {
     private func parseCallStatement() throws -> StatementNode {
         let startPos = getCurrentPosition()
 
-        // 跳过CALL
+        // 检查是CALL还是TRYCALL
+        let isTryCall: Bool
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type,
+           k.uppercased() == "TRYCALL" {
+            isTryCall = true
+        } else {
+            isTryCall = false
+        }
+
+        // 跳过CALL/TRYCALL
         currentIndex += 1
 
         // 跳过空白
@@ -517,19 +552,19 @@ public class ScriptParser {
             )
         }
 
-        var target: String
+        var functionName: String
         var isFunctionCall = false
 
         if case .variable(let name) = tokens[currentIndex].type {
-            target = name
+            functionName = name
             currentIndex += 1
         } else if case .label(let name) = tokens[currentIndex].type {
-            target = name
+            functionName = name
             currentIndex += 1
             // @开头的标签是函数调用
-            if target.hasPrefix("@") {
+            if functionName.hasPrefix("@") {
                 isFunctionCall = true
-                target = String(target.dropFirst()) // 移除@前缀
+                functionName = String(functionName.dropFirst()) // 移除@前缀
             }
         } else {
             throw EmueraError.scriptParseError(
@@ -541,16 +576,58 @@ public class ScriptParser {
         // 解析参数（可选）
         let args = try parseArguments()
 
+        // 对于TRYCALL，检查是否有CATCH标签
+        if isTryCall {
+            skipWhitespaceAndNewlines()
+            var catchLabel: String? = nil
+
+            if currentIndex < tokens.count,
+               case .keyword(let k) = tokens[currentIndex].type,
+               k.uppercased() == "CATCH" {
+                currentIndex += 1  // 跳过CATCH
+
+                // 获取标签名
+                skipWhitespaceAndNewlines()
+                if currentIndex < tokens.count,
+                   case .label(let name) = tokens[currentIndex].type {
+                    catchLabel = name  // 保留@前缀
+                    currentIndex += 1
+                } else if currentIndex < tokens.count,
+                          case .variable(let name) = tokens[currentIndex].type {
+                    catchLabel = name
+                    currentIndex += 1
+                }
+            }
+
+            // 如果有CATCH标签，返回TryCallStatement
+            if let catchLabel = catchLabel {
+                return TryCallStatement(
+                    functionName: functionName,
+                    arguments: args,
+                    catchLabel: catchLabel,
+                    position: startPos
+                )
+            }
+
+            // 没有CATCH标签，作为tryMode的FunctionCallStatement
+            return FunctionCallStatement(
+                functionName: functionName,
+                arguments: args,
+                tryMode: true,
+                position: startPos
+            )
+        }
+
         // 根据是否是函数调用返回不同类型的语句
         if isFunctionCall {
             return FunctionCallStatement(
-                functionName: target,
+                functionName: functionName,
                 arguments: args,
                 tryMode: false,
                 position: startPos
             )
         } else {
-            return CallStatement(target: target, arguments: args, position: startPos)
+            return CallStatement(target: functionName, arguments: args, position: startPos)
         }
     }
 
@@ -878,6 +955,11 @@ public class ScriptParser {
 
             case .function:
                 // 函数名
+                exprTokens.append(token)
+                currentIndex += 1
+
+            case .label:
+                // 标签（用于函数调用、跳转等）
                 exprTokens.append(token)
                 currentIndex += 1
 
@@ -1377,7 +1459,6 @@ public class ScriptParser {
 
         let funcName = String(name.dropFirst())  // 移除@前缀
         currentIndex += 1
-        print("[DEBUG] parseFunctionDefinition '\(funcName)' start: token \(debugStartIndex), now at \(currentIndex)")
 
         // 解析参数列表
         var parameters: [FunctionParameter] = []
@@ -1492,5 +1573,319 @@ public class ScriptParser {
 
         // 返回函数定义语句（用于后续注册到执行器）
         return FunctionDefinitionStatement(definition: definition, position: startPos)
+    }
+
+    // MARK: - TRY/CATCH异常处理解析 (Phase 3)
+
+    /// 解析TRY/CATCH异常处理语句
+    /// TRY
+    ///   statements
+    /// CATCH
+    ///   statements
+    /// ENDTRY
+    private func parseTryCatchStatement() throws -> TryCatchStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过TRY
+        currentIndex += 1
+
+        // 解析TRY块
+        let tryBlock = try parseBlock(until: ["CATCH", "ENDTRY"])
+
+        var catchBlock: StatementNode? = nil
+        var catchLabel: String? = nil
+
+        // 检查是否有CATCH
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type,
+           k.uppercased() == "CATCH" {
+            currentIndex += 1  // 跳过CATCH
+
+            // 检查CATCH后面是否有标签名（可选）
+            skipWhitespaceAndNewlines()
+            if currentIndex < tokens.count,
+               case .label(let name) = tokens[currentIndex].type {
+                catchLabel = name  // 保留@前缀
+                currentIndex += 1
+            }
+
+            // 解析CATCH块
+            catchBlock = try parseBlock(until: ["ENDTRY"])
+        }
+
+        // 消耗ENDTRY
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type,
+           k.uppercased() == "ENDTRY" {
+            currentIndex += 1
+        } else {
+            throw EmueraError.scriptParseError(
+                message: "TRY语句缺少ENDTRY",
+                position: getCurrentPosition()
+            )
+        }
+
+        return TryCatchStatement(
+            tryBlock: tryBlock,
+            catchBlock: catchBlock,
+            catchLabel: catchLabel,
+            position: startPos
+        )
+    }
+
+    /// 解析TRYJUMP语句
+    /// TRYJUMP target, arg1, arg2... CATCH label
+    private func parseTryJumpStatement() throws -> TryJumpStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过TRYJUMP
+        currentIndex += 1
+
+        // 解析参数列表
+        let arguments = try parseArgumentList()
+
+        // 检查是否有CATCH标签
+        var catchLabel: String? = nil
+        skipWhitespaceAndNewlines()
+
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type,
+           k.uppercased() == "CATCH" {
+            currentIndex += 1  // 跳过CATCH
+
+            // 获取标签名
+            skipWhitespaceAndNewlines()
+            if currentIndex < tokens.count,
+               case .label(let name) = tokens[currentIndex].type {
+                catchLabel = name  // 保留@前缀
+                currentIndex += 1
+            } else if currentIndex < tokens.count,
+                      case .variable(let name) = tokens[currentIndex].type {
+                catchLabel = name
+                currentIndex += 1
+            }
+        }
+
+        // 提取目标和参数
+        guard !arguments.isEmpty else {
+            throw EmueraError.scriptParseError(
+                message: "TRYJUMP需要目标参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第一个参数是目标
+        let targetExpr = arguments[0]
+        let target: String
+
+        if case .variable(let name) = targetExpr {
+            target = name
+        } else if case .string(let name) = targetExpr {
+            target = name
+        } else {
+            throw EmueraError.scriptParseError(
+                message: "TRYJUMP目标必须是变量或字符串",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 剩余参数
+        let remainingArgs = Array(arguments.dropFirst())
+
+        return TryJumpStatement(
+            target: target,
+            arguments: remainingArgs,
+            catchLabel: catchLabel,
+            position: startPos
+        )
+    }
+
+    /// 解析TRYGOTO语句
+    /// TRYGOTO label CATCH label
+    private func parseTryGotoStatement() throws -> TryGotoStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过TRYGOTO
+        currentIndex += 1
+
+        // 跳过空白
+        skipWhitespaceAndNewlines()
+
+        // 获取目标标签
+        guard currentIndex < tokens.count else {
+            throw EmueraError.scriptParseError(
+                message: "TRYGOTO需要标签名",
+                position: getCurrentPosition()
+            )
+        }
+
+        let label: String
+        switch tokens[currentIndex].type {
+        case .label(let name):
+            label = name  // 保留@前缀
+            currentIndex += 1
+        case .variable(let name):
+            label = name
+            currentIndex += 1
+        default:
+            throw EmueraError.scriptParseError(
+                message: "TRYGOTO后需要标签名",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 检查是否有CATCH标签
+        var catchLabel: String? = nil
+        skipWhitespaceAndNewlines()
+
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type,
+           k.uppercased() == "CATCH" {
+            currentIndex += 1  // 跳过CATCH
+
+            // 获取标签名
+            skipWhitespaceAndNewlines()
+            if currentIndex < tokens.count,
+               case .label(let name) = tokens[currentIndex].type {
+                catchLabel = name  // 保留@前缀
+                currentIndex += 1
+            } else if currentIndex < tokens.count,
+                      case .variable(let name) = tokens[currentIndex].type {
+                catchLabel = name
+                currentIndex += 1
+            }
+        }
+
+        return TryGotoStatement(
+            label: label,
+            catchLabel: catchLabel,
+            position: startPos
+        )
+    }
+
+    // MARK: - 辅助方法
+
+    /// 获取指定索引之后的token数组
+    private func getTokensAfter(_ index: Int) -> [TokenType.Token]? {
+        guard index < tokens.count else { return nil }
+        return Array(tokens[index...])
+    }
+
+    /// 判断token序列是否是函数定义的开始
+    /// 函数定义特征: 以 #DIM, #FUNCTION, RETURN, RETURNF, 变量赋值等开始
+    /// 标签定义特征: 以 PRINT, IF, WHILE, FOR, GOTO, CALL, TRYGOTO 等语句开始
+    private func isFunctionDefinitionStart(_ remainingTokens: [TokenType.Token]) -> Bool {
+        guard let firstToken = remainingTokens.first else { return false }
+
+        // 跳过空白和换行
+        var index = 0
+        while index < remainingTokens.count {
+            let token = remainingTokens[index]
+            switch token.type {
+            case .whitespace, .lineBreak, .comment:
+                index += 1
+                continue
+            default:
+                break
+            }
+            break
+        }
+
+        guard index < remainingTokens.count else { return false }
+        let firstNonWhitespace = remainingTokens[index]
+
+        // 检查是否是函数相关的指令或语句
+        switch firstNonWhitespace.type {
+        case .directive(let dir):
+            // #DIM, #FUNCTION 等指令
+            let upper = dir.uppercased()
+            return upper.hasPrefix("#DIM") || upper.hasPrefix("#FUNCTION") || upper == "#FUNCTIONS"
+
+        case .keyword(let keyword):
+            let upper = keyword.uppercased()
+            // 函数中常见的返回语句
+            return upper == "RETURN" || upper == "RETURNF" || upper == "RESTART"
+
+        case .variable:
+            // 变量赋值: VAR = value
+            // 检查下一个token是否是赋值操作符
+            if index + 1 < remainingTokens.count {
+                let nextToken = remainingTokens[index + 1]
+                if case .operatorSymbol(let op) = nextToken.type, op == .assign {
+                    return true
+                }
+            }
+            return false
+
+        case .command(let cmd):
+            // 检查命令类型
+            let upper = cmd.uppercased()
+
+            // 明确的标签起始命令（总是标签）
+            let labelStartCommands: Set<String> = [
+                "PRINT", "PRINTL", "PRINTW", "PRINTC", "PRINTLC",
+                "PRINTFORM", "PRINTFORML", "PRINTFORMW",
+                "INPUT", "INPUTS", "WAIT", "WAITANYKEY",
+                "IF", "WHILE", "FOR", "REPEAT",
+                "GOTO", "CALL", "TRYCALL", "TRYGOTO", "TRYJUMP",
+                "TRY", "BREAK", "CONTINUE",
+                "DRAWLINE", "BAR", "BARL",
+                "QUIT", "RESET", "PERSIST",
+                "DEBUGPRINT", "DEBUGPRINTL",
+                "THROW", "ASSERT"
+            ]
+
+            // 模糊命令：需要看后续内容来判断是标签还是函数
+            let ambiguousCommands: Set<String> = [
+                "PRINT", "PRINTL", "PRINTW", "PRINTFORM", "PRINTFORML", "PRINTFORMW"
+            ]
+
+            if ambiguousCommands.contains(upper) {
+                // PRINTL "text" 后面跟 RETURN 是函数定义，跟其他命令是标签
+                // 简化逻辑：查找 RETURN 关键字
+                for token in remainingTokens.dropFirst() {  // Skip PRINTL itself
+                    switch token.type {
+                    case .keyword(let k):
+                        let kUpper = k.uppercased()
+                        if kUpper == "RETURN" || kUpper == "RETURNF" || kUpper == "RESTART" {
+                            return true
+                        }
+                        // 遇到其他关键字（如PRINTL、GOTO等）说明是标签
+                        if kUpper == "PRINTL" || kUpper == "PRINT" || kUpper == "GOTO" ||
+                           kUpper == "CALL" || kUpper == "IF" || kUpper == "WHILE" ||
+                           kUpper == "FOR" || kUpper == "TRY" || kUpper == "TRYGOTO" {
+                            return false
+                        }
+                    case .directive:
+                        return true
+                    case .command(let c):
+                        // 遇到命令说明是标签
+                        let cUpper = c.uppercased()
+                        if cUpper == "PRINTL" || cUpper == "PRINT" || cUpper == "GOTO" ||
+                           cUpper == "CALL" || cUpper == "INPUT" || cUpper == "WAIT" {
+                            return false
+                        }
+                    case .lineBreak:
+                        continue
+                    case .whitespace, .comment:
+                        continue
+                    default:
+                        continue
+                    }
+                }
+                return false
+            }
+
+            // 明确的标签起始命令
+            if labelStartCommands.contains(upper) {
+                return false
+            }
+
+            // 其他命令（如变量赋值、函数调用等）可能是函数定义
+            return true
+
+        default:
+            return false
+        }
     }
 }

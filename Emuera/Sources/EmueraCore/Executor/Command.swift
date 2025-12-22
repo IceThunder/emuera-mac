@@ -134,12 +134,10 @@ public enum CommandType: String, CaseIterable {
     case CALLTRAIN      // 调用训练
     case STOPCALLTRAIN  // 停止训练
 
-    // MARK: - 异常处理
-    case CATCH          // 捕获异常
-    case ENDCATCH       // 结束捕获
-    case TRYCJUMP       // 尝试跳转
-    case TRYCCALL       // 尝试调用
-    case TRYCGOTO       // 尝试GOTO
+    // MARK: - 异常处理 (现在在关键字中处理，不是命令)
+    // case CATCH       // 移到关键字 (Phase 3)
+    // case ENDCATCH    // 移到关键字 (Phase 3)
+    // TRY相关命令在关键字中处理
 
     // MARK: - 函数定义
     case FUNC           // 函数开始
