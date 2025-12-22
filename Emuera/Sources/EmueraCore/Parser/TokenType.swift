@@ -53,6 +53,12 @@ public enum TokenType: CustomStringConvertible {
     case tryJumpList
     case tryGotoList
 
+    // PRINTDATA/DATALIST (Phase 3)
+    case printData
+    case dataList
+    case endList
+    case endData
+
     // Special
     case lineBreak
     case comment
@@ -201,6 +207,10 @@ public enum TokenType: CustomStringConvertible {
         case .tryCallList: return "tryCallList"
         case .tryJumpList: return "tryJumpList"
         case .tryGotoList: return "tryGotoList"
+        case .printData: return "printData"
+        case .dataList: return "dataList"
+        case .endList: return "endList"
+        case .endData: return "endData"
         case .lineBreak: return "lineBreak"
         case .comment: return "comment"
         case .whitespace: return "whitespace"

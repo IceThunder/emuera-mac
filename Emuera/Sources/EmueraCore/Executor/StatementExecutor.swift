@@ -1259,4 +1259,20 @@ public class StatementExecutor: StatementVisitor {
         context.currentCatchLabel = oldCatchLabel
         context.shouldCatch = oldShouldCatch
     }
+
+    /// 访问PRINTDATA语句
+    /// 随机选择一个DATALIST块执行
+    public func visitPrintDataStatement(_ statement: PrintDataStatement) throws {
+        guard !statement.dataLists.isEmpty else {
+            // 没有DATALIST子句，什么也不做
+            return
+        }
+
+        // 随机选择一个DATALIST块
+        let randomIndex = Int.random(in: 0..<statement.dataLists.count)
+        let selectedList = statement.dataLists[randomIndex]
+
+        // 执行选中的DATALIST块
+        try selectedList.body.accept(visitor: self)
+    }
 }

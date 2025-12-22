@@ -202,6 +202,9 @@ public class ScriptParser {
         case "SELECTCASE":
             return try parseSelectCaseStatement()
 
+        case "PRINTDATA":
+            return try parsePrintDataStatement()
+
         case "BREAK":
             currentIndex += 1
             return BreakStatement(position: getCurrentPosition())
@@ -1875,6 +1878,75 @@ public class ScriptParser {
         }
 
         return values
+    }
+
+    // MARK: - PRINTDATA/DATALIST语句解析 (Phase 3)
+
+    /// 解析PRINTDATA语句
+    /// PRINTDATA
+    ///     DATALIST
+    ///         PRINT "text1"
+    ///     ENDLIST
+    ///     DATALIST
+    ///         PRINT "text2"
+    ///     ENDLIST
+    /// ENDDATA
+    private func parsePrintDataStatement() throws -> PrintDataStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过PRINTDATA
+        currentIndex += 1
+
+        // 准备收集DATALIST子句
+        var dataLists: [DataListClause] = []
+
+        // 循环解析DATALIST子句
+        while currentIndex < tokens.count {
+            skipWhitespaceAndNewlines()
+
+            if currentIndex >= tokens.count {
+                break
+            }
+
+            let token = tokens[currentIndex]
+
+            // 检查是否是ENDDATA结束
+            if case .keyword(let k) = token.type, k.uppercased() == "ENDDATA" {
+                currentIndex += 1
+                break
+            }
+
+            // 检查是否是DATALIST
+            if case .keyword(let k) = token.type, k.uppercased() == "DATALIST" {
+                currentIndex += 1  // 跳过DATALIST
+
+                // 解析DATALIST块
+                let body = try parseBlock(until: ["ENDLIST"])
+
+                // 消耗ENDLIST
+                if currentIndex < tokens.count,
+                   case .keyword(let k) = tokens[currentIndex].type,
+                   k.uppercased() == "ENDLIST" {
+                    currentIndex += 1
+                } else {
+                    throw EmueraError.scriptParseError(
+                        message: "DATALIST缺少ENDLIST",
+                        position: getCurrentPosition()
+                    )
+                }
+
+                dataLists.append(DataListClause(body: body))
+                continue
+            }
+
+            // 未知token，跳过
+            currentIndex += 1
+        }
+
+        return PrintDataStatement(
+            dataLists: dataLists,
+            position: startPos
+        )
     }
 
     // MARK: - 辅助方法

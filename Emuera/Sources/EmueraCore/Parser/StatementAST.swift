@@ -429,6 +429,39 @@ public struct ExceptionContext {
     public let catchLabel: String
 }
 
+// MARK: - PRINTDATA/DATALIST (Phase 3)
+
+/// PRINTDATA语句 - 随机选择一个DATALIST块执行
+/// PRINTDATA
+///     DATALIST
+///         PRINT "text1"
+///     ENDLIST
+///     DATALIST
+///         PRINT "text2"
+///     ENDLIST
+/// ENDDATA
+public class PrintDataStatement: StatementNode {
+    public let dataLists: [DataListClause]
+
+    public init(dataLists: [DataListClause], position: ScriptPosition? = nil) {
+        self.dataLists = dataLists
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitPrintDataStatement(self)
+    }
+}
+
+/// DATALIST子句 - 包含一组要执行的语句
+public class DataListClause {
+    public let body: StatementNode
+
+    public init(body: StatementNode) {
+        self.body = body
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -456,6 +489,9 @@ public protocol StatementVisitor {
     func visitTryCallStatement(_ statement: TryCallStatement) throws
     func visitTryJumpStatement(_ statement: TryJumpStatement) throws
     func visitTryGotoStatement(_ statement: TryGotoStatement) throws
+
+    // Phase 3: PRINTDATA/DATALIST
+    func visitPrintDataStatement(_ statement: PrintDataStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

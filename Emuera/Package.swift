@@ -430,6 +430,30 @@ let package = Package(
             sources: ["DebugCaseValues.swift"]
         ),
 
+        // PRINTDATA Test Target (Phase 3)
+        .executableTarget(
+            name: "PrintDataTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["PrintDataTest.swift"]
+        ),
+
+        // Debug PRINTDATA Simple
+        .executableTarget(
+            name: "DebugPrintDataSimple",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugPrintDataSimple.swift"]
+        ),
+
+        // Debug PRINTDATA Final
+        .executableTarget(
+            name: "DebugPrintDataFinal",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugPrintDataFinal.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

@@ -146,14 +146,9 @@ public enum CommandType: String, CaseIterable {
     case CALLFORMF      // 格式化函数调用
 
     // MARK: - 数据块
-    case PRINTDATA      // 数据打印
-    case PRINTDATAL     // 数据打印换行
-    case PRINTDATAW     // 数据打印等待
+    // PRINTDATA, DATALIST, ENDLIST, ENDDATA 现在在关键字中处理 (Phase 3)
     case DATA           // 数据
     case DATAFORM       // 格式化数据
-    case ENDDATA        // 结束数据
-    case DATALIST       // 数据列表
-    case ENDLIST        // 结束列表
     case STRDATA        // 字符串数据
 
     // MARK: - DO-LOOP循环
