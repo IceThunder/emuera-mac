@@ -403,88 +403,6 @@ public class ScriptParser {
 
     // MARK: - SELECTCASE语句解析
 
-    /// 解析SELECTCASE语句
-    /// SELECTCASE test
-    ///   CASE value1[, value2, ...]
-    ///     statements
-    ///   CASE value3
-    ///     statements
-    ///   CASEELSE
-    ///     statements
-    /// ENDSELECT
-    private func parseSelectCaseStatement() throws -> SelectCaseStatement {
-        let startPos = getCurrentPosition()
-
-        // 跳过SELECTCASE
-        currentIndex += 1
-
-        // 解析测试表达式
-        let test = try parseExpression()
-
-        var cases: [CaseClause] = []
-        var defaultCase: StatementNode? = nil
-
-        // 解析CASE子句
-        while currentIndex < tokens.count {
-            skipWhitespaceAndNewlines()
-
-            guard currentIndex < tokens.count else { break }
-
-            let token = tokens[currentIndex]
-
-            switch token.type {
-            case .keyword(let k) where k.uppercased() == "CASE":
-                currentIndex += 1
-                let values = try parseArgumentList()
-                let body = try parseBlock(until: ["CASE", "CASEELSE", "ENDSELECT"])
-                cases.append(CaseClause(values: values, body: body))
-
-            case .keyword(let k) where k.uppercased() == "CASEELSE":
-                currentIndex += 1
-                defaultCase = try parseBlock(until: ["ENDSELECT"])
-
-            case .keyword(let k) where k.uppercased() == "ENDSELECT":
-                currentIndex += 1
-                return SelectCaseStatement(  // 直接返回，退出整个方法
-                    test: test,
-                    cases: cases,
-                    defaultCase: defaultCase,
-                    position: startPos
-                )
-
-            // Handle legacy token types if they exist
-            case .caseKeyword:
-                currentIndex += 1
-                let values = try parseArgumentList()
-                let body = try parseBlock(until: ["CASE", "CASEELSE", "ENDSELECT"])
-                cases.append(CaseClause(values: values, body: body))
-
-            case .caseElse:
-                currentIndex += 1
-                defaultCase = try parseBlock(until: ["ENDSELECT"])
-
-            case .endSelect:
-                currentIndex += 1
-                return SelectCaseStatement(
-                    test: test,
-                    cases: cases,
-                    defaultCase: defaultCase,
-                    position: startPos
-                )
-
-            default:
-                // 跳过无法识别的token，防止无限循环
-                currentIndex += 1
-            }
-        }
-
-        return SelectCaseStatement(
-            test: test,
-            cases: cases,
-            defaultCase: defaultCase,
-            position: startPos
-        )
-    }
 
     // MARK: - 跳转语句解析
 
@@ -1761,6 +1679,202 @@ public class ScriptParser {
             catchLabel: catchLabel,
             position: startPos
         )
+    }
+
+    // MARK: - SELECTCASE语句解析 (Phase 3)
+
+    /// 解析SELECTCASE多分支选择语句
+    /// SELECTCASE A
+    ///     CASE 1
+    ///         PRINT "One"
+    ///     CASE 2 TO 5
+    ///         PRINT "Two to Five"
+    ///     CASEELSE
+    ///         PRINT "Other"
+    /// ENDSELECT
+    private func parseSelectCaseStatement() throws -> SelectCaseStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过SELECTCASE
+        currentIndex += 1
+
+        // 解析测试表达式
+        let testExpression = try parseExpression()
+
+        // 准备收集CASE子句
+        var cases: [CaseClause] = []
+        var defaultCase: StatementNode? = nil
+
+        // 循环解析CASE子句
+        while currentIndex < tokens.count {
+            skipWhitespaceAndNewlines()
+
+            if currentIndex >= tokens.count {
+                break
+            }
+
+            let token = tokens[currentIndex]
+
+            // 检查是否是ENDSELECT结束
+            if case .keyword(let k) = token.type, k.uppercased() == "ENDSELECT" {
+                currentIndex += 1
+                break
+            }
+
+            // 检查是否是CASE
+            if case .keyword(let k) = token.type, k.uppercased() == "CASE" {
+                currentIndex += 1  // 跳过CASE
+
+                // 解析CASE的值列表
+                let values = try parseCaseValues()
+
+                // 解析CASE块
+                let body = try parseBlock(until: ["CASE", "CASEELSE", "ENDSELECT"])
+
+                cases.append(CaseClause(values: values, body: body))
+                continue
+            }
+
+            // 检查是否是CASEELSE
+            if case .keyword(let k) = token.type, k.uppercased() == "CASEELSE" {
+                currentIndex += 1  // 跳过CASEELSE
+
+                // 解析默认块
+                defaultCase = try parseBlock(until: ["ENDSELECT"])
+                continue
+            }
+
+            // 未知token，跳过
+            currentIndex += 1
+        }
+
+        return SelectCaseStatement(
+            test: testExpression,
+            cases: cases,
+            defaultCase: defaultCase,
+            position: startPos
+        )
+    }
+
+    /// 解析CASE的值列表
+    /// 支持格式:
+    /// - CASE 1
+    /// - CASE 1, 2, 3
+    /// - CASE 2 TO 5
+    /// - CASE "A", "B"
+    private func parseCaseValues() throws -> [ExpressionNode] {
+        var values: [ExpressionNode] = []
+        var hasMore = true
+
+        while hasMore && currentIndex < tokens.count {
+            skipWhitespaceAndNewlines()
+
+            if currentIndex >= tokens.count {
+                break
+            }
+
+            // 检查是否是结束关键字
+            let token = tokens[currentIndex]
+            if case .keyword(let k) = token.type {
+                let upper = k.uppercased()
+                if upper == "CASE" || upper == "CASEELSE" || upper == "ENDSELECT" {
+                    break
+                }
+            }
+
+            // 收集当前值的token（直到逗号或换行）
+            var exprTokens: [TokenType.Token] = []
+            var foundTO = false
+            var toIndex = -1
+
+            while currentIndex < tokens.count {
+                let t = tokens[currentIndex]
+
+                // 检查是否应该停止收集
+                switch t.type {
+                case .comma:
+                    // 逗号：继续收集下一个值
+                    currentIndex += 1
+                    hasMore = true
+                    break
+                case .lineBreak:
+                    // 换行：结束当前CASE的值列表
+                    currentIndex += 1
+                    hasMore = false
+                    break
+                case .keyword(let k):
+                    let upper = k.uppercased()
+                    if upper == "CASE" || upper == "CASEELSE" || upper == "ENDSELECT" {
+                        // 遇到下一个CASE关键字，结束
+                        hasMore = false
+                        break
+                    } else if upper == "TO" {
+                        // TO用于范围
+                        foundTO = true
+                        toIndex = exprTokens.count
+                        exprTokens.append(t)
+                        currentIndex += 1
+                        continue
+                    } else {
+                        // 其他关键字，作为表达式的一部分
+                        exprTokens.append(t)
+                        currentIndex += 1
+                    }
+                case .whitespace:
+                    currentIndex += 1
+                    continue
+                case .comment:
+                    currentIndex += 1
+                    continue
+                default:
+                    exprTokens.append(t)
+                    currentIndex += 1
+                    continue
+                }
+
+                // 如果遇到逗号、换行或CASE关键字，停止收集当前值
+                switch t.type {
+                case .comma, .lineBreak:
+                    break
+                case .keyword(let k):
+                    let upper = k.uppercased()
+                    if upper == "CASE" || upper == "CASEELSE" || upper == "ENDSELECT" {
+                        break
+                    }
+                default:
+                    continue
+                }
+                break
+            }
+
+            if exprTokens.isEmpty {
+                continue
+            }
+
+            // 处理TO范围或普通表达式
+            if foundTO && toIndex >= 0 {
+                let leftTokens = Array(exprTokens[0..<toIndex])
+                let rightTokens = Array(exprTokens[(toIndex + 1)...])
+
+                if !leftTokens.isEmpty && !rightTokens.isEmpty {
+                    let parser = ExpressionParser()
+                    let leftExpr = try parser.parse(leftTokens)
+                    let rightExpr = try parser.parse(rightTokens)
+
+                    let rangeExpr = ExpressionNode.functionCall(
+                        name: "__RANGE__",
+                        arguments: [leftExpr, rightExpr]
+                    )
+                    values.append(rangeExpr)
+                }
+            } else {
+                let parser = ExpressionParser()
+                let expr = try parser.parse(exprTokens)
+                values.append(expr)
+            }
+        }
+
+        return values
     }
 
     // MARK: - 辅助方法

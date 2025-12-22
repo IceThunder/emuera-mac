@@ -247,11 +247,26 @@ public class StatementExecutor: StatementVisitor {
 
         for caseClause in statement.cases {
             for valueExpr in caseClause.values {
-                let caseValue = try evaluateExpression(valueExpr)
-                if valuesEqual(testValue, caseValue) {
-                    try caseClause.body.accept(visitor: self)
-                    executed = true
-                    break
+                // 检查是否是范围匹配 (CASE 2 TO 5)
+                if case .functionCall(let name, let arguments) = valueExpr,
+                   name == "__RANGE__" && arguments.count == 2 {
+                    // 处理范围匹配
+                    let leftValue = try evaluateExpression(arguments[0])
+                    let rightValue = try evaluateExpression(arguments[1])
+
+                    if try isValueInRange(testValue, leftValue, rightValue) {
+                        try caseClause.body.accept(visitor: self)
+                        executed = true
+                        break
+                    }
+                } else {
+                    // 普通值匹配
+                    let caseValue = try evaluateExpression(valueExpr)
+                    if valuesEqual(testValue, caseValue) {
+                        try caseClause.body.accept(visitor: self)
+                        executed = true
+                        break
+                    }
                 }
             }
             if executed { break }
@@ -265,6 +280,18 @@ public class StatementExecutor: StatementVisitor {
         // The flag remains set so outer loops can handle it
         // CONTINUE also remains set for outer loops
         // SELECTCASE itself doesn't consume these flags
+    }
+
+    /// 检查值是否在范围内（包含边界）
+    private func isValueInRange(_ value: VariableValue, _ left: VariableValue, _ right: VariableValue) throws -> Bool {
+        switch (value, left, right) {
+        case (.integer(let v), .integer(let l), .integer(let r)):
+            return v >= l && v <= r
+        case (.string(let v), .string(let l), .string(let r)):
+            return v >= l && v <= r
+        default:
+            throw EmueraError.typeMismatch(expected: "same type for range comparison", actual: "mixed types")
+        }
     }
 
     public func visitGotoStatement(_ statement: GotoStatement) throws {

@@ -406,6 +406,30 @@ let package = Package(
             sources: ["DebugTryCallParse.swift"]
         ),
 
+        // SELECTCASE Test Target (Phase 3)
+        .executableTarget(
+            name: "SelectCaseTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["SelectCaseTest.swift"]
+        ),
+
+        // Debug SELECTCASE Parsing
+        .executableTarget(
+            name: "DebugSelectCaseParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSelectCaseParse.swift"]
+        ),
+
+        // Debug Case Values
+        .executableTarget(
+            name: "DebugCaseValues",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugCaseValues.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",
