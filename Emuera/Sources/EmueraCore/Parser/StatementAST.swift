@@ -144,6 +144,27 @@ public class DoLoopStatement: StatementNode {
     }
 }
 
+/// REPEAT循环语句
+/// REPEAT count
+///     statements (COUNT available)
+/// ENDREPEAT
+public class RepeatStatement: StatementNode {
+    public let count: ExpressionNode  // 循环次数
+    public let body: StatementNode    // 循环体
+
+    public init(count: ExpressionNode,
+                body: StatementNode,
+                position: ScriptPosition? = nil) {
+        self.count = count
+        self.body = body
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitRepeatStatement(self)
+    }
+}
+
 /// SELECTCASE语句
 public class SelectCaseStatement: StatementNode {
     public let test: ExpressionNode
@@ -496,6 +517,7 @@ public protocol StatementVisitor {
     func visitWhileStatement(_ statement: WhileStatement) throws
     func visitForStatement(_ statement: ForStatement) throws
     func visitDoLoopStatement(_ statement: DoLoopStatement) throws
+    func visitRepeatStatement(_ statement: RepeatStatement) throws
     func visitSelectCaseStatement(_ statement: SelectCaseStatement) throws
     func visitGotoStatement(_ statement: GotoStatement) throws
     func visitCallStatement(_ statement: CallStatement) throws

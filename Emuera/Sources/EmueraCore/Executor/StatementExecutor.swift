@@ -1316,4 +1316,47 @@ public class StatementExecutor: StatementVisitor {
             }
         }
     }
+
+    /// 访问REPEAT循环语句
+    /// REPEAT count
+    ///     statements (COUNT available)
+    /// ENDREPEAT
+    public func visitRepeatStatement(_ statement: RepeatStatement) throws {
+        // 评估循环次数
+        let countValue = try evaluateExpression(statement.count)
+        guard case .integer(let count) = countValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        // 执行循环
+        for i in 0..<Int(count) {
+            // 设置COUNT变量
+            context.setVariable("COUNT", value: .integer(Int64(i)))
+
+            // 执行循环体
+            try statement.body.accept(visitor: self)
+
+            // 检查是否需要跳出循环
+            if context.shouldBreak {
+                context.shouldBreak = false
+                break
+            }
+
+            // 检查是否需要继续（跳过本次剩余部分，直接进入下一次迭代）
+            if context.shouldContinue {
+                context.shouldContinue = false
+                continue  // 继续下一次迭代
+            }
+
+            // 检查返回值
+            if context.returnValue != nil {
+                break
+            }
+
+            // 检查是否退出
+            if context.shouldQuit {
+                break
+            }
+        }
+    }
 }

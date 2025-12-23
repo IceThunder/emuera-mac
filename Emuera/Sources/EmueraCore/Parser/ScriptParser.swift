@@ -206,6 +206,9 @@ public class ScriptParser {
         case "DO":
             return try parseDoLoopStatement()
 
+        case "REPEAT":
+            return try parseRepeatStatement()
+
         case "SELECTCASE":
             return try parseSelectCaseStatement()
 
@@ -252,7 +255,7 @@ public class ScriptParser {
                 position: getCurrentPosition()
             )
 
-        case "ELSE", "ENDIF", "ENDWHILE", "ENDFOR", "CASE", "CASEELSE", "ENDSELECT":
+        case "ELSE", "ENDIF", "ENDWHILE", "ENDFOR", "ENDREPEAT", "CASE", "CASEELSE", "ENDSELECT":
             // 这些应该在解析对应结构时处理，不应该单独出现
             throw EmueraError.scriptParseError(
                 message: "未匹配的结束关键字: \(keyword)",
@@ -1986,6 +1989,43 @@ public class ScriptParser {
             body: body,
             condition: condition,
             isWhile: isWhile,
+            position: startPos
+        )
+    }
+
+    // MARK: - REPEAT语句解析 (Phase 3)
+
+    /// 解析REPEAT循环语句
+    /// REPEAT count
+    ///     statements (COUNT available)
+    /// ENDREPEAT
+    private func parseRepeatStatement() throws -> RepeatStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过REPEAT
+        currentIndex += 1
+
+        // 解析循环次数
+        let count = try parseExpression()
+
+        // 解析循环体
+        let body = try parseBlock(until: ["ENDREPEAT"])
+
+        // 消耗ENDREPEAT
+        if currentIndex < tokens.count,
+           case .keyword(let k) = tokens[currentIndex].type,
+           k.uppercased() == "ENDREPEAT" {
+            currentIndex += 1
+        } else {
+            throw EmueraError.scriptParseError(
+                message: "REPEAT语句缺少ENDREPEAT",
+                position: getCurrentPosition()
+            )
+        }
+
+        return RepeatStatement(
+            count: count,
+            body: body,
             position: startPos
         )
     }

@@ -196,6 +196,7 @@ public struct LexicalAnalyzer {
                          "WHILE", "ENDWHILE",
                          "FOR", "ENDFOR",
                          "DO", "LOOP", "UNTIL",
+                         "REPEAT", "ENDREPEAT",
                          "SELECTCASE", "CASE", "CASEELSE", "ENDSELECT",
                          "BREAK", "CONTINUE", "RETURN", "RESTART", "RETURNF",
                          "GOTO", "CALL", "JUMP", "TRYCALL", "TRYCALLFORM",

@@ -270,14 +270,6 @@ let package = Package(
             sources: ["DebugArray2.swift"]
         ),
 
-        // Debug REPEAT Target
-        .executableTarget(
-            name: "DebugRepeat",
-            dependencies: ["EmueraCore"],
-            path: "Sources/Phase2Debug",
-            sources: ["DebugRepeat.swift"]
-        ),
-
         // Debug ARRAYMULTISORT Target
         .executableTarget(
             name: "DebugArraySort",
@@ -492,6 +484,14 @@ let package = Package(
             dependencies: ["EmueraCore"],
             path: "Sources/Phase3Debug",
             sources: ["DebugAssignment.swift"]
+        ),
+
+        // Debug REPEAT Target
+        .executableTarget(
+            name: "DebugRepeat",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugRepeat.swift"]
         ),
 
         // Debug Tokens 2 Target

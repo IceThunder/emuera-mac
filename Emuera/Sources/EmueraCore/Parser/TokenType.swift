@@ -63,6 +63,10 @@ public enum TokenType: CustomStringConvertible {
     case doKeyword
     case loopKeyword
 
+    // REPEAT循环 (Phase 3)
+    case repeatKeyword
+    case endRepeat
+
     // Special
     case lineBreak
     case comment
@@ -217,6 +221,8 @@ public enum TokenType: CustomStringConvertible {
         case .endData: return "endData"
         case .doKeyword: return "doKeyword"
         case .loopKeyword: return "loopKeyword"
+        case .repeatKeyword: return "repeatKeyword"
+        case .endRepeat: return "endRepeat"
         case .lineBreak: return "lineBreak"
         case .comment: return "comment"
         case .whitespace: return "whitespace"

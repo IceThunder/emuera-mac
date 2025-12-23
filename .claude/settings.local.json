@@ -90,7 +90,10 @@
       "Bash(.build/debug/DoLoopTest:*)",
       "Bash(.build/debug/DebugTokens2:*)",
       "Bash(.build/debug/DebugTest6:*)",
-      "Bash(.build/debug/DebugAssignment:*)"
+      "Bash(.build/debug/DebugAssignment:*)",
+      "Bash(.build/debug/SelectCaseTest:*)",
+      "Bash(.build/debug/DebugSelectCaseParse:*)",
+      "Bash(.build/debug/DebugRepeat:*)"
     ]
   }
 }
