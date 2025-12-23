@@ -99,7 +99,12 @@
       "Bash(.build/debug/DebugPrintDataVariables:*)",
       "Bash(.build/debug/DebugPrintDataTag:*)",
       "Bash(.build/debug/DebugIsFunction:*)",
-      "Bash(.build/debug/DebugDoLoop:*)"
+      "Bash(.build/debug/DebugDoLoop:*)",
+      "Bash(git push:*)",
+      "Bash(.build/debug/DebugSaveLoadParse:*)",
+      "Bash(.build/debug/DebugSaveLoadToken:*)",
+      "Bash(.build/debug/DebugSaveLoad:*)",
+      "Bash(.build/debug/DebugSaveLoadDetailed:*)"
     ]
   }
 }

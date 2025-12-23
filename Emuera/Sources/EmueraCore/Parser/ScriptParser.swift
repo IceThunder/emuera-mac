@@ -147,6 +147,18 @@ public class ScriptParser {
         case "PERSIST":
             return try parsePersistStatement()
 
+        case "SAVEDATA", "LOADDATA", "DELDATA":
+            return try parseSaveLoadCommand(upperCmd)
+
+        case "SAVEVAR", "LOADVAR":
+            return try parseSaveVarCommand(upperCmd)
+
+        case "SAVECHARA", "LOADCHARA":
+            return try parseSaveCharaCommand(upperCmd)
+
+        case "SAVEGAME", "LOADGAME":
+            return try parseSaveGameCommand(upperCmd)
+
         default:
             // 其他命令，作为通用命令处理
             let args = try parseArguments()
@@ -2294,6 +2306,148 @@ public class ScriptParser {
 
         default:
             return false
+        }
+    }
+
+    // MARK: - SAVE/LOAD数据持久化解析 (Phase 3 P1)
+
+    /// 解析SAVEDATA/LOADDATA/DELDATA命令
+    /// 注意：currentIndex已指向命令之后的第一个token
+    private func parseSaveLoadCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+
+        // 解析参数列表
+        let arguments = try parseArgumentList()
+
+        guard !arguments.isEmpty else {
+            throw EmueraError.scriptParseError(
+                message: "\(cmd)需要文件名参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第一个参数是文件名
+        let filename = arguments[0]
+
+        // 剩余参数是要保存/加载的变量列表
+        let variables = Array(arguments.dropFirst())
+
+        // 根据命令返回对应的语句
+        switch cmd {
+        case "SAVEDATA":
+            return SaveDataStatement(filename: filename, variables: variables, position: startPos)
+        case "LOADDATA":
+            return LoadDataStatement(filename: filename, variables: variables, position: startPos)
+        case "DELDATA":
+            if !variables.isEmpty {
+                throw EmueraError.scriptParseError(
+                    message: "DELDATA只接受文件名参数",
+                    position: getCurrentPosition()
+                )
+            }
+            return DelDataStatement(filename: filename, position: startPos)
+        default:
+            throw EmueraError.scriptParseError(
+                message: "未知的SAVE/LOAD命令: \(cmd)",
+                position: getCurrentPosition()
+            )
+        }
+    }
+
+    /// 解析SAVEVAR/LOADVAR命令
+    private func parseSaveVarCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+
+        // 解析参数列表
+        let arguments = try parseArgumentList()
+
+        guard arguments.count >= 2 else {
+            throw EmueraError.scriptParseError(
+                message: "\(cmd)需要文件名和至少一个变量",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第一个参数是文件名
+        let filename = arguments[0]
+
+        // 剩余参数是要保存/加载的变量
+        let variables = Array(arguments.dropFirst())
+
+        // 根据命令返回对应的语句
+        switch cmd {
+        case "SAVEVAR":
+            return SaveDataStatement(filename: filename, variables: variables, position: startPos)
+        case "LOADVAR":
+            return LoadDataStatement(filename: filename, variables: variables, position: startPos)
+        default:
+            throw EmueraError.scriptParseError(
+                message: "未知的SAVE/LOAD命令: \(cmd)",
+                position: getCurrentPosition()
+            )
+        }
+    }
+
+    /// 解析SAVECHARA/LOADCHARA命令
+    private func parseSaveCharaCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+
+        // 解析参数列表
+        let arguments = try parseArgumentList()
+
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "\(cmd)需要文件名参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第一个参数是文件名
+        let filename = arguments[0]
+
+        // 根据命令返回对应的语句
+        // 角色保存使用空变量列表标记
+        switch cmd {
+        case "SAVECHARA":
+            return SaveDataStatement(filename: filename, variables: [], position: startPos)
+        case "LOADCHARA":
+            return LoadDataStatement(filename: filename, variables: [], position: startPos)
+        default:
+            throw EmueraError.scriptParseError(
+                message: "未知的SAVE/LOAD命令: \(cmd)",
+                position: getCurrentPosition()
+            )
+        }
+    }
+
+    /// 解析SAVEGAME/LOADGAME命令
+    private func parseSaveGameCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+
+        // 解析参数列表
+        let arguments = try parseArgumentList()
+
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "\(cmd)需要存档槽位参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第一个参数是槽位号
+        let slot = arguments[0]
+
+        // 根据命令返回对应的语句
+        switch cmd {
+        case "SAVEGAME":
+            return SaveDataStatement(filename: slot, variables: [], position: startPos)
+        case "LOADGAME":
+            return LoadDataStatement(filename: slot, variables: [], position: startPos)
+        default:
+            throw EmueraError.scriptParseError(
+                message: "未知的SAVE/LOAD命令: \(cmd)",
+                position: getCurrentPosition()
+            )
         }
     }
 }

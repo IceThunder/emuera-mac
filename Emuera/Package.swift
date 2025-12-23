@@ -526,6 +526,38 @@ let package = Package(
             sources: ["DebugTokens2.swift"]
         ),
 
+        // Debug SAVE/LOAD Target (Phase 3 P1)
+        .executableTarget(
+            name: "DebugSaveLoad",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveLoad.swift"]
+        ),
+
+        // Debug SAVE/LOAD Parse Target
+        .executableTarget(
+            name: "DebugSaveLoadParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveLoadParse.swift"]
+        ),
+
+        // Debug SAVE/LOAD Token Target
+        .executableTarget(
+            name: "DebugSaveLoadToken",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveLoadToken.swift"]
+        ),
+
+        // Debug SAVE/LOAD Detailed Target
+        .executableTarget(
+            name: "DebugSaveLoadDetailed",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveLoadDetailed.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

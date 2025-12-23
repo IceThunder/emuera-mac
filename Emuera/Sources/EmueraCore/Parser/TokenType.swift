@@ -67,6 +67,17 @@ public enum TokenType: CustomStringConvertible {
     case repeatKeyword
     case endRepeat
 
+    // SAVE/LOAD数据持久化 (Phase 3 P1)
+    case saveData
+    case loadData
+    case delData
+    case saveVar
+    case loadVar
+    case saveChara
+    case loadChara
+    case saveGame
+    case loadGame
+
     // Special
     case lineBreak
     case comment
@@ -223,6 +234,15 @@ public enum TokenType: CustomStringConvertible {
         case .loopKeyword: return "loopKeyword"
         case .repeatKeyword: return "repeatKeyword"
         case .endRepeat: return "endRepeat"
+        case .saveData: return "saveData"
+        case .loadData: return "loadData"
+        case .delData: return "delData"
+        case .saveVar: return "saveVar"
+        case .loadVar: return "loadVar"
+        case .saveChara: return "saveChara"
+        case .loadChara: return "loadChara"
+        case .saveGame: return "saveGame"
+        case .loadGame: return "loadGame"
         case .lineBreak: return "lineBreak"
         case .comment: return "comment"
         case .whitespace: return "whitespace"

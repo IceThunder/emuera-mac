@@ -28,6 +28,9 @@ public class ExecutionContext {
     public var currentCatchLabel: String?  // 当前CATCH标签
     public var shouldCatch: Bool           // 是否应该捕获异常
 
+    // Phase 3 P1: 数据持久化相关
+    public var varData: VariableData?  // 变量数据存储（用于SAVE/LOAD）
+
     public init() {
         variables = [:]
         output = []
@@ -41,6 +44,7 @@ public class ExecutionContext {
         persistEnabled = false
         currentCatchLabel = nil
         shouldCatch = false
+        varData = nil
     }
 
     public func copy() -> ExecutionContext {
@@ -53,6 +57,7 @@ public class ExecutionContext {
         newContext.persistEnabled = persistEnabled
         newContext.currentCatchLabel = currentCatchLabel
         newContext.shouldCatch = shouldCatch
+        newContext.varData = varData
         return newContext
     }
 
@@ -1356,6 +1361,223 @@ public class StatementExecutor: StatementVisitor {
             // 检查是否退出
             if context.shouldQuit {
                 break
+            }
+        }
+    }
+
+    // MARK: - SAVE/LOAD数据持久化 (Phase 3 P1)
+
+    /// 访问SAVEDATA语句 - 保存变量到文件
+    public func visitSaveDataStatement(_ statement: SaveDataStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法保存数据", position: nil)
+        }
+
+        // 评估变量列表
+        var variableNames: [String] = []
+        for expr in statement.variables {
+            let value = try evaluateExpression(expr)
+            if case .string(let name) = value {
+                variableNames.append(name)
+            }
+        }
+
+        // 在保存前，先同步context.variables到VariableData
+        syncContextToVariableData(varData)
+
+        do {
+            let jsonString: String
+            if variableNames.isEmpty {
+                // 保存所有变量
+                jsonString = try varData.serializeAll()
+            } else {
+                // 保存指定变量
+                jsonString = try varData.serializeVariables(variableNames)
+            }
+
+            // 写入文件
+            let fileURL = getSaveFileURL(filename)
+            try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+
+            context.output.append("[已保存到: \(filename)]\n")
+            context.lastResult = .integer(1)  // 成功
+
+        } catch {
+            context.output.append("[保存失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
+    /// 访问LOADDATA语句 - 从文件加载变量
+    public func visitLoadDataStatement(_ statement: LoadDataStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法加载数据", position: nil)
+        }
+
+        // 评估变量列表
+        var variableNames: [String] = []
+        for expr in statement.variables {
+            let value = try evaluateExpression(expr)
+            if case .string(let name) = value {
+                variableNames.append(name)
+            }
+        }
+
+        do {
+            // 读取文件
+            let fileURL = getSaveFileURL(filename)
+            let jsonString = try String(contentsOf: fileURL, encoding: .utf8)
+
+            if variableNames.isEmpty {
+                // 加载所有变量
+                try varData.deserializeAll(jsonString)
+            } else {
+                // 加载指定变量
+                try varData.deserializeVariables(jsonString, variableNames: variableNames)
+            }
+
+            // 同步VariableData到ExecutionContext（可选，用于后续访问）
+            syncVariableDataToContext(varData)
+
+            context.output.append("[已从: \(filename) 加载]\n")
+            context.lastResult = .integer(1)  // 成功
+
+        } catch {
+            context.output.append("[加载失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
+    /// 访问DELDATA语句 - 删除存档文件
+    public func visitDelDataStatement(_ statement: DelDataStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        do {
+            let fileURL = getSaveFileURL(filename)
+
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+                context.output.append("[已删除: \(filename)]\n")
+                context.lastResult = .integer(1)  // 成功
+            } else {
+                context.output.append("[文件不存在: \(filename)]\n")
+                context.lastResult = .integer(0)  // 失败
+            }
+
+        } catch {
+            context.output.append("[删除失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
+    // MARK: - 辅助方法
+
+    /// 获取保存文件的URL（保存在应用目录下的saves文件夹）
+    private func getSaveFileURL(_ filename: String) -> URL {
+        // 获取应用文档目录
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsURL = paths[0]
+
+        // 创建saves子目录
+        let savesURL = documentsURL.appendingPathComponent("EmueraSaves")
+
+        // 确保目录存在
+        try? FileManager.default.createDirectory(at: savesURL, withIntermediateDirectories: true)
+
+        // 返回文件URL（自动添加.json扩展名如果未指定）
+        let finalFilename = filename.hasSuffix(".json") ? filename : "\(filename).json"
+        return savesURL.appendingPathComponent(finalFilename)
+    }
+
+    /// 将VariableData中的数据同步到ExecutionContext（用于后续访问）
+    private func syncVariableDataToContext(_ varData: VariableData) {
+        // 同步VariableData的arrays到context.variables
+        // 这样表达式求值就能访问到正确的数组数据
+
+        // 同步普通数组（RESULT, SELECTCOM等）
+        for (name, array) in varData.getAllArrays() {
+            // 转换为VariableValue.array格式
+            let variableArray = array.map { VariableValue.integer($0) }
+            context.variables[name] = .array(variableArray)
+        }
+
+        // 同步dataIntegerArray（系统变量如A-Z, FLAG等）
+        // 这些需要通过TokenData访问，但为了兼容性也同步到context
+        // 注意：dataIntegerArray的索引对应VariableCode的baseValue
+        // 这里我们只同步常用的A-Z数组（索引0x1E-0x37）
+        for i in 0x1E...0x37 {
+            if i < varData.dataIntegerArray.count {
+                let array = varData.dataIntegerArray[i]
+                if !array.isEmpty {
+                    // 将索引转换为字符名 (0x1E = 'A', 0x1F = 'B', etc.)
+                    if let charName = getArrayNameFromBaseValue(i) {
+                        let variableArray = array.map { VariableValue.integer($0) }
+                        context.variables[charName] = .array(variableArray)
+                    }
+                }
+            }
+        }
+    }
+
+    /// 从VariableCode baseValue获取数组名（如A, B, C等）
+    private func getArrayNameFromBaseValue(_ baseValue: Int) -> String? {
+        // A-Z对应0x1E-0x37
+        if baseValue >= 0x1E && baseValue <= 0x37 {
+            let offset = baseValue - 0x1E
+            if let scalar = UnicodeScalar("A".unicodeScalars.first!.value + UInt32(offset)) {
+                return String(Character(scalar))
+            }
+        }
+        return nil
+    }
+
+    /// 将ExecutionContext的变量同步到VariableData（用于保存）
+    private func syncContextToVariableData(_ varData: VariableData) {
+        // 同步context.variables中的数组到VariableData
+        for (name, value) in context.variables {
+            if case .array(let array) = value {
+                // 转换为Int64数组
+                let intArray = array.compactMap { val -> Int64? in
+                    if case .integer(let intVal) = val {
+                        return intVal
+                    }
+                    return nil
+                }
+                if !intArray.isEmpty {
+                    // 检查是否是系统变量（A-Z）
+                    if name.count == 1, let char = name.first, char.isUppercase, char >= "A" && char <= "Z" {
+                        // A-Z系统变量，使用dataIntegerArray
+                        let offset = Int(char.asciiValue! - Character("A").asciiValue!)
+                        let baseValue = 0x1E + offset
+                        if baseValue < varData.dataIntegerArray.count {
+                            varData.dataIntegerArray[baseValue] = intArray
+                        }
+                    } else {
+                        // 普通数组变量
+                        varData.setArray(name, values: intArray)
+                    }
+                }
             }
         }
     }

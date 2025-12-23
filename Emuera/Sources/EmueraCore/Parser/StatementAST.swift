@@ -507,6 +507,59 @@ public class DataListClause {
     }
 }
 
+// MARK: - SAVE/LOAD数据持久化 (Phase 3 P1)
+
+/// SAVEDATA语句 - 保存变量到文件
+/// SAVEDATA filename
+/// SAVEDATA filename, var1, var2, ...
+public class SaveDataStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+    public let variables: [ExpressionNode]  // 要保存的变量列表（可选，为空则保存所有）
+
+    public init(filename: ExpressionNode, variables: [ExpressionNode] = [], position: ScriptPosition? = nil) {
+        self.filename = filename
+        self.variables = variables
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSaveDataStatement(self)
+    }
+}
+
+/// LOADDATA语句 - 从文件加载变量
+/// LOADDATA filename
+/// LOADDATA filename, var1, var2, ...
+public class LoadDataStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+    public let variables: [ExpressionNode]  // 要加载的变量列表（可选，为空则加载所有）
+
+    public init(filename: ExpressionNode, variables: [ExpressionNode] = [], position: ScriptPosition? = nil) {
+        self.filename = filename
+        self.variables = variables
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitLoadDataStatement(self)
+    }
+}
+
+/// DELDATA语句 - 删除存档文件
+/// DELDATA filename
+public class DelDataStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+
+    public init(filename: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitDelDataStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -539,6 +592,11 @@ public protocol StatementVisitor {
 
     // Phase 3: PRINTDATA/DATALIST
     func visitPrintDataStatement(_ statement: PrintDataStatement) throws
+
+    // Phase 3: SAVE/LOAD数据持久化
+    func visitSaveDataStatement(_ statement: SaveDataStatement) throws
+    func visitLoadDataStatement(_ statement: LoadDataStatement) throws
+    func visitDelDataStatement(_ statement: DelDataStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

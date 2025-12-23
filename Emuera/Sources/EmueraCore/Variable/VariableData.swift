@@ -252,6 +252,16 @@ public class VariableData {
         arrays[name] = values
     }
 
+    /// 获取所有数组（用于同步）
+    public func getAllArrays() -> [String: [Int64]] {
+        return arrays
+    }
+
+    /// 批量设置数组（用于同步）
+    public func setAllArrays(_ newArrays: [String: [Int64]]) {
+        arrays = newArrays
+    }
+
     public func getArrayElement(_ name: String, index: Int) -> Int64 {
         guard let array = arrays[name],
               index >= 0 && index < array.count else {
@@ -450,5 +460,252 @@ public class VariableData {
             return array.indices.contains(index) ? array[index] : 0
         }
         return 0
+    }
+
+    // MARK: - Serialization for SAVE/LOAD (Phase 3 P1)
+
+    /// Serialize all variables to JSON string
+    public func serializeAll() throws -> String {
+        let data = try serializeData()
+        let jsonData = try JSONSerialization.data(withJSONObject: data, options: .prettyPrinted)
+        return String(data: jsonData, encoding: .utf8) ?? "{}"
+    }
+
+    /// Serialize specific variables to JSON string
+    public func serializeVariables(_ variableNames: [String]) throws -> String {
+        let data = try serializeData(variableNames: variableNames)
+        let jsonData = try JSONSerialization.data(withJSONObject: data, options: .prettyPrinted)
+        return String(data: jsonData, encoding: .utf8) ?? "{}"
+    }
+
+    /// Serialize character data to JSON string
+    public func serializeCharacters() throws -> String {
+        let data = try serializeCharacterData()
+        let jsonData = try JSONSerialization.data(withJSONObject: data, options: .prettyPrinted)
+        return String(data: jsonData, encoding: .utf8) ?? "{}"
+    }
+
+    /// Deserialize all variables from JSON string
+    public func deserializeAll(_ jsonString: String) throws {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw EmueraError.runtimeError(message: "Invalid JSON encoding", position: nil)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Invalid JSON format", position: nil)
+        }
+        try deserializeData(json)
+    }
+
+    /// Deserialize specific variables from JSON string
+    public func deserializeVariables(_ jsonString: String, variableNames: [String]) throws {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw EmueraError.runtimeError(message: "Invalid JSON encoding", position: nil)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Invalid JSON format", position: nil)
+        }
+        try deserializeData(json, variableNames: variableNames)
+    }
+
+    /// Deserialize character data from JSON string
+    public func deserializeCharacters(_ jsonString: String) throws {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw EmueraError.runtimeError(message: "Invalid JSON encoding", position: nil)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Invalid JSON format", position: nil)
+        }
+        try deserializeCharacterData(json)
+    }
+
+    // MARK: - Internal Serialization Methods
+
+    /// Internal method to serialize all data
+    private func serializeData(variableNames: [String]? = nil) throws -> [String: Any] {
+        var result: [String: Any] = [:]
+
+        // Metadata
+        result["metadata"] = [
+            "version": "1.0",
+            "timestamp": ISO8601DateFormatter().string(from: Date()),
+            "saveType": variableNames == nil ? "full" : "partial"
+        ]
+
+        // Variables
+        var variables: [String: Any] = [:]
+
+        // Global variables
+        if variableNames == nil {
+            var globalsData: [String: Any] = [:]
+            for (name, value) in globals {
+                globalsData[name] = serializeVariableValue(value)
+            }
+            variables["globals"] = globalsData
+        } else {
+            // Only serialize specified variables
+            var selectedGlobals: [String: Any] = [:]
+            for name in variableNames! {
+                if let value = globals[name] {
+                    selectedGlobals[name] = serializeVariableValue(value)
+                }
+            }
+            if !selectedGlobals.isEmpty {
+                variables["globals"] = selectedGlobals
+            }
+        }
+
+        // Arrays
+        if variableNames == nil {
+            var arraysData: [String: Any] = [:]
+            for (name, array) in arrays {
+                arraysData[name] = array
+            }
+            variables["arrays"] = arraysData
+        }
+
+        // System variables (dataInteger, dataString, etc.)
+        if variableNames == nil {
+            variables["dataInteger"] = dataInteger
+            variables["dataString"] = dataString
+            variables["dataIntegerArray"] = dataIntegerArray
+            variables["dataStringArray"] = dataStringArray
+            variables["dataIntegerArray2D"] = dataIntegerArray2D
+            variables["dataStringArray2D"] = dataStringArray2D
+            variables["dataIntegerArray3D"] = dataIntegerArray3D
+            variables["dataStringArray3D"] = dataStringArray3D
+        }
+
+        result["variables"] = variables
+
+        return result
+    }
+
+    /// Internal method to serialize character data
+    private func serializeCharacterData() throws -> [String: Any] {
+        var result: [String: Any] = [:]
+
+        // Metadata
+        result["metadata"] = [
+            "version": "1.0",
+            "timestamp": ISO8601DateFormatter().string(from: Date()),
+            "saveType": "characters"
+        ]
+
+        // Characters
+        var charactersData: [[String: Any]] = []
+        for (index, character) in characters.enumerated() {
+            var charDict: [String: Any] = [:]
+            charDict["id"] = index
+            charDict["name"] = character.name
+            // Add more character properties as needed
+            charactersData.append(charDict)
+        }
+        result["characters"] = charactersData
+
+        return result
+    }
+
+    /// Internal method to deserialize all data
+    private func deserializeData(_ json: [String: Any], variableNames: [String]? = nil) throws {
+        guard let variables = json["variables"] as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Missing variables section in JSON", position: nil)
+        }
+
+        // Deserialize globals
+        if let globalsData = variables["globals"] as? [String: Any] {
+            for (name, value) in globalsData {
+                if variableNames == nil || variableNames!.contains(name) {
+                    globals[name] = deserializeVariableValue(value)
+                }
+            }
+        }
+
+        // Deserialize arrays
+        if let arraysData = variables["arrays"] as? [String: Any],
+           variableNames == nil {
+            for (name, value) in arraysData {
+                if let array = value as? [Int64] {
+                    arrays[name] = array
+                }
+            }
+        }
+
+        // Deserialize system variables (only if full load)
+        if variableNames == nil {
+            if let di = variables["dataInteger"] as? [Int64] { dataInteger = di }
+            if let ds = variables["dataString"] as? [String?] { dataString = ds }
+            if let dia = variables["dataIntegerArray"] as? [[Int64]] { dataIntegerArray = dia }
+            if let dsa = variables["dataStringArray"] as? [[String?]] { dataStringArray = dsa }
+            if let dia2d = variables["dataIntegerArray2D"] as? [[[Int64]]] { dataIntegerArray2D = dia2d }
+            if let dsa2d = variables["dataStringArray2D"] as? [[[String?]]] { dataStringArray2D = dsa2d }
+            if let dia3d = variables["dataIntegerArray3D"] as? [[[[Int64]]]] { dataIntegerArray3D = dia3d }
+            if let dsa3d = variables["dataStringArray3D"] as? [[[[String?]]]] { dataStringArray3D = dsa3d }
+        }
+    }
+
+    /// Internal method to deserialize character data
+    private func deserializeCharacterData(_ json: [String: Any]) throws {
+        guard let charactersData = json["characters"] as? [[String: Any]] else {
+            throw EmueraError.runtimeError(message: "Missing characters section in JSON", position: nil)
+        }
+
+        characters.removeAll()
+        for charDict in charactersData {
+            let char = CharacterData()
+            if let name = charDict["name"] as? String {
+                char.name = name
+            }
+            if let id = charDict["id"] as? Int {
+                char.id = id
+            }
+            characters.append(char)
+        }
+    }
+
+    /// Serialize a VariableValue to JSON-compatible format
+    private func serializeVariableValue(_ value: VariableValue) -> Any {
+        switch value {
+        case .integer(let int):
+            return int
+        case .string(let str):
+            return str
+        case .null:
+            return NSNull()
+        case .array(let arr):
+            // 递归序列化数组中的每个元素
+            return arr.map { serializeVariableValue($0) }
+        case .character(let char):
+            // 序列化角色数据为字典
+            return [
+                "id": char.id,
+                "name": char.name
+            ]
+        }
+    }
+
+    /// Deserialize JSON value to VariableValue
+    private func deserializeVariableValue(_ value: Any) -> VariableValue {
+        if let int = value as? Int64 {
+            return .integer(int)
+        } else if let int = value as? Int {
+            return .integer(Int64(int))
+        } else if let str = value as? String {
+            return .string(str)
+        } else if let arr = value as? [Any] {
+            // 反序列化数组
+            return .array(arr.map { deserializeVariableValue($0) })
+        } else if let dict = value as? [String: Any] {
+            // 反序列化角色数据
+            let char = CharacterData()
+            if let id = dict["id"] as? Int {
+                char.id = id
+            }
+            if let name = dict["name"] as? String {
+                char.name = name
+            }
+            return .character(char)
+        } else {
+            return .null
+        }
     }
 }
