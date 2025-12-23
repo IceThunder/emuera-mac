@@ -93,7 +93,13 @@
       "Bash(.build/debug/DebugAssignment:*)",
       "Bash(.build/debug/SelectCaseTest:*)",
       "Bash(.build/debug/DebugSelectCaseParse:*)",
-      "Bash(.build/debug/DebugRepeat:*)"
+      "Bash(.build/debug/DebugRepeat:*)",
+      "Bash(.build/debug/PrintDataTest:*)",
+      "Bash(.build/debug/DebugPrintDataSimple:*)",
+      "Bash(.build/debug/DebugPrintDataVariables:*)",
+      "Bash(.build/debug/DebugPrintDataTag:*)",
+      "Bash(.build/debug/DebugIsFunction:*)",
+      "Bash(.build/debug/DebugDoLoop:*)"
     ]
   }
 }

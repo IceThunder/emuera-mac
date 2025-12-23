@@ -2140,7 +2140,19 @@ public class ScriptParser {
         case .keyword(let keyword):
             let upper = keyword.uppercased()
             // 函数中常见的返回语句
-            return upper == "RETURN" || upper == "RETURNF" || upper == "RESTART"
+            if upper == "RETURN" || upper == "RETURNF" || upper == "RESTART" {
+                return true
+            }
+            // Phase 3: 明确的标签起始关键字（总是标签，不是函数定义）
+            let labelStartKeywords: Set<String> = [
+                "IF", "WHILE", "FOR", "REPEAT", "DO",
+                "SELECTCASE", "PRINTDATA",
+                "TRY", "BREAK", "CONTINUE"
+            ]
+            if labelStartKeywords.contains(upper) {
+                return false
+            }
+            return false
 
         case .variable:
             // 变量赋值: VAR = value
@@ -2148,7 +2160,67 @@ public class ScriptParser {
             if index + 1 < remainingTokens.count {
                 let nextToken = remainingTokens[index + 1]
                 if case .operatorSymbol(let op) = nextToken.type, op == .assign {
-                    return true
+                    // 变量赋值后，继续查找是否有标签起始关键字或函数返回语句
+                    // 例如: A = 10\nPRINTDATA → 是标签，不是函数 (返回 false)
+                    // 例如: A = 10\nRETURN → 是函数 (返回 true)
+                    for i in (index + 2)..<remainingTokens.count {
+                        let t = remainingTokens[i]
+                        switch t.type {
+                        case .whitespace, .comment, .lineBreak:
+                            continue
+                        case .keyword(let k):
+                            let upper = k.uppercased()
+                            // 标签起始关键字 - 说明是标签定义
+                            let labelStartKeywords: Set<String> = [
+                                "IF", "WHILE", "FOR", "REPEAT", "DO",
+                                "SELECTCASE", "PRINTDATA",
+                                "TRY", "BREAK", "CONTINUE",
+                                "PRINT", "PRINTL", "PRINTW", "PRINTFORM", "PRINTFORML", "PRINTFORMW",
+                                "INPUT", "INPUTS", "WAIT", "WAITANYKEY",
+                                "GOTO", "CALL", "TRYCALL", "TRYGOTO", "TRYJUMP",
+                                "DRAWLINE", "BAR", "BARL",
+                                "QUIT", "RESET", "PERSIST",
+                                "DEBUGPRINT", "DEBUGPRINTL",
+                                "THROW", "ASSERT"
+                            ]
+                            if labelStartKeywords.contains(upper) {
+                                return false  // 是标签，不是函数
+                            }
+                            // 函数返回语句 - 说明是函数
+                            if upper == "RETURN" || upper == "RETURNF" || upper == "RESTART" {
+                                return true  // 是函数
+                            }
+                            // 其他关键字（如 ENDLIST, ENDDATA, ENDIF 等），继续查找
+                            continue
+                        case .directive(let d):
+                            let upper = d.uppercased()
+                            if upper.hasPrefix("#DIM") || upper.hasPrefix("#FUNCTION") || upper == "#FUNCTIONS" {
+                                return true  // 是函数
+                            }
+                            continue  // 其他指令，继续查找
+                        case .command(let c):
+                            let upper = c.uppercased()
+                            // 命令列表
+                            let commandsAlwaysLabel: Set<String> = [
+                                "PRINT", "PRINTL", "PRINTW", "PRINTFORM", "PRINTFORML", "PRINTFORMW",
+                                "INPUT", "INPUTS", "WAIT", "WAITANYKEY",
+                                "GOTO", "CALL", "TRYCALL", "TRYGOTO", "TRYJUMP",
+                                "DRAWLINE", "BAR", "BARL",
+                                "QUIT", "RESET", "PERSIST",
+                                "DEBUGPRINT", "DEBUGPRINTL",
+                                "THROW", "ASSERT"
+                            ]
+                            if commandsAlwaysLabel.contains(upper) {
+                                return false  // 标签起始命令
+                            }
+                            continue  // 其他命令，继续查找
+                        default:
+                            // 其他 token，不能确定，保守返回 false（作为标签处理）
+                            return false
+                        }
+                    }
+                    // 没有找到明确的标签起始或函数起始，可能是纯赋值后结束
+                    return false
                 }
             }
             return false

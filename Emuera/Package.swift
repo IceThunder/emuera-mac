@@ -446,6 +446,30 @@ let package = Package(
             sources: ["DebugPrintDataFinal.swift"]
         ),
 
+        // Debug PRINTDATA Variables
+        .executableTarget(
+            name: "DebugPrintDataVariables",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugPrintDataVariables.swift"]
+        ),
+
+        // Debug PRINTDATA Tag
+        .executableTarget(
+            name: "DebugPrintDataTag",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugPrintDataTag.swift"]
+        ),
+
+        // Debug isFunctionDefinitionStart
+        .executableTarget(
+            name: "DebugIsFunction",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugIsFunction.swift"]
+        ),
+
         // DO-LOOP Test Target (Phase 3)
         .executableTarget(
             name: "DoLoopTest",
