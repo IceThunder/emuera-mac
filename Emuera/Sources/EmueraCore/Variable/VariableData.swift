@@ -1052,4 +1052,154 @@ public class VariableData {
 
         return FileManager.default.fileExists(atPath: fileURL.path)
     }
+
+    /// 获取存档的详细信息
+    /// - Parameter filename: 文件名（可不带.json扩展名）
+    /// - Returns: 元数据字典，包含版本、时间、大小、游戏状态等信息
+    public func getSaveFileInfo(_ filename: String) -> [String: Any] {
+        var result: [String: Any] = [:]
+
+        // 获取应用文档目录
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return [:]
+        }
+
+        // saves子目录
+        let savesURL = documentsURL.appendingPathComponent("EmueraSaves")
+
+        // 自动添加.json扩展名如果未指定
+        let finalFilename = filename.hasSuffix(".json") ? filename : "\(filename).json"
+        let fileURL = savesURL.appendingPathComponent(finalFilename)
+
+        // 检查文件是否存在
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return [:]
+        }
+
+        do {
+            // 获取文件属性
+            let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+
+            // 基本文件信息
+            if let fileSize = attributes[.size] as? Int {
+                result["size"] = fileSize
+            }
+
+            if let modDate = attributes[.modificationDate] as? Date {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                result["modified"] = formatter.string(from: modDate)
+            }
+
+            // 读取JSON内容获取游戏状态信息
+            let jsonString = try String(contentsOf: fileURL, encoding: .utf8)
+            if let jsonData = jsonString.data(using: .utf8),
+               let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+
+                // 元数据
+                if let metadata = json["metadata"] as? [String: Any] {
+                    result["version"] = metadata["version"] ?? "unknown"
+                    if let saveType = metadata["saveType"] as? String {
+                        result["saveType"] = saveType
+                    }
+                }
+
+                // 变量信息
+                if let variables = json["variables"] as? [String: Any] {
+                    // 全局变量数量
+                    if let globals = variables["globals"] as? [String: Any] {
+                        result["globalVars"] = globals.count
+                    }
+
+                    // 数组数量
+                    if let arrays = variables["arrays"] as? [String: Any] {
+                        result["arrays"] = arrays.count
+                    }
+
+                    // 系统变量
+                    if let dataInteger = variables["dataInteger"] as? [Int64] {
+                        // 统计非零值作为游戏进度指标
+                        let nonZeroCount = dataInteger.filter { $0 != 0 }.count
+                        result["systemVars"] = nonZeroCount
+                    }
+                }
+
+                // 角色信息
+                if let characters = json["characters"] as? [[String: Any]] {
+                    result["characters"] = characters.count
+                }
+            }
+
+        } catch {
+            // 如果无法读取详细信息，返回基本文件信息
+            result["error"] = "无法读取详细信息"
+        }
+
+        return result
+    }
+
+    /// 执行自动保存（与SAVEGAME相同，但会记录自动保存信息）
+    /// - Parameter filename: 文件名
+    /// - Returns: 是否成功
+    public func autoSave(_ filename: String) throws -> Bool {
+        // 执行保存
+        let jsonString = try serializeGameState()
+
+        // 获取文件URL
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return false
+        }
+
+        let savesURL = documentsURL.appendingPathComponent("EmueraSaves")
+        try? FileManager.default.createDirectory(at: savesURL, withIntermediateDirectories: true)
+
+        let finalFilename = filename.hasSuffix(".json") ? filename : "\(filename).json"
+        let fileURL = savesURL.appendingPathComponent(finalFilename)
+
+        // 写入文件
+        try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        // 更新自动保存索引（可选功能）
+        updateAutoSaveIndex(filename)
+
+        return true
+    }
+
+    /// 更新自动保存索引
+    private func updateAutoSaveIndex(_ filename: String) {
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return
+        }
+
+        let savesURL = documentsURL.appendingPathComponent("EmueraSaves")
+        let indexFile = savesURL.appendingPathComponent("__autosave_index__.json")
+
+        do {
+            // 读取现有索引
+            var index: [String: Any] = [:]
+            if FileManager.default.fileExists(atPath: indexFile.path) {
+                let content = try String(contentsOf: indexFile, encoding: .utf8)
+                if let data = content.data(using: .utf8),
+                   let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    index = json
+                }
+            }
+
+            // 更新索引
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            index[filename] = [
+                "lastSave": formatter.string(from: Date()),
+                "autoSaveCount": (index[filename] as? [String: Any])?["autoSaveCount"] as? Int ?? 0 + 1
+            ]
+
+            // 保存索引
+            let jsonData = try JSONSerialization.data(withJSONObject: index, options: .prettyPrinted)
+            try String(data: jsonData, encoding: .utf8)?.write(to: indexFile, atomically: true, encoding: .utf8)
+
+        } catch {
+            // 索引更新失败不影响自动保存功能
+            print("自动保存索引更新失败: \(error)")
+        }
+    }
 }

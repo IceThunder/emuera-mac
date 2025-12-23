@@ -651,6 +651,36 @@ public class SaveExistsStatement: StatementNode {
     }
 }
 
+/// AUTOSAVE语句 - 自动保存游戏状态
+/// AUTOSAVE filename
+public class AutoSaveStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+
+    public init(filename: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitAutoSaveStatement(self)
+    }
+}
+
+/// SAVEINFO语句 - 显示存档详细信息
+/// SAVEINFO filename
+public class SaveInfoStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+
+    public init(filename: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSaveInfoStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -700,6 +730,10 @@ public protocol StatementVisitor {
     // Phase 3 P4: SAVELIST/SAVEEXISTS存档管理增强
     func visitSaveListStatement(_ statement: SaveListStatement) throws
     func visitSaveExistsStatement(_ statement: SaveExistsStatement) throws
+
+    // Phase 3 P5: AUTOSAVE/SAVEINFO高级存档功能
+    func visitAutoSaveStatement(_ statement: AutoSaveStatement) throws
+    func visitSaveInfoStatement(_ statement: SaveInfoStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

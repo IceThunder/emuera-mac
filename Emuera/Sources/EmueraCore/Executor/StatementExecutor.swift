@@ -1777,4 +1777,97 @@ public class StatementExecutor: StatementVisitor {
             context.lastResult = .integer(0)
         }
     }
+
+    // MARK: - SAVE/LOAD高级功能 (Phase 3 P5)
+
+    /// 访问AUTOSAVE语句 - 自动保存游戏状态
+    public func visitAutoSaveStatement(_ statement: AutoSaveStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法自动保存", position: nil)
+        }
+
+        do {
+            // 同步context到VariableData（确保最新数据）
+            syncContextToVariableData(varData)
+
+            // 执行自动保存
+            let success = try varData.autoSave(filename)
+
+            if success {
+                context.output.append("[自动保存完成: \(filename)]\n")
+                context.lastResult = .integer(1)  // 成功
+            } else {
+                context.output.append("[自动保存失败]\n")
+                context.lastResult = .integer(0)  // 失败
+            }
+
+        } catch {
+            context.output.append("[自动保存异常: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
+    /// 访问SAVEINFO语句 - 显示存档详细信息
+    public func visitSaveInfoStatement(_ statement: SaveInfoStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法获取存档信息", position: nil)
+        }
+
+        // 获取存档信息
+        let info = varData.getSaveFileInfo(filename)
+
+        if info.isEmpty {
+            context.output.append("[存档不存在: \(filename)]\n")
+            context.lastResult = .integer(0)
+        } else {
+            context.output.append("[存档信息: \(filename)]\n")
+
+            // 基本文件信息
+            if let modified = info["modified"] as? String {
+                context.output.append("  修改时间: \(modified)\n")
+            }
+            if let size = info["size"] as? Int {
+                context.output.append("  文件大小: \(size) bytes\n")
+            }
+
+            // 版本信息
+            if let version = info["version"] as? String {
+                context.output.append("  版本: \(version)\n")
+            }
+            if let saveType = info["saveType"] as? String {
+                context.output.append("  保存类型: \(saveType)\n")
+            }
+
+            // 变量信息
+            if let globalVars = info["globalVars"] as? Int {
+                context.output.append("  全局变量: \(globalVars)个\n")
+            }
+            if let arrays = info["arrays"] as? Int {
+                context.output.append("  数组: \(arrays)个\n")
+            }
+            if let systemVars = info["systemVars"] as? Int {
+                context.output.append("  系统变量: \(systemVars)个\n")
+            }
+            if let characters = info["characters"] as? Int {
+                context.output.append("  角色: \(characters)个\n")
+            }
+
+            context.lastResult = .integer(1)
+        }
+    }
 }

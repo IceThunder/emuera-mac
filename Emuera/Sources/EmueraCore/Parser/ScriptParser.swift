@@ -266,6 +266,12 @@ public class ScriptParser {
         case "SAVEEXISTS":
             return try parseSaveExistsCommand()
 
+        case "AUTOSAVE":
+            return try parseAutoSaveCommand()
+
+        case "SAVEINFO":
+            return try parseSaveInfoCommand()
+
         case "CATCH", "ENDTRY", "TRYJUMPLIST", "TRYGOTOLIST":
             // 这些应该在TRY/CATCH解析时处理，不应该单独出现
             throw EmueraError.scriptParseError(
@@ -2488,5 +2494,43 @@ public class ScriptParser {
 
         let filename = arguments[0]
         return SaveExistsStatement(filename: filename, position: startPos)
+    }
+
+    /// 解析AUTOSAVE命令 - 自动保存游戏状态
+    /// AUTOSAVE filename
+    private func parseAutoSaveCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        currentIndex += 1  // 跳过AUTOSAVE
+
+        // 解析文件名参数
+        let arguments = try parseArguments()
+        guard arguments.count == 1 else {
+            throw EmueraError.scriptParseError(
+                message: "AUTOSAVE需要一个文件名参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        let filename = arguments[0]
+        return AutoSaveStatement(filename: filename, position: startPos)
+    }
+
+    /// 解析SAVEINFO命令 - 显示存档详细信息
+    /// SAVEINFO filename
+    private func parseSaveInfoCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        currentIndex += 1  // 跳过SAVEINFO
+
+        // 解析文件名参数
+        let arguments = try parseArguments()
+        guard arguments.count == 1 else {
+            throw EmueraError.scriptParseError(
+                message: "SAVEINFO需要一个文件名参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        let filename = arguments[0]
+        return SaveInfoStatement(filename: filename, position: startPos)
     }
 }

@@ -104,7 +104,8 @@
       "Bash(.build/debug/DebugSaveLoadParse:*)",
       "Bash(.build/debug/DebugSaveLoadToken:*)",
       "Bash(.build/debug/DebugSaveLoad:*)",
-      "Bash(.build/debug/DebugSaveLoadDetailed:*)"
+      "Bash(.build/debug/DebugSaveLoadDetailed:*)",
+      "Bash(.build/debug/DebugSaveInfo:*)"
     ]
   }
 }

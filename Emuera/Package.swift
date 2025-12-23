@@ -582,6 +582,14 @@ let package = Package(
             sources: ["DebugSaveList.swift"]
         ),
 
+        // Debug AUTOSAVE/SAVEINFO Target (Phase 3 P5)
+        .executableTarget(
+            name: "DebugSaveInfo",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveInfo.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",
