@@ -574,6 +574,14 @@ let package = Package(
             sources: ["DebugSaveGame.swift"]
         ),
 
+        // Debug SAVELIST/SAVEEXISTS Target (Phase 3 P4)
+        .executableTarget(
+            name: "DebugSaveList",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveList.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

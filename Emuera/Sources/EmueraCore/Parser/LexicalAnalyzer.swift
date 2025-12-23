@@ -203,7 +203,8 @@ public struct LexicalAnalyzer {
                          "TRY", "CATCH", "ENDTRY", "TRYJUMP", "TRYGOTO", "TRYJUMPLIST", "TRYGOTOLIST",
                          "TO", "PRINTDATA", "DATALIST", "ENDLIST", "ENDDATA",
                          "SAVEDATA", "LOADDATA", "DELDATA", "SAVEVAR", "LOADVAR",
-                         "SAVECHARA", "LOADCHARA", "SAVEGAME", "LOADGAME"].contains(upper) {
+                         "SAVECHARA", "LOADCHARA", "SAVEGAME", "LOADGAME",
+                         "SAVELIST", "SAVEEXISTS"].contains(upper) {
                     tokenType = .keyword(identifier)
                 }
                 // 检查是否是内置函数

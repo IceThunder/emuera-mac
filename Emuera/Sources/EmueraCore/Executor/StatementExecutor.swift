@@ -1723,4 +1723,58 @@ public class StatementExecutor: StatementVisitor {
             }
         }
     }
+
+    /// 访问SAVELIST语句 - 列出所有存档文件
+    public func visitSaveListStatement(_ statement: SaveListStatement) throws {
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法列出存档", position: nil)
+        }
+
+        // 获取存档列表
+        let saveList = varData.getSaveFileList()
+
+        if saveList.isEmpty {
+            context.output.append("[没有找到存档文件]\\n")
+            context.lastResult = .integer(0)
+        } else {
+            context.output.append("[存档列表]\\n")
+            for (filename, metadata) in saveList.sorted(by: { $0.key < $1.key }) {
+                var line = "  \(filename)"
+                if let modified = metadata["modified"] as? String {
+                    line += " - \(modified)"
+                }
+                if let size = metadata["size"] as? Int {
+                    line += " - \(size) bytes"
+                }
+                context.output.append(line + "\\n")
+            }
+            context.lastResult = .integer(Int64(saveList.count))
+        }
+    }
+
+    /// 访问SAVEEXISTS语句 - 检查存档是否存在
+    public func visitSaveExistsStatement(_ statement: SaveExistsStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法检查存档", position: nil)
+        }
+
+        // 检查存档是否存在
+        let exists = varData.saveFileExists(filename)
+
+        if exists {
+            context.output.append("[存档存在: \(filename)]\\n")
+            context.lastResult = .integer(1)
+        } else {
+            context.output.append("[存档不存在: \(filename)]\\n")
+            context.lastResult = .integer(0)
+        }
+    }
 }

@@ -624,6 +624,33 @@ public class LoadGameStatement: StatementNode {
     }
 }
 
+/// SAVELIST语句 - 列出所有存档文件
+/// SAVELIST
+public class SaveListStatement: StatementNode {
+    public override init(position: ScriptPosition? = nil) {
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSaveListStatement(self)
+    }
+}
+
+/// SAVEEXISTS语句 - 检查存档是否存在
+/// SAVEEXISTS filename
+public class SaveExistsStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+
+    public init(filename: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSaveExistsStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -669,6 +696,10 @@ public protocol StatementVisitor {
     // Phase 3 P3: SAVEGAME/LOADGAME完整游戏状态持久化
     func visitSaveGameStatement(_ statement: SaveGameStatement) throws
     func visitLoadGameStatement(_ statement: LoadGameStatement) throws
+
+    // Phase 3 P4: SAVELIST/SAVEEXISTS存档管理增强
+    func visitSaveListStatement(_ statement: SaveListStatement) throws
+    func visitSaveExistsStatement(_ statement: SaveExistsStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

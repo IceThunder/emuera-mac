@@ -983,4 +983,73 @@ public class VariableData {
         // Load game state (placeholder - would set actual game state)
         // if let gameState = json["gameState"] as? [String: Any] { ... }
     }
+
+    // MARK: - SAVELIST/SAVEEXISTS (Phase 3 P4)
+
+    /// 获取存档文件列表
+    /// - Returns: [文件名: 元数据字典]，元数据包含时间戳和大小
+    public func getSaveFileList() -> [String: [String: Any]] {
+        var result: [String: [String: Any]] = [:]
+
+        // 获取应用文档目录
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return [:]
+        }
+
+        // saves子目录
+        let savesURL = documentsURL.appendingPathComponent("EmueraSaves")
+
+        // 检查目录是否存在
+        guard let enumerator = FileManager.default.enumerator(at: savesURL, includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey]) else {
+            return [:]
+        }
+
+        for case let fileURL as URL in enumerator {
+            // 只处理.json文件
+            guard fileURL.pathExtension == "json" else { continue }
+
+            let filename = fileURL.lastPathComponent
+
+            do {
+                let attributes = try fileURL.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+                var metadata: [String: Any] = [:]
+
+                if let modDate = attributes.contentModificationDate {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    metadata["modified"] = formatter.string(from: modDate)
+                }
+
+                if let fileSize = attributes.fileSize {
+                    metadata["size"] = fileSize
+                }
+
+                result[filename] = metadata
+            } catch {
+                // 如果无法获取元数据，仍然返回文件名
+                result[filename] = [:]
+            }
+        }
+
+        return result
+    }
+
+    /// 检查存档文件是否存在
+    /// - Parameter filename: 文件名（可不带.json扩展名）
+    /// - Returns: 是否存在
+    public func saveFileExists(_ filename: String) -> Bool {
+        // 获取应用文档目录
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return false
+        }
+
+        // saves子目录
+        let savesURL = documentsURL.appendingPathComponent("EmueraSaves")
+
+        // 自动添加.json扩展名如果未指定
+        let finalFilename = filename.hasSuffix(".json") ? filename : "\(filename).json"
+        let fileURL = savesURL.appendingPathComponent(finalFilename)
+
+        return FileManager.default.fileExists(atPath: fileURL.path)
+    }
 }

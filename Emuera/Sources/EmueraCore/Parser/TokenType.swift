@@ -78,6 +78,10 @@ public enum TokenType: CustomStringConvertible {
     case saveGame
     case loadGame
 
+    // SAVE管理增强 (Phase 3 P4)
+    case saveList
+    case saveExists
+
     // Special
     case lineBreak
     case comment
@@ -243,6 +247,8 @@ public enum TokenType: CustomStringConvertible {
         case .loadChara: return "loadChara"
         case .saveGame: return "saveGame"
         case .loadGame: return "loadGame"
+        case .saveList: return "saveList"
+        case .saveExists: return "saveExists"
         case .lineBreak: return "lineBreak"
         case .comment: return "comment"
         case .whitespace: return "whitespace"
