@@ -681,6 +681,36 @@ public class SaveInfoStatement: StatementNode {
     }
 }
 
+/// RESETDATA - 重置所有变量
+public class ResetDataStatement: StatementNode {
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitResetDataStatement(self)
+    }
+}
+
+/// RESETGLOBAL - 重置全局变量数组
+public class ResetGlobalStatement: StatementNode {
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitResetGlobalStatement(self)
+    }
+}
+
+/// PERSIST - 持久化状态控制
+public class PersistEnhancedStatement: StatementNode {
+    public let enabled: Bool
+    public let option: ExpressionNode?  // 可选的选项参数
+
+    public init(enabled: Bool, option: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.enabled = enabled
+        self.option = option
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitPersistEnhancedStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -734,6 +764,11 @@ public protocol StatementVisitor {
     // Phase 3 P5: AUTOSAVE/SAVEINFO高级存档功能
     func visitAutoSaveStatement(_ statement: AutoSaveStatement) throws
     func visitSaveInfoStatement(_ statement: SaveInfoStatement) throws
+
+    // Phase 4: 数据重置和持久化控制
+    func visitResetDataStatement(_ statement: ResetDataStatement) throws
+    func visitResetGlobalStatement(_ statement: ResetGlobalStatement) throws
+    func visitPersistEnhancedStatement(_ statement: PersistEnhancedStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

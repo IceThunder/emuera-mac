@@ -144,9 +144,6 @@ public class ScriptParser {
         case "RESET":
             return ResetStatement(position: startPos)
 
-        case "PERSIST":
-            return try parsePersistStatement()
-
         case "SAVEDATA", "LOADDATA", "DELDATA":
             return try parseSaveLoadCommand(upperCmd)
 
@@ -158,6 +155,15 @@ public class ScriptParser {
 
         case "SAVEGAME", "LOADGAME":
             return try parseSaveGameCommand(upperCmd)
+
+        case "RESETDATA":
+            return ResetDataStatement(position: startPos)
+
+        case "RESETGLOBAL":
+            return ResetGlobalStatement(position: startPos)
+
+        case "PERSIST":
+            return try parsePersistCommand()
 
         default:
             // 其他命令，作为通用命令处理
@@ -174,29 +180,24 @@ public class ScriptParser {
         // 只需要跳过空白
         skipWhitespaceAndNewlines()
 
-        // 检查当前token是否为变量名（ON/OFF）
+        // 检查是否有参数（支持无参数的情况）
         guard currentIndex < tokens.count else {
-            throw EmueraError.scriptParseError(
-                message: "PERSIST后需要ON或OFF",
-                position: getCurrentPosition()
-            )
+            // 无参数：默认开启持久化
+            return PersistStatement(enabled: true, position: startPos)
         }
 
         let token = tokens[currentIndex]
 
-        guard case .variable(let value) = token.type else {
-            throw EmueraError.scriptParseError(
-                message: "PERSIST后需要ON或OFF",
-                position: getCurrentPosition()
-            )
+        // 检查是否是变量（ON/OFF）
+        if case .variable(let value) = token.type {
+            let upperValue = value.uppercased()
+            let enabled = (upperValue == "ON" || upperValue == "TRUE" || upperValue == "1")
+            currentIndex += 1
+            return PersistStatement(enabled: enabled, position: startPos)
         }
 
-        let upperValue = value.uppercased()
-        let enabled = (upperValue == "ON" || upperValue == "TRUE")
-
-        currentIndex += 1
-
-        return PersistStatement(enabled: enabled, position: startPos)
+        // 其他情况，默认开启
+        return PersistStatement(enabled: true, position: startPos)
     }
 
     // MARK: - 关键字语句解析
@@ -271,6 +272,15 @@ public class ScriptParser {
 
         case "SAVEINFO":
             return try parseSaveInfoCommand()
+
+        case "RESETDATA":
+            return try parseResetDataCommand()
+
+        case "RESETGLOBAL":
+            return try parseResetGlobalCommand()
+
+        case "PERSIST":
+            return try parsePersistCommand()
 
         case "CATCH", "ENDTRY", "TRYJUMPLIST", "TRYGOTOLIST":
             // 这些应该在TRY/CATCH解析时处理，不应该单独出现
@@ -2532,5 +2542,57 @@ public class ScriptParser {
 
         let filename = arguments[0]
         return SaveInfoStatement(filename: filename, position: startPos)
+    }
+
+    /// 解析RESETDATA命令 - 重置所有变量
+    /// RESETDATA
+    private func parseResetDataCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        currentIndex += 1  // 跳过RESETDATA
+        return ResetDataStatement(position: startPos)
+    }
+
+    /// 解析RESETGLOBAL命令 - 重置全局变量数组
+    /// RESETGLOBAL
+    private func parseResetGlobalCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        currentIndex += 1  // 跳过RESETGLOBAL
+        return ResetGlobalStatement(position: startPos)
+    }
+
+    /// 解析PERSIST命令 - 持久化状态控制
+    /// PERSIST [option]
+    /// PERSIST ON/OFF
+    /// 注意：currentIndex已指向命令之后的第一个token
+    private func parsePersistCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+
+        // 检查是否有参数
+        if currentIndex >= tokens.count {
+            // 无参数：默认开启持久化
+            return PersistEnhancedStatement(enabled: true, option: nil, position: startPos)
+        }
+
+        // 检查下一个token是否是变量（ON/OFF或其他选项）
+        let nextToken = tokens[currentIndex]
+
+        if case .variable(let value) = nextToken.type {
+            currentIndex += 1
+            let option = ExpressionNode.variable(value)
+
+            // 判断是ON还是OFF
+            let upperValue = value.uppercased()
+            if upperValue == "ON" || upperValue == "1" || upperValue == "TRUE" {
+                return PersistEnhancedStatement(enabled: true, option: option, position: startPos)
+            } else if upperValue == "OFF" || upperValue == "0" || upperValue == "FALSE" {
+                return PersistEnhancedStatement(enabled: false, option: option, position: startPos)
+            } else {
+                // 其他选项参数
+                return PersistEnhancedStatement(enabled: true, option: option, position: startPos)
+            }
+        }
+
+        // 默认开启
+        return PersistEnhancedStatement(enabled: true, option: nil, position: startPos)
     }
 }

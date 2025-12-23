@@ -590,6 +590,22 @@ let package = Package(
             sources: ["DebugSaveInfo.swift"]
         ),
 
+        // Debug Phase 4 Target (数据重置和持久化控制)
+        .executableTarget(
+            name: "DebugPhase4",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugPhase4.swift"]
+        ),
+
+        // Debug Phase 4 Parse Target (解析调试)
+        .executableTarget(
+            name: "DebugPhase4Parse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugPhase4Parse.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

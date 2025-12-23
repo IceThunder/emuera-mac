@@ -1871,3 +1871,80 @@ public class StatementExecutor: StatementVisitor {
         }
     }
 }
+
+// MARK: - Phase 4: 数据重置和持久化控制
+
+extension StatementExecutor {
+    /// 访问RESETDATA语句 - 重置所有变量
+    public func visitResetDataStatement(_ statement: ResetDataStatement) throws {
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+
+        // 重置VariableData
+        varData.reset()
+
+        // 同步到ExecutionContext
+        syncVariableDataToContext(varData)
+
+        // 重置ExecutionContext的变量字典
+        context.variables.removeAll()
+        context.variables["RESULT"] = .integer(0)
+        context.variables["RESULTS"] = .string("")
+        context.variables["COUNT"] = .integer(0)
+        context.variables["MASTER"] = .integer(0)
+        context.variables["TARGET"] = .integer(0)
+        context.variables["ASSI"] = .integer(0)
+
+        context.lastResult = .null
+        context.output.append("[所有数据已重置]\n")
+    }
+
+    /// 访问RESETGLOBAL语句 - 重置全局变量数组
+    public func visitResetGlobalStatement(_ statement: ResetGlobalStatement) throws {
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+
+        // 重置VariableData中的全局数组
+        varData.resetGlobalArrays()
+
+        // 重置ExecutionContext中的A-Z数组变量
+        // A-Z对应0x1E-0x37
+        for i in 0x1E...0x37 {
+            if let charName = getArrayNameFromBaseValue(i) {
+                // 重置为100个0的数组
+                context.variables[charName] = .array(Array(repeating: .integer(0), count: 100))
+            }
+        }
+
+        // 重置其他全局数组变量（如FLAG等）
+        let globalArrays = ["FLAG", "RESULT", "SELECTCOM", "ITEM", "TALENT", "ABL", "EXP", "MARK", "PALAM", "SOURCE"]
+        for name in globalArrays {
+            context.variables[name] = .array(Array(repeating: .integer(0), count: 100))
+        }
+
+        context.lastResult = .null
+        context.output.append("[全局变量数组已重置]\n")
+    }
+
+    /// 访问PERSIST增强语句 - 持久化状态控制
+    public func visitPersistEnhancedStatement(_ statement: PersistEnhancedStatement) throws {
+        // 设置持久化状态
+        context.persistEnabled = statement.enabled
+
+        // 如果有选项参数，可以在这里处理
+        if let option = statement.option {
+            let optionValue = try evaluateExpression(option)
+            let status = statement.enabled ? "ON" : "OFF"
+            context.output.append("[持久化状态: \(status) 选项: \(optionValue)]\n")
+        } else {
+            let status = statement.enabled ? "ON" : "OFF"
+            context.output.append("[持久化状态: \(status)]\n")
+        }
+
+        context.lastResult = .integer(statement.enabled ? 1 : 0)
+    }
+}

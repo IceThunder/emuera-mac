@@ -86,6 +86,11 @@ public enum TokenType: CustomStringConvertible {
     case autoSave
     case saveInfo
 
+    // 数据重置和持久化控制 (Phase 4)
+    case resetData
+    case resetGlobal
+    case persist
+
     // Special
     case lineBreak
     case comment
@@ -255,6 +260,9 @@ public enum TokenType: CustomStringConvertible {
         case .saveExists: return "saveExists"
         case .autoSave: return "autoSave"
         case .saveInfo: return "saveInfo"
+        case .resetData: return "resetData"
+        case .resetGlobal: return "resetGlobal"
+        case .persist: return "persist"
         case .lineBreak: return "lineBreak"
         case .comment: return "comment"
         case .whitespace: return "whitespace"

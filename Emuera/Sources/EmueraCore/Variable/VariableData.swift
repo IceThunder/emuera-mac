@@ -370,6 +370,36 @@ public class VariableData {
         }
     }
 
+    /// 重置所有全局变量（保留数组和系统变量）
+    public func resetGlobals() {
+        globals.removeAll()
+        // 重新设置默认全局变量
+        globals["RESULT"] = .integer(0)
+        globals["RESULTS"] = .string("")
+        globals["COUNT"] = .integer(0)
+        globals["MASTER"] = .integer(0)
+        globals["TARGET"] = .integer(0)
+        globals["ASSI"] = .integer(0)
+    }
+
+    /// 重置全局变量数组（A-Z, FLAG等）
+    public func resetGlobalArrays() {
+        // 重置A-Z数组（索引0x1E-0x37）
+        for i in 0x1E...0x37 {
+            if i < dataIntegerArray.count {
+                dataIntegerArray[i] = Array(repeating: 0, count: 100)
+            }
+        }
+
+        // 重置其他全局数组
+        let globalArrays = [0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x11, 0x13, 0x19, 0x3C, 0x3D, 0x3E, 0x3F, 0x40]
+        for i in globalArrays {
+            if i < dataIntegerArray.count {
+                dataIntegerArray[i] = Array(repeating: 0, count: 100)
+            }
+        }
+    }
+
     // MARK: - 2D/3D Array Access Methods
 
     /// Get 2D integer array element
