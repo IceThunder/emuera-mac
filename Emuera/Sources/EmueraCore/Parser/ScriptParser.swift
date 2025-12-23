@@ -2389,29 +2389,32 @@ public class ScriptParser {
     }
 
     /// 解析SAVECHARA/LOADCHARA命令
+    /// SAVECHARA filename, charaIndex
+    /// LOADCHARA filename, charaIndex
     private func parseSaveCharaCommand(_ cmd: String) throws -> StatementNode {
         let startPos = getCurrentPosition()
 
         // 解析参数列表
         let arguments = try parseArgumentList()
 
-        guard arguments.count >= 1 else {
+        guard arguments.count >= 2 else {
             throw EmueraError.scriptParseError(
-                message: "\(cmd)需要文件名参数",
+                message: "\(cmd)需要文件名和角色索引参数",
                 position: getCurrentPosition()
             )
         }
 
         // 第一个参数是文件名
         let filename = arguments[0]
+        // 第二个参数是角色索引
+        let charaIndex = arguments[1]
 
         // 根据命令返回对应的语句
-        // 角色保存使用空变量列表标记
         switch cmd {
         case "SAVECHARA":
-            return SaveDataStatement(filename: filename, variables: [], position: startPos)
+            return SaveCharaStatement(filename: filename, charaIndex: charaIndex, position: startPos)
         case "LOADCHARA":
-            return LoadDataStatement(filename: filename, variables: [], position: startPos)
+            return LoadCharaStatement(filename: filename, charaIndex: charaIndex, position: startPos)
         default:
             throw EmueraError.scriptParseError(
                 message: "未知的SAVE/LOAD命令: \(cmd)",

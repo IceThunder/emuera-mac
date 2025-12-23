@@ -708,4 +708,123 @@ public class VariableData {
             return .null
         }
     }
+
+    // MARK: - SAVECHARA/LOADCHARA (Phase 3 P2)
+
+    /// Serialize specific character to JSON string
+    /// - Parameters:
+    ///   - charaIndex: Character index in characters array
+    ///   - filename: Output filename (for metadata only)
+    /// - Returns: JSON string
+    public func serializeCharacter(charaIndex: Int, filename: String) throws -> String {
+        guard charaIndex >= 0 && charaIndex < characters.count else {
+            throw EmueraError.runtimeError(
+                message: "角色索引超出范围: \(charaIndex), 当前角色数: \(characters.count)",
+                position: nil
+            )
+        }
+
+        let character = characters[charaIndex]
+        let data = try serializeSingleCharacter(character, index: charaIndex)
+        let jsonData = try JSONSerialization.data(withJSONObject: data, options: .prettyPrinted)
+        return String(data: jsonData, encoding: .utf8) ?? "{}"
+    }
+
+    /// Deserialize character from JSON string and replace at specified index
+    /// - Parameters:
+    ///   - jsonString: JSON string containing character data
+    ///   - charaIndex: Character index to replace
+    public func deserializeCharacter(jsonString: String, charaIndex: Int) throws {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw EmueraError.runtimeError(message: "Invalid JSON encoding", position: nil)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Invalid JSON format", position: nil)
+        }
+
+        try deserializeSingleCharacter(json, charaIndex: charaIndex)
+    }
+
+    /// Internal method to serialize a single character with full data
+    private func serializeSingleCharacter(_ character: CharacterData, index: Int) throws -> [String: Any] {
+        var result: [String: Any] = [:]
+
+        // Metadata
+        result["metadata"] = [
+            "version": "1.0",
+            "timestamp": ISO8601DateFormatter().string(from: Date()),
+            "saveType": "character"
+        ]
+
+        // Character data
+        var charData: [String: Any] = [:]
+        charData["id"] = character.id
+        charData["name"] = character.name
+
+        // Character internal data (9-group storage)
+        var dataDict: [String: Any] = [:]
+        dataDict["integers"] = character.dataInteger
+        dataDict["strings"] = character.dataString.map { $0 ?? "" }
+        dataDict["intArrays"] = character.dataIntegerArray
+        dataDict["strArrays"] = character.dataStringArray.map { $0.map { $0 ?? "" } }
+        dataDict["int2D"] = character.dataIntegerArray2D
+        dataDict["str2D"] = character.dataStringArray2D.map { $0.map { $0.map { $0 ?? "" } } }
+        dataDict["int3D"] = character.dataIntegerArray3D
+        dataDict["str3D"] = character.dataStringArray3D.map { $0.map { $0.map { $0.map { $0 ?? "" } } } }
+
+        charData["data"] = dataDict
+        result["character"] = charData
+
+        return result
+    }
+
+    /// Internal method to deserialize a single character
+    private func deserializeSingleCharacter(_ json: [String: Any], charaIndex: Int) throws {
+        guard let charData = json["character"] as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Missing character data in JSON", position: nil)
+        }
+
+        // Ensure character exists at index
+        while characters.count <= charaIndex {
+            characters.append(CharacterData())
+        }
+
+        let character = characters[charaIndex]
+
+        // Load basic info
+        if let id = charData["id"] as? Int {
+            character.id = id
+        }
+        if let name = charData["name"] as? String {
+            character.name = name
+        }
+
+        // Load internal data
+        if let dataDict = charData["data"] as? [String: Any] {
+            if let ints = dataDict["integers"] as? [Int64] {
+                character.dataInteger = ints
+            }
+            if let strs = dataDict["strings"] as? [String] {
+                character.dataString = strs.map { $0.isEmpty ? nil : $0 }
+            }
+            if let intArrays = dataDict["intArrays"] as? [[Int64]] {
+                character.dataIntegerArray = intArrays
+            }
+            if let strArrays = dataDict["strArrays"] as? [[String]] {
+                character.dataStringArray = strArrays.map { $0.map { $0.isEmpty ? nil : $0 } }
+            }
+            if let int2D = dataDict["int2D"] as? [[[Int64]]] {
+                character.dataIntegerArray2D = int2D
+            }
+            if let str2D = dataDict["str2D"] as? [[[String]]] {
+                character.dataStringArray2D = str2D.map { $0.map { $0.map { $0.isEmpty ? nil : $0 } } }
+            }
+            if let int3D = dataDict["int3D"] as? [[[[Int64]]]] {
+                character.dataIntegerArray3D = int3D
+            }
+            if let str3D = dataDict["str3D"] as? [[[[String]]]] {
+                character.dataStringArray3D = str3D.map { $0.map { $0.map { $0.map { $0.isEmpty ? nil : $0 } } } }
+            }
+        }
+    }
 }

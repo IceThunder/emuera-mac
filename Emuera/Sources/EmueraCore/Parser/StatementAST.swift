@@ -560,6 +560,40 @@ public class DelDataStatement: StatementNode {
     }
 }
 
+/// SAVECHARA语句 - 保存角色数据到文件
+/// SAVECHARA filename, charaIndex
+public class SaveCharaStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+    public let charaIndex: ExpressionNode  // 角色索引表达式
+
+    public init(filename: ExpressionNode, charaIndex: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        self.charaIndex = charaIndex
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSaveCharaStatement(self)
+    }
+}
+
+/// LOADCHARA语句 - 从文件加载角色数据
+/// LOADCHARA filename, charaIndex
+public class LoadCharaStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+    public let charaIndex: ExpressionNode  // 角色索引表达式
+
+    public init(filename: ExpressionNode, charaIndex: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        self.charaIndex = charaIndex
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitLoadCharaStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -597,6 +631,10 @@ public protocol StatementVisitor {
     func visitSaveDataStatement(_ statement: SaveDataStatement) throws
     func visitLoadDataStatement(_ statement: LoadDataStatement) throws
     func visitDelDataStatement(_ statement: DelDataStatement) throws
+
+    // Phase 3 P2: SAVECHARA/LOADCHARA角色数据持久化
+    func visitSaveCharaStatement(_ statement: SaveCharaStatement) throws
+    func visitLoadCharaStatement(_ statement: LoadCharaStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

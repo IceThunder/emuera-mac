@@ -1491,6 +1491,80 @@ public class StatementExecutor: StatementVisitor {
         }
     }
 
+    /// 访问SAVECHARA语句 - 保存角色数据到文件
+    public func visitSaveCharaStatement(_ statement: SaveCharaStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 评估角色索引
+        let charaIndexValue = try evaluateExpression(statement.charaIndex)
+        guard case .integer(let charaIndex) = charaIndexValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法保存角色数据", position: nil)
+        }
+
+        do {
+            // 序列化角色数据
+            let jsonString = try varData.serializeCharacter(charaIndex: Int(charaIndex), filename: filename)
+
+            // 写入文件
+            let fileURL = getSaveFileURL(filename)
+            try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+
+            context.output.append("[角色已保存到: \(filename)]\n")
+            context.lastResult = .integer(1)  // 成功
+
+        } catch {
+            context.output.append("[角色保存失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
+    /// 访问LOADCHARA语句 - 从文件加载角色数据
+    public func visitLoadCharaStatement(_ statement: LoadCharaStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 评估角色索引
+        let charaIndexValue = try evaluateExpression(statement.charaIndex)
+        guard case .integer(let charaIndex) = charaIndexValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法加载角色数据", position: nil)
+        }
+
+        do {
+            // 读取文件
+            let fileURL = getSaveFileURL(filename)
+            let jsonString = try String(contentsOf: fileURL, encoding: .utf8)
+
+            // 反序列化角色数据
+            try varData.deserializeCharacter(jsonString: jsonString, charaIndex: Int(charaIndex))
+
+            context.output.append("[已从: \(filename) 加载角色]\n")
+            context.lastResult = .integer(1)  // 成功
+
+        } catch {
+            context.output.append("[角色加载失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
     // MARK: - 辅助方法
 
     /// 获取保存文件的URL（保存在应用目录下的saves文件夹）

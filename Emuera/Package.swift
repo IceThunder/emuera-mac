@@ -558,6 +558,14 @@ let package = Package(
             sources: ["DebugSaveLoadDetailed.swift"]
         ),
 
+        // Debug SAVECHARA/LOADCHARA Target (Phase 3 P2)
+        .executableTarget(
+            name: "DebugSaveChara",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase3Debug",
+            sources: ["DebugSaveChara.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",
