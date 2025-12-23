@@ -827,4 +827,160 @@ public class VariableData {
             }
         }
     }
+
+    // MARK: - SAVEGAME/LOADGAME (Phase 3 P3)
+
+    /// Serialize complete game state to JSON string
+    /// Includes: all variables, all characters, game state (day, time, etc.)
+    public func serializeGameState() throws -> String {
+        let data = try serializeGameStateData()
+        let jsonData = try JSONSerialization.data(withJSONObject: data, options: .prettyPrinted)
+        return String(data: jsonData, encoding: .utf8) ?? "{}"
+    }
+
+    /// Deserialize complete game state from JSON string
+    public func deserializeGameState(_ jsonString: String) throws {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw EmueraError.runtimeError(message: "Invalid JSON encoding", position: nil)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw EmueraError.runtimeError(message: "Invalid JSON format", position: nil)
+        }
+        try deserializeGameStateData(json)
+    }
+
+    /// Internal method to serialize complete game state
+    private func serializeGameStateData() throws -> [String: Any] {
+        var result: [String: Any] = [:]
+
+        // Metadata
+        result["metadata"] = [
+            "version": "1.0",
+            "timestamp": ISO8601DateFormatter().string(from: Date()),
+            "saveType": "full",
+            "gameVersion": "1.0"
+        ]
+
+        // Variables
+        var variables: [String: Any] = [:]
+
+        // Global variables
+        var globalsData: [String: Any] = [:]
+        for (name, value) in globals {
+            globalsData[name] = serializeVariableValue(value)
+        }
+        variables["globals"] = globalsData
+
+        // Arrays
+        var arraysData: [String: Any] = [:]
+        for (name, array) in getAllArrays() {
+            arraysData[name] = array
+        }
+        variables["arrays"] = arraysData
+
+        // System variables
+        variables["dataInteger"] = dataInteger
+        variables["dataString"] = dataString.map { $0 ?? "" }
+        variables["dataIntegerArray"] = dataIntegerArray
+        variables["dataStringArray"] = dataStringArray.map { $0.map { $0 ?? "" } }
+        variables["dataIntegerArray2D"] = dataIntegerArray2D
+        variables["dataStringArray2D"] = dataStringArray2D.map { $0.map { $0.map { $0 ?? "" } } }
+        variables["dataIntegerArray3D"] = dataIntegerArray3D
+        variables["dataStringArray3D"] = dataStringArray3D.map { $0.map { $0.map { $0.map { $0 ?? "" } } } }
+
+        result["variables"] = variables
+
+        // Characters
+        var charactersData: [[String: Any]] = []
+        for (index, character) in characters.enumerated() {
+            let charDict = try serializeSingleCharacter(character, index: index)
+            charactersData.append(charDict["character"] as! [String: Any])
+        }
+        result["characters"] = charactersData
+
+        // Game state (placeholder - would need actual game state from context)
+        result["gameState"] = [
+            "day": 0,
+            "time": 0,
+            "randomSeed": 0
+        ]
+
+        return result
+    }
+
+    /// Internal method to deserialize complete game state
+    private func deserializeGameStateData(_ json: [String: Any]) throws {
+        // Load variables
+        if let variables = json["variables"] as? [String: Any] {
+            // Globals
+            if let globalsData = variables["globals"] as? [String: Any] {
+                for (name, value) in globalsData {
+                    globals[name] = deserializeVariableValue(value)
+                }
+            }
+
+            // Arrays
+            if let arraysData = variables["arrays"] as? [String: Any] {
+                for (name, value) in arraysData {
+                    if let array = value as? [Int64] {
+                        setArray(name, values: array)
+                    }
+                }
+            }
+
+            // System variables
+            if let di = variables["dataInteger"] as? [Int64] { dataInteger = di }
+            if let ds = variables["dataString"] as? [String] { dataString = ds.map { $0.isEmpty ? nil : $0 } }
+            if let dia = variables["dataIntegerArray"] as? [[Int64]] { dataIntegerArray = dia }
+            if let dsa = variables["dataStringArray"] as? [[String]] { dataStringArray = dsa.map { $0.map { $0.isEmpty ? nil : $0 } } }
+            if let dia2d = variables["dataIntegerArray2D"] as? [[[Int64]]] { dataIntegerArray2D = dia2d }
+            if let dsa2d = variables["dataStringArray2D"] as? [[[String]]] { dataStringArray2D = dsa2d.map { $0.map { $0.map { $0.isEmpty ? nil : $0 } } } }
+            if let dia3d = variables["dataIntegerArray3D"] as? [[[[Int64]]]] { dataIntegerArray3D = dia3d }
+            if let dsa3d = variables["dataStringArray3D"] as? [[[[String]]]] { dataStringArray3D = dsa3d.map { $0.map { $0.map { $0.map { $0.isEmpty ? nil : $0 } } } } }
+        }
+
+        // Load characters
+        if let charactersData = json["characters"] as? [[String: Any]] {
+            characters.removeAll()
+            for charDict in charactersData {
+                let char = CharacterData()
+                if let id = charDict["id"] as? Int {
+                    char.id = id
+                }
+                if let name = charDict["name"] as? String {
+                    char.name = name
+                }
+                if let dataDict = charDict["data"] as? [String: Any] {
+                    if let ints = dataDict["integers"] as? [Int64] {
+                        char.dataInteger = ints
+                    }
+                    if let strs = dataDict["strings"] as? [String] {
+                        char.dataString = strs.map { $0.isEmpty ? nil : $0 }
+                    }
+                    if let intArrays = dataDict["intArrays"] as? [[Int64]] {
+                        char.dataIntegerArray = intArrays
+                    }
+                    if let strArrays = dataDict["strArrays"] as? [[String]] {
+                        char.dataStringArray = strArrays.map { $0.map { $0.isEmpty ? nil : $0 } }
+                    }
+                    if let int2D = dataDict["int2D"] as? [[[Int64]]] {
+                        char.dataIntegerArray2D = int2D
+                    }
+                    if let str2D = dataDict["str2D"] as? [[[String]]] {
+                        char.dataStringArray2D = str2D.map { $0.map { $0.map { $0.isEmpty ? nil : $0 } } }
+                    }
+                    if let int3D = dataDict["int3D"] as? [[[[Int64]]]] {
+                        char.dataIntegerArray3D = int3D
+                    }
+                    if let str3D = dataDict["str3D"] as? [[[[String]]]] {
+                        char.dataStringArray3D = str3D.map { $0.map { $0.map { $0.map { $0.isEmpty ? nil : $0 } } } }
+                    }
+                }
+                characters.append(char)
+            }
+        }
+
+        // Load game state (placeholder - would set actual game state)
+        // if let gameState = json["gameState"] as? [String: Any] { ... }
+    }
 }

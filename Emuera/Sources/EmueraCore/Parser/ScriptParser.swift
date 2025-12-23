@@ -2424,6 +2424,8 @@ public class ScriptParser {
     }
 
     /// 解析SAVEGAME/LOADGAME命令
+    /// SAVEGAME filename
+    /// LOADGAME filename
     private func parseSaveGameCommand(_ cmd: String) throws -> StatementNode {
         let startPos = getCurrentPosition()
 
@@ -2432,20 +2434,20 @@ public class ScriptParser {
 
         guard arguments.count >= 1 else {
             throw EmueraError.scriptParseError(
-                message: "\(cmd)需要存档槽位参数",
+                message: "\(cmd)需要存档文件名参数",
                 position: getCurrentPosition()
             )
         }
 
-        // 第一个参数是槽位号
-        let slot = arguments[0]
+        // 第一个参数是文件名
+        let filename = arguments[0]
 
         // 根据命令返回对应的语句
         switch cmd {
         case "SAVEGAME":
-            return SaveDataStatement(filename: slot, variables: [], position: startPos)
+            return SaveGameStatement(filename: filename, position: startPos)
         case "LOADGAME":
-            return LoadDataStatement(filename: slot, variables: [], position: startPos)
+            return LoadGameStatement(filename: filename, position: startPos)
         default:
             throw EmueraError.scriptParseError(
                 message: "未知的SAVE/LOAD命令: \(cmd)",

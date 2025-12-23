@@ -594,6 +594,36 @@ public class LoadCharaStatement: StatementNode {
     }
 }
 
+/// SAVEGAME语句 - 保存完整游戏状态到文件
+/// SAVEGAME filename
+public class SaveGameStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+
+    public init(filename: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSaveGameStatement(self)
+    }
+}
+
+/// LOADGAME语句 - 从文件加载完整游戏状态
+/// LOADGAME filename
+public class LoadGameStatement: StatementNode {
+    public let filename: ExpressionNode  // 文件名表达式
+
+    public init(filename: ExpressionNode, position: ScriptPosition? = nil) {
+        self.filename = filename
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitLoadGameStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -635,6 +665,10 @@ public protocol StatementVisitor {
     // Phase 3 P2: SAVECHARA/LOADCHARA角色数据持久化
     func visitSaveCharaStatement(_ statement: SaveCharaStatement) throws
     func visitLoadCharaStatement(_ statement: LoadCharaStatement) throws
+
+    // Phase 3 P3: SAVEGAME/LOADGAME完整游戏状态持久化
+    func visitSaveGameStatement(_ statement: SaveGameStatement) throws
+    func visitLoadGameStatement(_ statement: LoadGameStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

@@ -1565,6 +1565,74 @@ public class StatementExecutor: StatementVisitor {
         }
     }
 
+    /// 访问SAVEGAME语句 - 保存完整游戏状态到文件
+    public func visitSaveGameStatement(_ statement: SaveGameStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法保存游戏状态", position: nil)
+        }
+
+        do {
+            // 同步context到VariableData（确保最新数据）
+            syncContextToVariableData(varData)
+
+            // 序列化完整游戏状态
+            let jsonString = try varData.serializeGameState()
+
+            // 写入文件
+            let fileURL = getSaveFileURL(filename)
+            try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+
+            context.output.append("[游戏已保存到: \(filename)]\n")
+            context.lastResult = .integer(1)  // 成功
+
+        } catch {
+            context.output.append("[游戏保存失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
+    /// 访问LOADGAME语句 - 从文件加载完整游戏状态
+    public func visitLoadGameStatement(_ statement: LoadGameStatement) throws {
+        // 评估文件名
+        let filenameValue = try evaluateExpression(statement.filename)
+        guard case .string(let filename) = filenameValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // 获取VariableData实例
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化，无法加载游戏状态", position: nil)
+        }
+
+        do {
+            // 读取文件
+            let fileURL = getSaveFileURL(filename)
+            let jsonString = try String(contentsOf: fileURL, encoding: .utf8)
+
+            // 反序列化完整游戏状态
+            try varData.deserializeGameState(jsonString)
+
+            // 同步VariableData到context（用于后续访问）
+            syncVariableDataToContext(varData)
+
+            context.output.append("[已从: \(filename) 加载游戏]\n")
+            context.lastResult = .integer(1)  // 成功
+
+        } catch {
+            context.output.append("[游戏加载失败: \(error)]\n")
+            context.lastResult = .integer(0)  // 失败
+            throw error
+        }
+    }
+
     // MARK: - 辅助方法
 
     /// 获取保存文件的URL（保存在应用目录下的saves文件夹）
