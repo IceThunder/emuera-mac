@@ -20,6 +20,20 @@ public enum CommandType: String, CaseIterable {
     case PRINTFORML     // 格式化输出并换行
     case PRINTFORMW     // 格式化输出并等待
 
+    // MARK: - D系列输出命令 (不解析{}和%)
+    case PRINTD         // 输出不换行 (不解析)
+    case PRINTDL        // 输出并换行 (不解析)
+    case PRINTDW        // 输出并等待输入 (不解析)
+    case PRINTVD        // 输出变量内容 (不解析)
+    case PRINTVL        // 变量内容换行 (不解析)
+    case PRINTVW        // 变量内容等待 (不解析)
+    case PRINTSD        // 输出字符串变量 (不解析)
+    case PRINTSL        // 字符串变量换行 (不解析)
+    case PRINTSW        // 字符串变量等待 (不解析)
+    case PRINTFORMD     // 格式化输出 (不解析)
+    case PRINTFORMDL    // 格式化输出换行 (不解析)
+    case PRINTFORMDW    // 格式化输出等待 (不解析)
+
     case INPUT          // 整数输入
     case INPUTS         // 字符串输入
     case TINPUT         // 带超时输入

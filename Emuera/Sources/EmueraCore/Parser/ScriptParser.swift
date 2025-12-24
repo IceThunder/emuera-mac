@@ -201,6 +201,32 @@ public class ScriptParser {
         case "CHARAEXISTS":
             return try parseCharaExistsCommand()
 
+        // Priority 1: D系列输出命令
+        case "PRINTD":
+            return try parsePrintDCommand()
+        case "PRINTDL":
+            return try parsePrintDLCommand()
+        case "PRINTDW":
+            return try parsePrintDWCommand()
+        case "PRINTVD":
+            return try parsePrintVDCommand()
+        case "PRINTVL":
+            return try parsePrintVLCommand()
+        case "PRINTVW":
+            return try parsePrintVWCommand()
+        case "PRINTSD":
+            return try parsePrintSDCommand()
+        case "PRINTSL":
+            return try parsePrintSLCommand()
+        case "PRINTSW":
+            return try parsePrintSWCommand()
+        case "PRINTFORMD":
+            return try parsePrintFormDCommand()
+        case "PRINTFORMDL":
+            return try parsePrintFormDLCommand()
+        case "PRINTFORMDW":
+            return try parsePrintFormDWCommand()
+
         default:
             // 其他命令，作为通用命令处理
             let args = try parseArguments()
@@ -3172,6 +3198,173 @@ public class ScriptParser {
         return CharaExistsStatement(
             targetExpression: arguments[0],
             resultVariable: resultVariable,
+            position: startPos
+        )
+    }
+
+    // MARK: - D系列输出命令解析方法 (Priority 1)
+
+    /// 解析PRINTD命令 - 输出不换行 (不解析{}和%)
+    private func parsePrintDCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintDStatement(
+            arguments: arguments,
+            waitInput: false,
+            newLine: false,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTDL命令 - 输出并换行 (不解析{}和%)
+    private func parsePrintDLCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintDStatement(
+            arguments: arguments,
+            waitInput: false,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTDW命令 - 输出并等待输入 (不解析{}和%)
+    private func parsePrintDWCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintDStatement(
+            arguments: arguments,
+            waitInput: true,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTVD命令 - 输出变量内容 (不解析{}和%)
+    private func parsePrintVDCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintVStatement(
+            arguments: arguments,
+            waitInput: false,
+            newLine: false,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTVL命令 - 变量内容换行 (不解析{}和%)
+    private func parsePrintVLCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintVStatement(
+            arguments: arguments,
+            waitInput: false,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTVW命令 - 变量内容等待 (不解析{}和%)
+    private func parsePrintVWCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintVStatement(
+            arguments: arguments,
+            waitInput: true,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTSD命令 - 输出字符串变量 (不解析{}和%)
+    private func parsePrintSDCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintSStatement(
+            arguments: arguments,
+            waitInput: false,
+            newLine: false,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTSL命令 - 字符串变量换行 (不解析{}和%)
+    private func parsePrintSLCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintSStatement(
+            arguments: arguments,
+            waitInput: false,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTSW命令 - 字符串变量等待 (不解析{}和%)
+    private func parsePrintSWCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        return PrintSStatement(
+            arguments: arguments,
+            waitInput: true,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTFORMD命令 - 格式化输出 (不解析{}和%)
+    private func parsePrintFormDCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "PRINTFORMD需要格式化字符串参数",
+                position: getCurrentPosition()
+            )
+        }
+        return PrintFormDStatement(
+            format: arguments[0],
+            arguments: Array(arguments.dropFirst()),
+            waitInput: false,
+            newLine: false,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTFORMDL命令 - 格式化输出换行 (不解析{}和%)
+    private func parsePrintFormDLCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "PRINTFORMDL需要格式化字符串参数",
+                position: getCurrentPosition()
+            )
+        }
+        return PrintFormDStatement(
+            format: arguments[0],
+            arguments: Array(arguments.dropFirst()),
+            waitInput: false,
+            newLine: true,
+            position: startPos
+        )
+    }
+
+    /// 解析PRINTFORMDW命令 - 格式化输出等待 (不解析{}和%)
+    private func parsePrintFormDWCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "PRINTFORMDW需要格式化字符串参数",
+                position: getCurrentPosition()
+            )
+        }
+        return PrintFormDStatement(
+            format: arguments[0],
+            arguments: Array(arguments.dropFirst()),
+            waitInput: true,
+            newLine: true,
             position: startPos
         )
     }

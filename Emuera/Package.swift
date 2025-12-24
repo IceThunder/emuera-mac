@@ -672,6 +672,22 @@ let package = Package(
             name: "EmueraAppTests",
             dependencies: ["EmueraApp"]
         ),
+
+        // D系列输出命令测试 Target (Priority 1)
+        .executableTarget(
+            name: "PrintDTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["PrintDTest.swift"]
+        ),
+
+        // PRINTFORMD调试 Target
+        .executableTarget(
+            name: "DebugPrintFormD",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugPrintFormD.swift"]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )

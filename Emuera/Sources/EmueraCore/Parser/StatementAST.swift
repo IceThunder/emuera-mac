@@ -357,6 +357,83 @@ public class CommandStatement: StatementNode {
     }
 }
 
+// MARK: - D系列输出命令 (Phase 7 Priority 1)
+
+/// D系列输出命令 - 不解析{}和%
+/// 与普通PRINT的区别: 不进行格式化，直接输出变量值或字符串
+public class PrintDStatement: StatementNode {
+    public let arguments: [ExpressionNode]
+    public let waitInput: Bool
+    public let newLine: Bool
+
+    public init(arguments: [ExpressionNode], waitInput: Bool = false, newLine: Bool = false, position: ScriptPosition? = nil) {
+        self.arguments = arguments
+        self.waitInput = waitInput
+        self.newLine = newLine
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitPrintDStatement(self)
+    }
+}
+
+/// PRINTVD/PRINTVL/PRINTVW - 输出变量内容
+public class PrintVStatement: StatementNode {
+    public let arguments: [ExpressionNode]
+    public let waitInput: Bool
+    public let newLine: Bool
+
+    public init(arguments: [ExpressionNode], waitInput: Bool = false, newLine: Bool = false, position: ScriptPosition? = nil) {
+        self.arguments = arguments
+        self.waitInput = waitInput
+        self.newLine = newLine
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitPrintVStatement(self)
+    }
+}
+
+/// PRINTSD/PRINTSL/PRINTSW - 输出字符串变量
+public class PrintSStatement: StatementNode {
+    public let arguments: [ExpressionNode]
+    public let waitInput: Bool
+    public let newLine: Bool
+
+    public init(arguments: [ExpressionNode], waitInput: Bool = false, newLine: Bool = false, position: ScriptPosition? = nil) {
+        self.arguments = arguments
+        self.waitInput = waitInput
+        self.newLine = newLine
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitPrintSStatement(self)
+    }
+}
+
+/// PRINTFORMD/PRINTFORMDL/PRINTFORMDW - 格式化输出但不解析{}和%
+public class PrintFormDStatement: StatementNode {
+    public let format: ExpressionNode
+    public let arguments: [ExpressionNode]
+    public let waitInput: Bool
+    public let newLine: Bool
+
+    public init(format: ExpressionNode, arguments: [ExpressionNode], waitInput: Bool = false, newLine: Bool = false, position: ScriptPosition? = nil) {
+        self.format = format
+        self.arguments = arguments
+        self.waitInput = waitInput
+        self.newLine = newLine
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitPrintFormDStatement(self)
+    }
+}
+
 // MARK: - 特殊语句
 
 /// RESET语句
@@ -887,6 +964,12 @@ public protocol StatementVisitor {
     func visitBatchModifyStatement(_ statement: BatchModifyStatement) throws
     func visitCharaCountStatement(_ statement: CharaCountStatement) throws
     func visitCharaExistsStatement(_ statement: CharaExistsStatement) throws
+
+    // Priority 1: D系列输出命令
+    func visitPrintDStatement(_ statement: PrintDStatement) throws
+    func visitPrintVStatement(_ statement: PrintVStatement) throws
+    func visitPrintSStatement(_ statement: PrintSStatement) throws
+    func visitPrintFormDStatement(_ statement: PrintFormDStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

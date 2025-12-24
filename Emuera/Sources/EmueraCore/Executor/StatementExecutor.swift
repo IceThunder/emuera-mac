@@ -2452,4 +2452,169 @@ extension StatementExecutor {
             varData.setVariable(varName, value: exists ? .integer(1) : .integer(0))
         }
     }
+
+    // MARK: - D系列输出命令执行 (Priority 1)
+
+    /// 执行PRINTD系列命令 - 不解析{}和%
+    public func visitPrintDStatement(_ statement: PrintDStatement) throws {
+        guard let console = context.console else {
+            throw EmueraError.runtimeError(message: "Console未初始化", position: statement.position)
+        }
+
+        // D系列命令不解析{}和%，直接输出变量值或字符串
+        var outputText = ""
+        for arg in statement.arguments {
+            let value = try evaluateExpression(arg)
+            outputText += value.toString()
+        }
+
+        // 添加到控制台 - 使用正确的ConsoleLine构造函数
+        console.addLine(ConsoleLine(
+            type: .print,
+            content: outputText,
+            attributes: ConsoleAttributes()
+        ))
+
+        // 如果需要等待输入，通过lastResult标记
+        if statement.waitInput {
+            context.lastResult = .string("__WAIT_INPUT__")
+        }
+
+        context.lastResult = .integer(1)
+    }
+
+    /// 执行PRINTVD/PRINTVL/PRINTVW - 输出变量内容
+    public func visitPrintVStatement(_ statement: PrintVStatement) throws {
+        guard let console = context.console else {
+            throw EmueraError.runtimeError(message: "Console未初始化", position: statement.position)
+        }
+
+        // 输出变量的原始值（不进行格式化）
+        var outputText = ""
+        for arg in statement.arguments {
+            let value = try evaluateExpression(arg)
+            // 直接输出变量的值，不进行任何格式化
+            outputText += value.toString()
+        }
+
+        console.addLine(ConsoleLine(
+            type: .print,
+            content: outputText,
+            attributes: ConsoleAttributes()
+        ))
+
+        if statement.waitInput {
+            context.lastResult = .string("__WAIT_INPUT__")
+        }
+
+        context.lastResult = .integer(1)
+    }
+
+    /// 执行PRINTSD/PRINTSL/PRINTSW - 输出字符串变量
+    public func visitPrintSStatement(_ statement: PrintSStatement) throws {
+        guard let console = context.console else {
+            throw EmueraError.runtimeError(message: "Console未初始化", position: statement.position)
+        }
+
+        // 输出字符串变量内容
+        var outputText = ""
+        for arg in statement.arguments {
+            let value = try evaluateExpression(arg)
+            // 确保作为字符串输出
+            outputText += value.toString()
+        }
+
+        console.addLine(ConsoleLine(
+            type: .print,
+            content: outputText,
+            attributes: ConsoleAttributes()
+        ))
+
+        if statement.waitInput {
+            context.lastResult = .string("__WAIT_INPUT__")
+        }
+
+        context.lastResult = .integer(1)
+    }
+
+    /// 执行PRINTFORMD/PRINTFORMDL/PRINTFORMDW - 格式化输出但不解析{}和%
+    public func visitPrintFormDStatement(_ statement: PrintFormDStatement) throws {
+        guard let console = context.console else {
+            throw EmueraError.runtimeError(message: "Console未初始化", position: statement.position)
+        }
+
+        // 获取格式化字符串
+        let formatValue = try evaluateExpression(statement.format)
+        guard case .string(let formatStr) = formatValue else {
+            throw EmueraError.typeMismatch(expected: "string", actual: "other")
+        }
+
+        // D系列的特殊处理：不解析{}和%，但支持%格式化字符串
+        // 处理%格式化符（如%d, %s, %ld, %lld等）
+        var result = ""
+        var argIndex = 0
+        var i = 0
+
+        while i < formatStr.count {
+            let charIndex = formatStr.index(formatStr.startIndex, offsetBy: i)
+            let char = formatStr[charIndex]
+
+            if char == "%" && i + 1 < formatStr.count {
+                // 检查下一个字符
+                let nextCharIndex = formatStr.index(after: charIndex)
+                let nextChar = formatStr[nextCharIndex]
+
+                if nextChar == "%" {
+                    // %% 转义为单个 %
+                    result.append("%")
+                    i += 2
+                    continue
+                }
+
+                // 检查是否是格式说明符（d, s, f, l, L 开头的）
+                if "dfsSl".contains(nextChar) {
+                    // 跳过格式说明符，替换为参数值
+                    if argIndex < statement.arguments.count {
+                        let argValue = try evaluateExpression(statement.arguments[argIndex])
+                        result += argValue.toString()
+                        argIndex += 1
+                    }
+
+                    // 跳过格式说明符的所有字符
+                    i += 2  // 跳过 % 和第一个格式字符
+                    var checkIndex = nextCharIndex
+                    while i < formatStr.count {
+                        checkIndex = formatStr.index(after: checkIndex)
+                        if checkIndex >= formatStr.endIndex { break }
+                        let checkChar = formatStr[checkIndex]
+                        if "dfsSl".contains(checkChar) {
+                            i += 1
+                        } else {
+                            break
+                        }
+                    }
+                    continue
+                } else {
+                    // 不是支持的格式说明符，保留原样
+                    result.append(char)
+                    i += 1
+                }
+            } else {
+                result.append(char)
+                i += 1
+            }
+        }
+
+        console.addLine(ConsoleLine(
+            type: .print,
+            content: result,
+            attributes: ConsoleAttributes()
+        ))
+
+        if statement.waitInput {
+            context.lastResult = .string("__WAIT_INPUT__")
+        }
+
+        context.lastResult = .integer(1)
+    }
 }
