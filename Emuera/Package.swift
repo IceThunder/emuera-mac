@@ -606,6 +606,14 @@ let package = Package(
             sources: ["DebugPhase4Parse.swift"]
         ),
 
+        // ERH Test Target (Phase 5)
+        .executableTarget(
+            name: "ERHTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase5Debug",
+            sources: ["ERHTest.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

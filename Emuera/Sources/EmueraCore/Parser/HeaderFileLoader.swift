@@ -6,19 +6,62 @@
 
 import Foundation
 
-/// Loads and processes ERH header files
+/// Loads and processes ERH header files with enhanced features
 public final class HeaderFileLoader {
     private let idDic: IdentifierDictionary
     private let tokenData: TokenData
     private var dimLines: [DimLineData] = []
     private var noError: Bool = true
 
+    // MARK: - Phase 5 增强功能
+
+    /// 头文件依赖关系图
+    private var dependencyGraph: [String: [String]] = [:]
+
+    /// 已加载的头文件（用于去重和循环检测）
+    private var loadedFiles: Set<String> = []
+
+    /// 加载栈（用于循环依赖检测）
+    private var loadingStack: [String] = []
+
+    /// 缓存机制
+    private var cacheEnabled: Bool = true
+    private var cacheDirectory: String?
+
+    /// 预处理器实例
+    private var preprocessor: Preprocessor?
+
     public init(idDic: IdentifierDictionary, tokenData: TokenData) {
         self.idDic = idDic
         self.tokenData = tokenData
+        self.preprocessor = Preprocessor()
+    }
+
+    // MARK: - 新增属性访问器
+
+    /// 获取依赖关系图
+    public func getDependencyGraph() -> [String: [String]] {
+        return dependencyGraph
+    }
+
+    /// 获取已加载的文件列表
+    public func getLoadedFiles() -> Set<String> {
+        return loadedFiles
+    }
+
+    /// 启用/禁用缓存
+    public func setCacheEnabled(_ enabled: Bool, directory: String? = nil) {
+        cacheEnabled = enabled
+        cacheDirectory = directory
+    }
+
+    /// 获取预处理器（用于访问宏定义等）
+    public func getPreprocessor() -> Preprocessor? {
+        return preprocessor
     }
 
     /// Load all ERH header files from specified directory
+    /// Phase 5增强：支持依赖解析和循环检测
     public func loadHeaderFiles(from directory: String, displayReport: Bool = false) throws -> Bool {
         let fileManager = FileManager.default
         guard let files = try? fileManager.contentsOfDirectory(atPath: directory) else {
@@ -27,14 +70,38 @@ public final class HeaderFileLoader {
 
         let erhFiles = files.filter { $0.uppercased().hasSuffix(".ERH") }
 
+        // 清除之前的状态
         dimLines.removeAll()
         noError = true
+        dependencyGraph.removeAll()
+        loadedFiles.removeAll()
+        loadingStack.removeAll()
 
+        // 第一阶段：使用预处理器处理所有文件（包括#INCLUDE）
         for filename in erhFiles {
             let filepath = (directory as NSString).appendingPathComponent(filename)
 
             if displayReport {
-                print("読み込み中: \(filename)")
+                print("预处理中: \(filename)")
+            }
+
+            // 使用预处理器处理文件
+            if let preprocessor = preprocessor {
+                let preprocessed = try preprocessor.preprocess(filePath: filepath)
+
+                // 保存预处理结果（可选，用于调试）
+                if cacheEnabled {
+                    try savePreprocessedCache(filename: filename, content: preprocessed)
+                }
+            }
+        }
+
+        // 第二阶段：解析预处理后的指令
+        for filename in erhFiles {
+            let filepath = (directory as NSString).appendingPathComponent(filename)
+
+            if displayReport {
+                print("解析中: \(filename)")
             }
 
             let result = try loadHeaderFile(filepath: filepath, filename: filename)
@@ -43,6 +110,7 @@ public final class HeaderFileLoader {
             }
         }
 
+        // 第三阶段：处理#DIM声明
         if !dimLines.isEmpty {
             let dimResult = try analyzeSharpDimLines()
             noError = noError && dimResult
@@ -301,6 +369,91 @@ public final class HeaderFileLoader {
         }
 
         return noError
+    }
+
+    // MARK: - Phase 5 新增辅助方法
+
+    /// 保存预处理缓存
+    private func savePreprocessedCache(filename: String, content: String) throws {
+        guard let cacheDir = cacheDirectory else { return }
+
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: cacheDir) {
+            try fileManager.createDirectory(atPath: cacheDir, withIntermediateDirectories: true)
+        }
+
+        let cacheFilename = filename + ".cache"
+        let cachePath = (cacheDir as NSString).appendingPathComponent(cacheFilename)
+
+        try content.write(toFile: cachePath, atomically: true, encoding: .utf8)
+    }
+
+    /// 检查并记录依赖关系
+    private func recordDependency(parent: String, child: String) {
+        if dependencyGraph[parent] == nil {
+            dependencyGraph[parent] = []
+        }
+        if !dependencyGraph[parent]!.contains(child) {
+            dependencyGraph[parent]!.append(child)
+        }
+    }
+
+    /// 拓扑排序依赖关系
+    public func getSortedDependencies() throws -> [String] {
+        var graph: [String: [String]] = dependencyGraph
+        var inDegree: [String: Int] = [:]
+
+        // 初始化所有节点的入度
+        for (parent, children) in graph {
+            inDegree[parent] = inDegree[parent] ?? 0
+            for child in children {
+                inDegree[child] = (inDegree[child] ?? 0) + 1
+            }
+        }
+
+        // 找到所有节点（包括没有依赖的）
+        let allNodes = Set(graph.keys).union(graph.values.flatMap { $0 })
+        for node in allNodes {
+            if inDegree[node] == nil {
+                inDegree[node] = 0
+            }
+        }
+
+        // 拓扑排序
+        var result: [String] = []
+        var queue: [String] = allNodes.filter { inDegree[$0] == 0 }
+
+        while !queue.isEmpty {
+            let node = queue.removeFirst()
+            result.append(node)
+
+            if let children = graph[node] {
+                for child in children {
+                    inDegree[child, default: 0] -= 1
+                    if inDegree[child] == 0 {
+                        queue.append(child)
+                    }
+                }
+            }
+        }
+
+        // 检查是否有循环依赖
+        if result.count != allNodes.count {
+            throw EmueraError.headerFileError(
+                message: "检测到循环依赖，无法拓扑排序",
+                position: nil
+            )
+        }
+
+        return result
+    }
+
+    /// 清除缓存
+    public func clearCache() {
+        loadedFiles.removeAll()
+        loadingStack.removeAll()
+        dependencyGraph.removeAll()
+        preprocessor?.clearCache()
     }
 }
 

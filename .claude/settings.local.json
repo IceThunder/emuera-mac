@@ -107,7 +107,8 @@
       "Bash(.build/debug/DebugSaveLoadDetailed:*)",
       "Bash(.build/debug/DebugSaveInfo:*)",
       "Bash(.build/debug/DebugPhase4:*)",
-      "Bash(.build/debug/DebugPhase4Parse:*)"
+      "Bash(.build/debug/DebugPhase4Parse:*)",
+      "Bash(.build/debug/ERHTest:*)"
     ]
   }
 }

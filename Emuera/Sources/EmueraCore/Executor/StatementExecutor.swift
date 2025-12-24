@@ -1947,4 +1947,41 @@ extension StatementExecutor {
 
         context.lastResult = .integer(statement.enabled ? 1 : 0)
     }
+
+    // MARK: - Phase 5: ERH头文件系统访问者方法
+
+    /// 访问函数指令语句（#FUNCTION）
+    public func visitFunctionDirectiveStatement(_ statement: FunctionDirectiveStatement) throws {
+        // ERH指令在预处理阶段处理，执行阶段通常不需要
+        // 这里可以记录调试信息或忽略
+        context.lastResult = .null
+    }
+
+    /// 访问全局DIM语句（#DIM/#DIMS）
+    public func visitGlobalDimStatement(_ statement: GlobalDimStatement) throws {
+        // ERH指令在预处理阶段处理，执行阶段通常不需要
+        // 这里可以记录调试信息或忽略
+        context.lastResult = .null
+    }
+
+    /// 访问宏定义语句（#DEFINE）
+    public func visitDefineMacroStatement(_ statement: DefineMacroStatement) throws {
+        // ERH指令在预处理阶段处理，执行阶段通常不需要
+        // 这里可以记录调试信息或忽略
+        context.lastResult = .null
+    }
+
+    /// 访问包含语句（#INCLUDE）
+    public func visitIncludeStatement(_ statement: IncludeStatement) throws {
+        // ERH指令在预处理阶段处理，执行阶段通常不需要
+        // 这里可以记录调试信息或忽略
+        context.lastResult = .null
+    }
+
+    /// 访问全局变量语句（#GLOBAL）
+    public func visitGlobalVariableStatement(_ statement: GlobalVariableStatement) throws {
+        // ERH指令在预处理阶段处理，执行阶段通常不需要
+        // 这里可以记录调试信息或忽略
+        context.lastResult = .null
+    }
 }

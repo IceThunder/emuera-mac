@@ -1395,7 +1395,7 @@ public class ScriptParser {
 
     // MARK: - Phase 2: 函数系统解析
 
-    /// 解析指令语句 (#DIM, #FUNCTIONS等)
+    /// 解析指令语句 (#DIM, #FUNCTIONS, #INCLUDE等)
     private func parseDirectiveStatement(_ directive: String) throws -> StatementNode? {
         let upperDirective = directive.uppercased()
         let startPos = getCurrentPosition()
@@ -1414,10 +1414,176 @@ public class ScriptParser {
             skipWhitespaceAndNewlines()
             return nil
 
+        case "#INCLUDE":
+            // 解析: #INCLUDE "header.erh"
+            return try parseIncludeStatement()
+
+        case "#DEFINE":
+            // 解析: #DEFINE MAX_HP 1000 或 #DEFINE DAMAGE(x) (x * 2)
+            return try parseDefineStatement()
+
+        case "#GLOBAL":
+            // 解析: #GLOBAL MY_VAR 或 #GLOBAL MY_ARRAY, 100
+            return try parseGlobalStatement()
+
         default:
             // 未知指令，跳过
             return nil
         }
+    }
+
+    /// 解析 #INCLUDE 指令
+    private func parseIncludeStatement() throws -> IncludeStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过空白
+        skipWhitespaceAndNewlines()
+
+        // 期望一个字符串字面量（文件路径）
+        guard currentIndex < tokens.count,
+              case .string(let path) = tokens[currentIndex].type else {
+            throw EmueraError.scriptParseError(
+                message: "#INCLUDE需要带引号的文件路径",
+                position: getCurrentPosition()
+            )
+        }
+
+        currentIndex += 1  // 跳过字符串
+
+        return IncludeStatement(path: path, position: startPos)
+    }
+
+    /// 解析 #DEFINE 指令
+    private func parseDefineStatement() throws -> DefineMacroStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过空白
+        skipWhitespaceAndNewlines()
+
+        // 读取宏名称
+        guard currentIndex < tokens.count,
+              case .variable(let name) = tokens[currentIndex].type else {
+            throw EmueraError.scriptParseError(
+                message: "#DEFINE需要宏名称",
+                position: getCurrentPosition()
+            )
+        }
+
+        currentIndex += 1
+
+        // 检查是否有参数（函数式宏）
+        skipWhitespaceAndNewlines()
+        var parameters: [String] = []
+
+        if currentIndex < tokens.count,
+           case .parenthesisOpen = tokens[currentIndex].type {
+            currentIndex += 1  // 跳过 (
+
+            // 解析参数列表
+            while currentIndex < tokens.count {
+                skipWhitespaceAndNewlines()
+
+                if case .parenthesisClose = tokens[currentIndex].type {
+                    currentIndex += 1
+                    break
+                }
+
+                if case .variable(let paramName) = tokens[currentIndex].type {
+                    parameters.append(paramName)
+                    currentIndex += 1
+                }
+
+                skipWhitespaceAndNewlines()
+
+                if case .comma = tokens[currentIndex].type {
+                    currentIndex += 1
+                }
+            }
+        }
+
+        // 读取宏体（剩余部分直到行尾）
+        skipWhitespaceAndNewlines()
+        var bodyParts: [String] = []
+
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+            switch token.type {
+            case .lineBreak:
+                currentIndex += 1
+                break
+            case .whitespace:
+                currentIndex += 1
+                bodyParts.append(" ")
+            case .integer(let value):
+                currentIndex += 1
+                bodyParts.append(String(value))
+            case .string(let value):
+                currentIndex += 1
+                bodyParts.append("\"\(value)\"")
+            case .variable(let value), .function(let value), .command(let value), .keyword(let value):
+                currentIndex += 1
+                bodyParts.append(value)
+            case .operatorSymbol(let op):
+                currentIndex += 1
+                bodyParts.append(op.rawValue)
+            case .comparator(let comp):
+                currentIndex += 1
+                bodyParts.append(comp.rawValue)
+            case .comma:
+                currentIndex += 1
+                bodyParts.append(",")
+            case .colon:
+                currentIndex += 1
+                bodyParts.append(":")
+            case .parenthesisOpen:
+                currentIndex += 1
+                bodyParts.append("(")
+            case .parenthesisClose:
+                currentIndex += 1
+                bodyParts.append(")")
+            default:
+                currentIndex += 1
+            }
+        }
+
+        let body = bodyParts.joined()
+
+        return DefineMacroStatement(name: name, body: body, parameters: parameters, position: startPos)
+    }
+
+    /// 解析 #GLOBAL 指令
+    private func parseGlobalStatement() throws -> GlobalVariableStatement {
+        let startPos = getCurrentPosition()
+
+        // 跳过空白
+        skipWhitespaceAndNewlines()
+
+        // 读取变量名
+        guard currentIndex < tokens.count,
+              case .variable(let name) = tokens[currentIndex].type else {
+            throw EmueraError.scriptParseError(
+                message: "#GLOBAL需要变量名称",
+                position: getCurrentPosition()
+            )
+        }
+
+        currentIndex += 1
+
+        // 检查是否有数组大小
+        skipWhitespaceAndNewlines()
+        var isArray = false
+        var size: ExpressionNode? = nil
+
+        if currentIndex < tokens.count,
+           case .comma = tokens[currentIndex].type {
+            currentIndex += 1  // 跳过逗号
+            isArray = true
+
+            // 解析数组大小表达式
+            size = try parseExpression()
+        }
+
+        return GlobalVariableStatement(name: name, isArray: isArray, size: size, position: startPos)
     }
 
     /// 解析变量声明 (#DIM, #DIMS)

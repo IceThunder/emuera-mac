@@ -711,6 +711,98 @@ public class PersistEnhancedStatement: StatementNode {
     }
 }
 
+// MARK: - Phase 5: ERH头文件系统
+
+/// #FUNCTION指令定义语句
+public class FunctionDirectiveStatement: StatementNode {
+    public let name: String
+    public let parameters: [FunctionParameter]
+    public let returnType: VariableType
+    public let body: [StatementNode]
+
+    public init(name: String, parameters: [FunctionParameter], returnType: VariableType, body: [StatementNode], position: ScriptPosition? = nil) {
+        self.name = name
+        self.parameters = parameters
+        self.returnType = returnType
+        self.body = body
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitFunctionDirectiveStatement(self)
+    }
+}
+
+/// #DIM/#DIMS全局变量声明语句
+public class GlobalDimStatement: StatementNode {
+    public let name: String
+    public let type: VariableType
+    public let isArray: Bool
+    public let size: ExpressionNode?
+
+    public init(name: String, type: VariableType, isArray: Bool = false, size: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.name = name
+        self.type = type
+        self.isArray = isArray
+        self.size = size
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitGlobalDimStatement(self)
+    }
+}
+
+/// #DEFINE宏定义语句
+public class DefineMacroStatement: StatementNode {
+    public let name: String
+    public let body: String
+    public let parameters: [String]
+
+    public init(name: String, body: String, parameters: [String] = [], position: ScriptPosition? = nil) {
+        self.name = name
+        self.body = body
+        self.parameters = parameters
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitDefineMacroStatement(self)
+    }
+}
+
+/// #INCLUDE头文件包含语句
+public class IncludeStatement: StatementNode {
+    public let path: String
+
+    public init(path: String, position: ScriptPosition? = nil) {
+        self.path = path
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitIncludeStatement(self)
+    }
+}
+
+/// #GLOBAL全局变量声明语句
+public class GlobalVariableStatement: StatementNode {
+    public let name: String
+    public let isArray: Bool
+    public let size: ExpressionNode?
+
+    public init(name: String, isArray: Bool = false, size: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.name = name
+        self.isArray = isArray
+        self.size = size
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitGlobalVariableStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -769,6 +861,13 @@ public protocol StatementVisitor {
     func visitResetDataStatement(_ statement: ResetDataStatement) throws
     func visitResetGlobalStatement(_ statement: ResetGlobalStatement) throws
     func visitPersistEnhancedStatement(_ statement: PersistEnhancedStatement) throws
+
+    // Phase 5: ERH头文件系统
+    func visitFunctionDirectiveStatement(_ statement: FunctionDirectiveStatement) throws
+    func visitGlobalDimStatement(_ statement: GlobalDimStatement) throws
+    func visitDefineMacroStatement(_ statement: DefineMacroStatement) throws
+    func visitIncludeStatement(_ statement: IncludeStatement) throws
+    func visitGlobalVariableStatement(_ statement: GlobalVariableStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)
