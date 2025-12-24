@@ -31,6 +31,9 @@ public class ExecutionContext {
     // Phase 3 P1: 数据持久化相关
     public var varData: VariableData?  // 变量数据存储（用于SAVE/LOAD）
 
+    // Phase 6: UI相关
+    public var console: EmueraConsole?  // 控制台输出
+
     public init() {
         variables = [:]
         output = []
@@ -45,6 +48,7 @@ public class ExecutionContext {
         currentCatchLabel = nil
         shouldCatch = false
         varData = nil
+        console = nil
     }
 
     public func copy() -> ExecutionContext {
@@ -58,6 +62,7 @@ public class ExecutionContext {
         newContext.currentCatchLabel = currentCatchLabel
         newContext.shouldCatch = shouldCatch
         newContext.varData = varData
+        newContext.console = console
         return newContext
     }
 
@@ -1983,5 +1988,468 @@ extension StatementExecutor {
         // ERH指令在预处理阶段处理，执行阶段通常不需要
         // 这里可以记录调试信息或忽略
         context.lastResult = .null
+    }
+
+    // MARK: - Phase 6: 字符管理系统增强
+
+    /// ADDCHARA - 添加角色
+    public func visitAddCharaStatement(_ statement: AddCharaStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+
+        // 解析ID和名字
+        var id: Int? = nil
+        var name = "新角色"
+
+        if let idExpr = statement.idExpression {
+            let idValue = try evaluateExpression(idExpr)
+            if case .integer(let idInt) = idValue {
+                id = Int(idInt)
+            }
+        }
+
+        if let nameExpr = statement.nameExpression {
+            let nameValue = try evaluateExpression(nameExpr)
+            name = nameValue.toString()
+        }
+
+        let character = manager.addCharacter(id: id, name: name)
+        context.lastResult = .integer(Int64(character.id))
+    }
+
+    /// DELCHARA - 删除角色
+    public func visitDelCharaStatement(_ statement: DelCharaStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        guard case .integer(let targetInt) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+        let target = Int(targetInt)
+
+        let success = manager.deleteCharacter(at: target) || manager.deleteCharacterByID(target)
+        context.lastResult = .integer(success ? 1 : 0)
+    }
+
+    /// SWAPCHARA - 交换角色
+    public func visitSwapCharaStatement(_ statement: SwapCharaStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+        let index1Value = try evaluateExpression(statement.index1Expression)
+        let index2Value = try evaluateExpression(statement.index2Expression)
+        guard case .integer(let idx1) = index1Value,
+              case .integer(let idx2) = index2Value else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        let success = manager.swapCharacters(at: Int(idx1), at: Int(idx2))
+        context.lastResult = .integer(success ? 1 : 0)
+    }
+
+    /// COPYCHARA - 复制角色
+    public func visitCopyCharaStatement(_ statement: CopyCharaStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+        let srcValue = try evaluateExpression(statement.srcExpression)
+        guard case .integer(let srcIdx) = srcValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        var dstIndex: Int? = nil
+        if let dstExpr = statement.dstExpression {
+            let dstValue = try evaluateExpression(dstExpr)
+            if case .integer(let dstIdx) = dstValue {
+                dstIndex = Int(dstIdx)
+            }
+        }
+
+        if let character = manager.copyCharacter(from: Int(srcIdx), to: dstIndex) {
+            context.lastResult = .integer(Int64(character.id))
+        } else {
+            context.lastResult = .integer(-1)
+        }
+    }
+
+    /// SORTCHARA - 排序角色
+    public func visitSortCharaStatement(_ statement: SortCharaStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+        let keyValue = try evaluateExpression(statement.keyExpression)
+        let keyString = keyValue.toString().uppercased()
+
+        // 解析排序键
+        let sortKey: SortKey
+        switch keyString {
+        case "ID":
+            sortKey = .id
+        case "NAME":
+            sortKey = .name
+        case "HP", "BASE":
+            sortKey = .baseHP
+        case "MP":
+            sortKey = .baseMP
+        case "LEVEL":
+            sortKey = .level
+        default:
+            // 尝试解析为自定义数组索引
+            if let colonIndex = keyString.firstIndex(of: ":") {
+                let arrayStr = String(keyString[keyString.index(after: colonIndex)...])
+                let parts = arrayStr.split(separator: ":")
+                if parts.count >= 2,
+                   let arrayIdx = Int(parts[0]),
+                   let elementIdx = Int(parts[1]) {
+                    sortKey = .custom(arrayIndex: arrayIdx, elementIndex: elementIdx)
+                } else {
+                    sortKey = .id
+                }
+            } else {
+                sortKey = .id
+            }
+        }
+
+        // 解析排序顺序
+        var order: SortOrder = .ascending
+        if let orderExpr = statement.orderExpression {
+            let orderValue = try evaluateExpression(orderExpr)
+            let orderString = orderValue.toString().uppercased()
+            if orderString == "DESC" || orderString == "DESCENDING" {
+                order = .descending
+            }
+        }
+
+        manager.sortCharacters(by: sortKey, order: order)
+        context.lastResult = .null
+    }
+
+    /// FINDCHARA - 查找角色
+    public func visitFindCharaStatement(_ statement: FindCharaStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+
+        // 简化实现：返回第一个角色ID
+        if let first = manager.getCharacter(at: 0) {
+            context.lastResult = .integer(Int64(first.id))
+
+            // 如果指定了结果变量，设置它
+            if let varName = statement.resultVariable {
+                varData.setVariable(varName, value: .integer(Int64(first.id)))
+            }
+        } else {
+            context.lastResult = .integer(-1)
+        }
+    }
+
+    /// CHARAOPERATE - 角色操作
+    public func visitCharaOperateStatement(_ statement: CharaOperateStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        let operationValue = try evaluateExpression(statement.operationExpression)
+        guard case .integer(let targetIdx) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+        let operation = operationValue.toString()
+        let value = statement.valueExpression != nil ? try evaluateExpression(statement.valueExpression!).toInt() : 0
+
+        let manager = CharacterManager(variableData: varData)
+
+        // 执行操作
+        if let character = manager.getCharacter(at: Int(targetIdx)) {
+            switch operation.uppercased() {
+            case "ADD":
+                if character.dataIntegerArray.count > 0 {
+                    for i in 0..<character.dataIntegerArray[0].count {
+                        character.dataIntegerArray[0][i] += value
+                    }
+                }
+            case "SET":
+                if character.dataIntegerArray.count > 0 {
+                    for i in 0..<character.dataIntegerArray[0].count {
+                        character.dataIntegerArray[0][i] = value
+                    }
+                }
+            default:
+                break
+            }
+            context.lastResult = .integer(1)
+        } else {
+            context.lastResult = .integer(0)
+        }
+    }
+
+    /// CHARAMODIFY - 批量修改
+    public func visitCharaModifyStatement(_ statement: CharaModifyStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        let variableValue = try evaluateExpression(statement.variableExpression)
+        let valueValue = try evaluateExpression(statement.valueExpression)
+        guard case .integer(let targetIdx) = targetValue,
+              case .integer(let value) = valueValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+        let variable = variableValue.toString()
+
+        if let character = varData.getCharacter(at: Int(targetIdx)) {
+            // 解析变量类型并修改
+            // 简化实现：直接修改BASE[0]
+            if variable.uppercased() == "BASE" && character.dataIntegerArray.count > 0 {
+                if character.dataIntegerArray[0].count > 0 {
+                    character.dataIntegerArray[0][0] = value
+                }
+            }
+            context.lastResult = .integer(1)
+        } else {
+            context.lastResult = .integer(0)
+        }
+    }
+
+    /// CHARAFILTER - 角色过滤
+    public func visitCharaFilterStatement(_ statement: CharaFilterStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let manager = CharacterManager(variableData: varData)
+
+        // 简化实现：返回所有角色ID数组
+        let allIDs = (0..<manager.getCharacterCount()).map { VariableValue.integer(Int64($0)) }
+        let result = VariableValue.array(allIDs)
+
+        context.lastResult = result
+
+        if let varName = statement.resultVariable {
+            varData.setVariable(varName, value: result)
+        }
+    }
+
+    /// SHOWCHARACARD - 显示角色卡片
+    public func visitShowCharaCardStatement(_ statement: ShowCharaCardStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        guard case .integer(let targetIdx) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        if let character = varData.getCharacter(at: Int(targetIdx)) {
+            // 检查 console 属性是否存在
+            guard let console = context.console else {
+                throw EmueraError.runtimeError(message: "Console未初始化", position: nil)
+            }
+            let uiManager = CharacterUIManager(console: console)
+
+            var style: CharacterCardStyle = .compact
+            if let styleExpr = statement.styleExpression {
+                let styleValue = try evaluateExpression(styleExpr)
+                let styleString = styleValue.toString().uppercased()
+                switch styleString {
+                case "DETAILED": style = .detailed
+                case "FULL": style = .full
+                default: style = .compact
+                }
+            }
+
+            uiManager.showCharacterCard(character, style: style)
+            context.lastResult = .integer(1)
+        } else {
+            context.lastResult = .integer(0)
+        }
+    }
+
+    /// SHOWCHARALIST - 显示角色列表
+    public func visitShowCharaListStatement(_ statement: ShowCharaListStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        guard let console = context.console else {
+            throw EmueraError.runtimeError(message: "Console未初始化", position: nil)
+        }
+        let uiManager = CharacterUIManager(console: console)
+
+        var characters: [CharacterData] = []
+
+        if let indicesExpr = statement.indicesExpression {
+            // 如果指定了索引，只显示这些
+            let indicesValue = try evaluateExpression(indicesExpr)
+            // 简化：假设是数组
+            if case .array(let array) = indicesValue {
+                for id in array {
+                    if case .integer(let idx) = id,
+                       let char = varData.getCharacter(at: Int(idx)) {
+                        characters.append(char)
+                    }
+                }
+            }
+        } else {
+            // 显示所有
+            characters = varData.characters
+        }
+
+        uiManager.showCharacterListOverview(characters)
+        context.lastResult = .null
+    }
+
+    /// SHOWBATTLESTATUS - 显示战斗状态
+    public func visitShowBattleStatusStatement(_ statement: ShowBattleStatusStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        guard case .integer(let targetIdx) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        if let character = varData.getCharacter(at: Int(targetIdx)) {
+            guard let console = context.console else {
+                throw EmueraError.runtimeError(message: "Console未初始化", position: nil)
+            }
+            let uiManager = CharacterUIManager(console: console)
+            uiManager.showBattleStatus(character)
+            context.lastResult = .integer(1)
+        } else {
+            context.lastResult = .integer(0)
+        }
+    }
+
+    /// SHOWPROGRESSBARS - 显示进度条
+    public func visitShowProgressBarsStatement(_ statement: ShowProgressBarsStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        guard case .integer(let targetIdx) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+        _ = try evaluateExpression(statement.barsExpression)  // barsValue 用于兼容性检查
+
+        if let character = varData.getCharacter(at: Int(targetIdx)) {
+            guard let console = context.console else {
+                throw EmueraError.runtimeError(message: "Console未初始化", position: nil)
+            }
+            let uiManager = CharacterUIManager(console: console)
+
+            // 简化：创建默认进度条配置
+            let bars: [ProgressBarConfig] = [
+                ProgressBarConfig(attribute: .hp, maxValue: 5000, label: "HP"),
+                ProgressBarConfig(attribute: .mp, maxValue: 2000, label: "MP")
+            ]
+
+            uiManager.showProgressBars(character, bars: bars)
+            context.lastResult = .integer(1)
+        } else {
+            context.lastResult = .integer(0)
+        }
+    }
+
+    /// SHOWCHARATAGS - 显示角色标签
+    public func visitShowCharaTagsStatement(_ statement: ShowCharaTagsStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        guard case .integer(let targetIdx) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        if let character = varData.getCharacter(at: Int(targetIdx)) {
+            guard let console = context.console else {
+                throw EmueraError.runtimeError(message: "Console未初始化", position: nil)
+            }
+            let uiManager = CharacterUIManager(console: console)
+            uiManager.showCharacterTags(character)
+            context.lastResult = .integer(1)
+        } else {
+            context.lastResult = .integer(0)
+        }
+    }
+
+    /// BATCHMODIFY - 批量修改
+    public func visitBatchModifyStatement(_ statement: BatchModifyStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let indicesValue = try evaluateExpression(statement.indicesExpression)
+        let operationValue = try evaluateExpression(statement.operationExpression)
+        let valueValue = try evaluateExpression(statement.valueExpression)
+        guard case .integer(let value) = valueValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+
+        let manager = CharacterManager(variableData: varData)
+
+        // 解析索引数组
+        var indices: [Int] = []
+        if case .array(let array) = indicesValue {
+            for idx in array {
+                if case .integer(let i) = idx {
+                    indices.append(Int(i))
+                }
+            }
+        } else {
+            // 单个索引
+            if case .integer(let idx) = indicesValue {
+                indices = [Int(idx)]
+            }
+        }
+
+        // 解析操作类型
+        let operationString = operationValue.toString().uppercased()
+        let operation: BatchOperation
+        switch operationString {
+        case "ADD": operation = .add
+        case "SUBTRACT": operation = .subtract
+        case "MULTIPLY": operation = .multiply
+        case "SET": operation = .set
+        default: operation = .add
+        }
+
+        let count = manager.batchModify(indices: indices, operation: operation, value: value)
+        context.lastResult = .integer(Int64(count))
+    }
+
+    /// CHARACOUNT - 获取角色数量
+    public func visitCharaCountStatement(_ statement: CharaCountStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let count = varData.characters.count
+        context.lastResult = .integer(Int64(count))
+
+        if let varName = statement.resultVariable {
+            varData.setVariable(varName, value: .integer(Int64(count)))
+        }
+    }
+
+    /// CHARAEXISTS - 检查角色是否存在
+    public func visitCharaExistsStatement(_ statement: CharaExistsStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+        let targetValue = try evaluateExpression(statement.targetExpression)
+        guard case .integer(let targetIdx) = targetValue else {
+            throw EmueraError.typeMismatch(expected: "integer", actual: "other")
+        }
+        let exists = varData.getCharacter(at: Int(targetIdx)) != nil
+
+        context.lastResult = exists ? .integer(1) : .integer(0)
+
+        if let varName = statement.resultVariable {
+            varData.setVariable(varName, value: exists ? .integer(1) : .integer(0))
+        }
     }
 }

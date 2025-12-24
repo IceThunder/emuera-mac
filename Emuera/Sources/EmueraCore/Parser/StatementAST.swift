@@ -868,6 +868,25 @@ public protocol StatementVisitor {
     func visitDefineMacroStatement(_ statement: DefineMacroStatement) throws
     func visitIncludeStatement(_ statement: IncludeStatement) throws
     func visitGlobalVariableStatement(_ statement: GlobalVariableStatement) throws
+
+    // Phase 6: 字符管理系统增强
+    func visitAddCharaStatement(_ statement: AddCharaStatement) throws
+    func visitDelCharaStatement(_ statement: DelCharaStatement) throws
+    func visitSwapCharaStatement(_ statement: SwapCharaStatement) throws
+    func visitCopyCharaStatement(_ statement: CopyCharaStatement) throws
+    func visitSortCharaStatement(_ statement: SortCharaStatement) throws
+    func visitFindCharaStatement(_ statement: FindCharaStatement) throws
+    func visitCharaOperateStatement(_ statement: CharaOperateStatement) throws
+    func visitCharaModifyStatement(_ statement: CharaModifyStatement) throws
+    func visitCharaFilterStatement(_ statement: CharaFilterStatement) throws
+    func visitShowCharaCardStatement(_ statement: ShowCharaCardStatement) throws
+    func visitShowCharaListStatement(_ statement: ShowCharaListStatement) throws
+    func visitShowBattleStatusStatement(_ statement: ShowBattleStatusStatement) throws
+    func visitShowProgressBarsStatement(_ statement: ShowProgressBarsStatement) throws
+    func visitShowCharaTagsStatement(_ statement: ShowCharaTagsStatement) throws
+    func visitBatchModifyStatement(_ statement: BatchModifyStatement) throws
+    func visitCharaCountStatement(_ statement: CharaCountStatement) throws
+    func visitCharaExistsStatement(_ statement: CharaExistsStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

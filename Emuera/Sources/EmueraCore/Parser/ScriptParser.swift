@@ -165,6 +165,42 @@ public class ScriptParser {
         case "PERSIST":
             return try parsePersistCommand()
 
+        // Phase 6: 字符管理系统命令
+        case "ADDCHARA":
+            return try parseAddCharaCommand()
+        case "DELCHARA":
+            return try parseDelCharaCommand()
+        case "SWAPCHARA":
+            return try parseSwapCharaCommand()
+        case "COPYCHARA":
+            return try parseCopyCharaCommand()
+        case "SORTCHARA":
+            return try parseSortCharaCommand()
+        case "FINDCHARA":
+            return try parseFindCharaCommand()
+        case "CHARAOPERATE":
+            return try parseCharaOperateCommand()
+        case "CHARAMODIFY":
+            return try parseCharaModifyCommand()
+        case "CHARAFILTER":
+            return try parseCharaFilterCommand()
+        case "SHOWCHARACARD":
+            return try parseShowCharaCardCommand()
+        case "SHOWCHARALIST":
+            return try parseShowCharaListCommand()
+        case "SHOWBATTLESTATUS":
+            return try parseShowBattleStatusCommand()
+        case "SHOWPROGRESSBARS":
+            return try parseShowProgressBarsCommand()
+        case "SHOWCHARATAGS":
+            return try parseShowCharaTagsCommand()
+        case "BATCHMODIFY":
+            return try parseBatchModifyCommand()
+        case "CHARACOUNT":
+            return try parseCharaCountCommand()
+        case "CHARAEXISTS":
+            return try parseCharaExistsCommand()
+
         default:
             // 其他命令，作为通用命令处理
             let args = try parseArguments()
@@ -2760,5 +2796,383 @@ public class ScriptParser {
 
         // 默认开启
         return PersistEnhancedStatement(enabled: true, option: nil, position: startPos)
+    }
+
+    // MARK: - Phase 6: 字符管理系统命令解析
+
+    /// 解析ADDCHARA命令 - 添加角色
+    /// ADDCHARA [id,] name
+    private func parseAddCharaCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+
+        var idExpression: ExpressionNode? = nil
+        var nameExpression: ExpressionNode? = nil
+
+        if arguments.count == 1 {
+            // ADDCHARA name
+            nameExpression = arguments[0]
+        } else if arguments.count == 2 {
+            // ADDCHARA id, name
+            idExpression = arguments[0]
+            nameExpression = arguments[1]
+        }
+
+        return AddCharaStatement(
+            idExpression: idExpression,
+            nameExpression: nameExpression,
+            position: startPos
+        )
+    }
+
+    /// 解析DELCHARA命令 - 删除角色
+    /// DELCHARA target
+    private func parseDelCharaCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count == 1 else {
+            throw EmueraError.scriptParseError(
+                message: "DELCHARA需要一个目标参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return DelCharaStatement(targetExpression: arguments[0], position: startPos)
+    }
+
+    /// 解析SWAPCHARA命令 - 交换角色
+    /// SWAPCHARA index1, index2
+    private func parseSwapCharaCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count == 2 else {
+            throw EmueraError.scriptParseError(
+                message: "SWAPCHARA需要两个索引参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return SwapCharaStatement(
+            index1Expression: arguments[0],
+            index2Expression: arguments[1],
+            position: startPos
+        )
+    }
+
+    /// 解析COPYCHARA命令 - 复制角色
+    /// COPYCHARA src [, dst]
+    private func parseCopyCharaCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 && arguments.count <= 2 else {
+            throw EmueraError.scriptParseError(
+                message: "COPYCHARA需要1-2个参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return CopyCharaStatement(
+            srcExpression: arguments[0],
+            dstExpression: arguments.count > 1 ? arguments[1] : nil,
+            position: startPos
+        )
+    }
+
+    /// 解析SORTCHARA命令 - 排序角色
+    /// SORTCHARA key [, order]
+    private func parseSortCharaCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "SORTCHARA需要至少一个排序键参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return SortCharaStatement(
+            keyExpression: arguments[0],
+            orderExpression: arguments.count > 1 ? arguments[1] : nil,
+            position: startPos
+        )
+    }
+
+    /// 解析FINDCHARA命令 - 查找角色
+    /// FINDCHARA condition [, resultVar]
+    private func parseFindCharaCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "FINDCHARA需要条件参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第二个参数可能是结果变量名（字符串字面量）
+        var resultVariable: String? = nil
+        if arguments.count > 1 {
+            if case .string(let varName) = arguments[1] {
+                resultVariable = varName
+            }
+        }
+
+        return FindCharaStatement(
+            conditionExpression: arguments[0],
+            resultVariable: resultVariable,
+            position: startPos
+        )
+    }
+
+    /// 解析CHARAOPERATE命令 - 角色操作
+    /// CHARAOPERATE target, operation [, value]
+    private func parseCharaOperateCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 2 else {
+            throw EmueraError.scriptParseError(
+                message: "CHARAOPERATE需要至少2个参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return CharaOperateStatement(
+            targetExpression: arguments[0],
+            operationExpression: arguments[1],
+            valueExpression: arguments.count > 2 ? arguments[2] : nil,
+            position: startPos
+        )
+    }
+
+    /// 解析CHARAMODIFY命令 - 批量修改
+    /// CHARAMODIFY target, variable, value [, indices]
+    private func parseCharaModifyCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 3 else {
+            throw EmueraError.scriptParseError(
+                message: "CHARAMODIFY需要至少3个参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return CharaModifyStatement(
+            targetExpression: arguments[0],
+            variableExpression: arguments[1],
+            valueExpression: arguments[2],
+            indicesExpression: arguments.count > 3 ? arguments[3] : nil,
+            position: startPos
+        )
+    }
+
+    /// 解析CHARAFILTER命令 - 角色过滤
+    /// CHARAFILTER condition [, resultVar]
+    private func parseCharaFilterCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "CHARAFILTER需要条件参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        var resultVariable: String? = nil
+        if arguments.count > 1 {
+            if case .string(let varName) = arguments[1] {
+                resultVariable = varName
+            }
+        }
+
+        return CharaFilterStatement(
+            conditionExpression: arguments[0],
+            resultVariable: resultVariable,
+            position: startPos
+        )
+    }
+
+    /// 解析SHOWCHARACARD命令 - 显示角色卡片
+    /// SHOWCHARACARD target [, style]
+    private func parseShowCharaCardCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "SHOWCHARACARD需要目标参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return ShowCharaCardStatement(
+            targetExpression: arguments[0],
+            styleExpression: arguments.count > 1 ? arguments[1] : nil,
+            position: startPos
+        )
+    }
+
+    /// 解析SHOWCHARALIST命令 - 显示角色列表
+    /// SHOWCHARALIST [, indices]
+    private func parseShowCharaListCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+
+        return ShowCharaListStatement(
+            indicesExpression: arguments.count > 0 ? arguments[0] : nil,
+            position: startPos
+        )
+    }
+
+    /// 解析SHOWBATTLESTATUS命令 - 显示战斗状态
+    /// SHOWBATTLESTATUS target
+    private func parseShowBattleStatusCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count == 1 else {
+            throw EmueraError.scriptParseError(
+                message: "SHOWBATTLESTATUS需要一个目标参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return ShowBattleStatusStatement(targetExpression: arguments[0], position: startPos)
+    }
+
+    /// 解析SHOWPROGRESSBARS命令 - 显示进度条
+    /// SHOWPROGRESSBARS target, bars
+    private func parseShowProgressBarsCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 2 else {
+            throw EmueraError.scriptParseError(
+                message: "SHOWPROGRESSBARS需要2个参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return ShowProgressBarsStatement(
+            targetExpression: arguments[0],
+            barsExpression: arguments[1],
+            position: startPos
+        )
+    }
+
+    /// 解析SHOWCHARATAGS命令 - 显示角色标签
+    /// SHOWCHARATAGS target
+    private func parseShowCharaTagsCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count == 1 else {
+            throw EmueraError.scriptParseError(
+                message: "SHOWCHARATAGS需要一个目标参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return ShowCharaTagsStatement(targetExpression: arguments[0], position: startPos)
+    }
+
+    /// 解析BATCHMODIFY命令 - 批量修改
+    /// BATCHMODIFY indices, operation, value
+    private func parseBatchModifyCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count == 3 else {
+            throw EmueraError.scriptParseError(
+                message: "BATCHMODIFY需要3个参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        return BatchModifyStatement(
+            indicesExpression: arguments[0],
+            operationExpression: arguments[1],
+            valueExpression: arguments[2],
+            position: startPos
+        )
+    }
+
+    /// 解析CHARACOUNT命令 - 获取角色数量
+    /// CHARACOUNT [, resultVar]
+    private func parseCharaCountCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        // 跳过空白
+        skipWhitespaceAndNewlines()
+
+        // 检查是否有逗号开头
+        var resultVariable: String? = nil
+        if currentIndex < tokens.count,
+           case .comma = tokens[currentIndex].type {
+            currentIndex += 1  // 跳过逗号
+            skipWhitespaceAndNewlines()
+
+            // 解析参数
+            let arguments = try parseArguments()
+            if arguments.count > 0,
+               case .string(let varName) = arguments[0] {
+                resultVariable = varName
+            }
+        }
+
+        return CharaCountStatement(resultVariable: resultVariable, position: startPos)
+    }
+
+    /// 解析CHARAEXISTS命令 - 检查角色是否存在
+    /// CHARAEXISTS target [, resultVar]
+    private func parseCharaExistsCommand() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意: parseCommandStatement 已经跳过了命令 token，这里不需要再跳
+
+        let arguments = try parseArguments()
+        guard arguments.count >= 1 else {
+            throw EmueraError.scriptParseError(
+                message: "CHARAEXISTS需要目标参数",
+                position: getCurrentPosition()
+            )
+        }
+
+        var resultVariable: String? = nil
+        if arguments.count > 1 {
+            if case .string(let varName) = arguments[1] {
+                resultVariable = varName
+            }
+        }
+
+        return CharaExistsStatement(
+            targetExpression: arguments[0],
+            resultVariable: resultVariable,
+            position: startPos
+        )
     }
 }

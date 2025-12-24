@@ -44,6 +44,10 @@ public enum CommandType: String, CaseIterable {
     case SWAPCHARA      // 交换角色
     case COPYCHARA      // 复制角色
     case SORTCHARA      // 角色排序
+    case FINDCHARA      // 查找角色
+    case CHARAOPERATE   // 角色操作
+    case CHARAMODIFY    // 批量修改
+    case CHARAFILTER    // 角色过滤
 
     case ADDVOIDCHARA   // 添加空角色
     case DELALLCHARA    // 删除所有角色
@@ -189,6 +193,18 @@ public enum CommandType: String, CaseIterable {
     case PRINTSINGLES   // 单行字符串输出
     case PRINTSINGLEFORM // 单行格式化输出
     case PRINTSINGLEFORMS // 单行格式化字符串输出
+
+    // MARK: - Phase 6: 角色显示命令
+    case SHOWCHARACARD  // 显示角色卡片
+    case SHOWCHARALIST  // 显示角色列表
+    case SHOWBATTLESTATUS // 显示战斗状态
+    case SHOWPROGRESSBARS // 显示进度条
+    case SHOWCHARATAGS  // 显示角色标签
+
+    // MARK: - Phase 6: 批量操作命令
+    case BATCHMODIFY    // 批量修改
+    case CHARACOUNT     // 角色数量
+    case CHARAEXISTS    // 检查角色存在
 
     // MARK: - K系列（韩文扩展）
     case PRINTK         // K输出

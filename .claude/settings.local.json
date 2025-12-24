@@ -108,7 +108,14 @@
       "Bash(.build/debug/DebugSaveInfo:*)",
       "Bash(.build/debug/DebugPhase4:*)",
       "Bash(.build/debug/DebugPhase4Parse:*)",
-      "Bash(.build/debug/ERHTest:*)"
+      "Bash(.build/debug/ERHTest:*)",
+      "Bash(.build/debug/GUIEnhancedTest:*)",
+      "Bash(.build/debug/ThemeTest:*)",
+      "Bash(.build/debug/GUIIntegrationTest:*)",
+      "Bash(.build/debug/CharacterManagerTest:*)",
+      "Bash(.build/debug/Phase6ParserTest:*)",
+      "Bash(.build/debug/DebugParser:*)",
+      "Bash(.build/debug/DebugPhase6Parser:*)"
     ]
   }
 }
