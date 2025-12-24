@@ -614,6 +614,30 @@ let package = Package(
             sources: ["ERHTest.swift"]
         ),
 
+        // GUI Enhanced Test Target (Phase 5)
+        .executableTarget(
+            name: "GUIEnhancedTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase5Debug",
+            sources: ["GUIEnhancedTest.swift"]
+        ),
+
+        // Theme Test Target (Phase 5)
+        .executableTarget(
+            name: "ThemeTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase5Debug",
+            sources: ["ThemeTest.swift"]
+        ),
+
+        // GUI Integration Test Target (Phase 5)
+        .executableTarget(
+            name: "GUIIntegrationTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase5Debug",
+            sources: ["GUIIntegrationTest.swift"]
+        ),
+
         // Unit Tests
         .testTarget(
             name: "EmueraCoreTests",

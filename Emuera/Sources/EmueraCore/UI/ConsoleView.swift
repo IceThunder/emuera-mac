@@ -72,49 +72,310 @@ struct ConsoleLineView: View {
     var body: some View {
         switch line.type {
         case .text, .print:
+            renderTextLine()
+
+        case .error:
+            renderErrorLine()
+
+        case .button:
+            renderButtonLine()
+
+        case .image:
+            renderImageLine()
+
+        case .separator:
+            renderSeparatorLine()
+
+        case .progressBar:
+            renderProgressBarLine()
+
+        case .table:
+            renderTableLine()
+
+        case .header:
+            renderHeaderLine()
+
+        case .quote:
+            renderQuoteLine()
+
+        case .code:
+            renderCodeLine()
+
+        case .link:
+            renderLinkLine()
+        }
+    }
+
+    // MARK: - Render Methods
+
+    private func renderTextLine() -> some View {
+        let text = Text(line.content)
+            .foregroundColor(colorFromConsole(line.attributes.color))
+            .font(createFont())
+            .fontWeight(line.attributes.isBold ? .bold : .regular)
+            .italic(line.attributes.isItalic)
+            .opacity(line.attributes.opacity)
+
+        return applyModifiers(text: text)
+            .frame(maxWidth: .infinity, alignment: alignmentFromConsole(line.attributes.alignment))
+            .background(backgroundColor())
+    }
+
+    private func renderErrorLine() -> some View {
+        Text(line.content)
+            .foregroundColor(.red)
+            .font(.system(.body, design: .monospaced))
+            .fontWeight(.bold)
+            .padding(.vertical, 4)
+            .background(Color.red.opacity(0.1))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .cornerRadius(4)
+    }
+
+    private func renderButtonLine() -> some View {
+        Button(action: onButtonTap) {
             Text(line.content)
                 .foregroundColor(colorFromConsole(line.attributes.color))
-                .font(fontFromConsole(line.attributes.font))
+                .font(createFont())
                 .fontWeight(line.attributes.isBold ? .bold : .regular)
                 .italic(line.attributes.isItalic)
                 .underline(line.attributes.isUnderlined, color: colorFromConsole(line.attributes.color))
-                .frame(maxWidth: .infinity, alignment: alignmentFromConsole(line.attributes.alignment))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-        case .error:
-            Text(line.content)
-                .foregroundColor(.red)
-                .font(.system(.body, design: .monospaced))
-                .fontWeight(.bold)
-                .padding(.vertical, 2)
-                .background(Color.red.opacity(0.1))
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func renderImageLine() -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let ref = line.imageReference {
+                // 实际图像渲染（需要图像系统）
+                HStack {
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: line.imageSize?.width ?? 60, height: line.imageSize?.height ?? 60)
+                        .foregroundColor(.gray)
 
-        case .button:
-            Button(action: onButtonTap) {
-                Text(line.content)
-                    .foregroundColor(colorFromConsole(line.attributes.color))
-                    .underline(line.attributes.isUnderlined)
-                    .font(fontFromConsole(line.attributes.font))
-            }
-            .buttonStyle(PlainButtonStyle())
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-        case .image:
-            HStack {
-                Image(systemName: "photo")
-                    .foregroundColor(.gray)
+                    if line.content != "[图像: \(ref)]" {
+                        Text(line.content)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding(.vertical, 4)
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(4)
+            } else {
                 Text(line.content)
                     .foregroundColor(.gray)
                     .font(.caption)
+                    .padding(.vertical, 4)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
-            .background(Color.gray.opacity(0.05))
-
-        case .separator:
-            Divider()
-                .padding(.vertical, 4)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func renderSeparatorLine() -> some View {
+        Divider()
+            .padding(.vertical, 4)
+    }
+
+    private func renderProgressBarLine() -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let label = line.progressLabel {
+                Text(label)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            if let value = line.progressValue {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // 背景
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 16)
+                            .cornerRadius(8)
+
+                        // 进度
+                        Rectangle()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [.blue, .cyan]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ))
+                            .frame(width: geometry.size.width * CGFloat(value), height: 16)
+                            .cornerRadius(8)
+                    }
+                }
+                .frame(height: 16)
+
+                Text("\(Int(value * 100))%")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func renderTableLine() -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // 表头
+            if let headers = line.tableHeaders {
+                HStack(spacing: 4) {
+                    ForEach(headers, id: \.self) { header in
+                        Text(header)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(4)
+                            .background(Color.gray.opacity(0.2))
+                            .cornerRadius(2)
+                    }
+                }
+            }
+
+            // 表格数据
+            if let data = line.tableData {
+                ForEach(data.indices, id: \.self) { rowIndex in
+                    HStack(spacing: 4) {
+                        ForEach(data[rowIndex], id: \.self) { cell in
+                            Text(cell)
+                                .font(.caption)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(4)
+                                .background(Color.gray.opacity(0.05))
+                                .cornerRadius(2)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func renderHeaderLine() -> some View {
+        Text(line.content)
+            .font(createFont())
+            .fontWeight(.bold)
+            .foregroundColor(colorFromConsole(line.attributes.color))
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: alignmentFromConsole(line.attributes.alignment))
+            .background(backgroundColor())
+    }
+
+    private func renderQuoteLine() -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Rectangle()
+                .fill(Color.gray.opacity(0.5))
+                .frame(width: 3)
+
+            Text(line.content)
+                .font(createFont())
+                .foregroundColor(colorFromConsole(line.attributes.color))
+                .italic()
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(backgroundColor())
+    }
+
+    private func renderCodeLine() -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let lang = line.codeLanguage {
+                Text(lang.uppercased())
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(4)
+            }
+
+            Text(line.content)
+                .font(createFont())
+                .foregroundColor(colorFromConsole(line.attributes.color))
+                .padding(8)
+                .background(backgroundColor() ?? Color.gray.opacity(0.1))
+                .cornerRadius(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func renderLinkLine() -> some View {
+        Button(action: {
+            if let action = line.buttonAction {
+                action()
+            } else if let url = line.linkURL {
+                // 打开URL
+                if let url = URL(string: url) {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: "link")
+                    .font(.caption)
+                Text(line.content)
+                    .font(createFont())
+                    .foregroundColor(colorFromConsole(line.attributes.color))
+                    .underline(line.attributes.isUnderlined)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.cyan.opacity(0.1))
+        .cornerRadius(4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Helper Methods
+
+    private func createFont() -> Font {
+        let baseSize = line.attributes.fontSize ?? line.attributes.font.size
+
+        if line.attributes.font == .monospace {
+            return .system(size: baseSize, design: .monospaced)
+        }
+
+        return .system(size: baseSize)
+    }
+
+    private func applyModifiers<T: View>(text: T) -> some View {
+        var view = AnyView(text)
+
+        // 下划线
+        if line.attributes.isUnderlined {
+            view = AnyView(view.underline(color: colorFromConsole(line.attributes.color)))
+        }
+
+        // 删除线
+        if line.attributes.strikethrough {
+            let strikeColor = line.attributes.strikethroughColor ?? line.attributes.color
+            view = AnyView(view.strikethrough(color: colorFromConsole(strikeColor)))
+        }
+
+        // 字符间距
+        if let spacing = line.attributes.letterSpacing {
+            view = AnyView(view.kerning(spacing))
+        }
+
+        return view
+    }
+
+    private func backgroundColor() -> Color? {
+        guard let bg = line.attributes.backgroundColor else { return nil }
+        return colorFromConsole(bg).opacity(0.1)
     }
 
     private func colorFromConsole(_ consoleColor: ConsoleColor) -> Color {

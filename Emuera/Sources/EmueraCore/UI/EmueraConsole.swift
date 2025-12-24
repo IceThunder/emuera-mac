@@ -17,8 +17,14 @@ public enum ConsoleLineType {
     case print          // PRINT/PRINTL输出
     case error          // 错误信息
     case button         // 可点击按钮
-    case image          // 图像占位符
+    case image          // 图像
     case separator      // 分隔线
+    case progressBar    // 进度条
+    case table          // 表格数据
+    case header         // 标题文本
+    case quote          // 引用文本
+    case code           // 代码块
+    case link           // 可点击链接
 }
 
 /// 显示行数据结构
@@ -29,12 +35,28 @@ public struct ConsoleLine: Identifiable, Hashable {
     public let attributes: ConsoleAttributes
     public let timestamp: Date
 
-    // 用于按钮
+    // 用于按钮和链接
     public var buttonValue: Int?
     public var buttonAction: (() -> Void)?
+    public var linkURL: String?
 
     // 用于图像
     public var imageReference: String?
+    public var imageSize: CGSize?
+
+    // 用于进度条
+    public var progressValue: Double?  // 0.0 - 1.0
+    public var progressLabel: String?
+
+    // 用于表格
+    public var tableData: [[String]]?  // 二维数组表示表格
+    public var tableHeaders: [String]?
+
+    // 用于代码块
+    public var codeLanguage: String?
+
+    // 用于多行内容
+    public var multiLineContent: [String]?
 
     public init(
         type: ConsoleLineType,
@@ -42,7 +64,15 @@ public struct ConsoleLine: Identifiable, Hashable {
         attributes: ConsoleAttributes = ConsoleAttributes(),
         buttonValue: Int? = nil,
         buttonAction: (() -> Void)? = nil,
-        imageReference: String? = nil
+        linkURL: String? = nil,
+        imageReference: String? = nil,
+        imageSize: CGSize? = nil,
+        progressValue: Double? = nil,
+        progressLabel: String? = nil,
+        tableData: [[String]]? = nil,
+        tableHeaders: [String]? = nil,
+        codeLanguage: String? = nil,
+        multiLineContent: [String]? = nil
     ) {
         self.type = type
         self.content = content
@@ -50,7 +80,15 @@ public struct ConsoleLine: Identifiable, Hashable {
         self.timestamp = Date()
         self.buttonValue = buttonValue
         self.buttonAction = buttonAction
+        self.linkURL = linkURL
         self.imageReference = imageReference
+        self.imageSize = imageSize
+        self.progressValue = progressValue
+        self.progressLabel = progressLabel
+        self.tableData = tableData
+        self.tableHeaders = tableHeaders
+        self.codeLanguage = codeLanguage
+        self.multiLineContent = multiLineContent
     }
 
     public static func == (lhs: ConsoleLine, rhs: ConsoleLine) -> Bool {
@@ -65,26 +103,47 @@ public struct ConsoleLine: Identifiable, Hashable {
 /// 文本属性和样式
 public struct ConsoleAttributes: Hashable {
     public var color: ConsoleColor
+    public var backgroundColor: ConsoleColor?
     public var font: ConsoleFont
+    public var fontSize: CGFloat?  // 自定义字体大小
     public var alignment: TextAlignment
     public var isBold: Bool
     public var isItalic: Bool
     public var isUnderlined: Bool
+    public var lineHeight: CGFloat?  // 行高
+    public var letterSpacing: CGFloat?  // 字符间距
+    public var opacity: Double  // 透明度 (0.0 - 1.0)
+    public var strikethrough: Bool  // 删除线
+    public var strikethroughColor: ConsoleColor?
 
     public init(
         color: ConsoleColor = .default,
+        backgroundColor: ConsoleColor? = nil,
         font: ConsoleFont = .default,
+        fontSize: CGFloat? = nil,
         alignment: TextAlignment = .left,
         isBold: Bool = false,
         isItalic: Bool = false,
-        isUnderlined: Bool = false
+        isUnderlined: Bool = false,
+        lineHeight: CGFloat? = nil,
+        letterSpacing: CGFloat? = nil,
+        opacity: Double = 1.0,
+        strikethrough: Bool = false,
+        strikethroughColor: ConsoleColor? = nil
     ) {
         self.color = color
+        self.backgroundColor = backgroundColor
         self.font = font
+        self.fontSize = fontSize
         self.alignment = alignment
         self.isBold = isBold
         self.isItalic = isItalic
         self.isUnderlined = isUnderlined
+        self.lineHeight = lineHeight
+        self.letterSpacing = letterSpacing
+        self.opacity = opacity
+        self.strikethrough = strikethrough
+        self.strikethroughColor = strikethroughColor
     }
 }
 
@@ -213,6 +272,9 @@ public final class EmueraConsole: ObservableObject {
     /// 滚动到最新
     @Published public var scrollToBottom: Bool = false
 
+    /// 当前主题
+    @Published public var currentTheme: ConsoleTheme
+
     /// 总行数
     public var lineCount: Int { lines.count }
 
@@ -232,18 +294,20 @@ public final class EmueraConsole: ObservableObject {
 
     // MARK: - Initialization
 
-    public init(config: ConsoleConfig = ConsoleConfig()) {
+    public init(config: ConsoleConfig = ConsoleConfig(), theme: ConsoleTheme = .classic) {
         self.config = config
+        self.currentTheme = theme
         setupInitialState()
     }
 
     private func setupInitialState() {
         // 添加欢迎信息
-        addLine(ConsoleLine(
-            type: .text,
-            content: "Emuera for macOS - Ready",
-            attributes: ConsoleAttributes(color: .cyan, isBold: true)
-        ))
+        let welcomeLine = ConsoleLine.themedText(
+            "Emuera for macOS - Ready",
+            theme: currentTheme,
+            style: .primary
+        )
+        addLine(welcomeLine)
     }
 
     // MARK: - Output Methods
@@ -425,16 +489,139 @@ public final class EmueraConsole: ObservableObject {
         }
     }
 
-    // MARK: - Image/Graphic Support
+    // MARK: - Enhanced Image/Graphic Support
 
-    /// 添加图像占位符
-    public func addImageReference(_ imageName: String) {
+    /// 添加图像
+    public func addImage(
+        _ imageName: String,
+        size: CGSize? = nil,
+        caption: String? = nil
+    ) {
+        let content = caption ?? "[图像: \(imageName)]"
         let line = ConsoleLine(
             type: .image,
-            content: "[图像: \(imageName)]",
-            imageReference: imageName
+            content: content,
+            imageReference: imageName,
+            imageSize: size
         )
         addLine(line)
+    }
+
+    /// 添加进度条
+    public func addProgressBar(
+        value: Double,
+        label: String? = nil,
+        attributes: ConsoleAttributes? = nil
+    ) {
+        let content = label ?? "进度: \(Int(value * 100))%"
+        let line = ConsoleLine(
+            type: .progressBar,
+            content: content,
+            attributes: attributes ?? ConsoleAttributes(),
+            progressValue: value,
+            progressLabel: label
+        )
+        addLine(line)
+    }
+
+    /// 添加表格
+    public func addTable(
+        headers: [String],
+        data: [[String]],
+        attributes: ConsoleAttributes? = nil
+    ) {
+        let line = ConsoleLine(
+            type: .table,
+            content: headers.joined(separator: " | "),
+            attributes: attributes ?? ConsoleAttributes(),
+            tableData: data,
+            tableHeaders: headers
+        )
+        addLine(line)
+    }
+
+    /// 添加标题
+    public func addHeader(
+        _ text: String,
+        level: Int = 1,
+        attributes: ConsoleAttributes? = nil
+    ) {
+        var attrs = attributes ?? ConsoleAttributes()
+        attrs.isBold = true
+        attrs.fontSize = attrs.fontSize ?? (18.0 - Double(level) * 2.0)
+
+        let line = ConsoleLine(
+            type: .header,
+            content: text,
+            attributes: attrs
+        )
+        addLine(line)
+    }
+
+    /// 添加引用文本
+    public func addQuote(
+        _ text: String,
+        attributes: ConsoleAttributes? = nil
+    ) {
+        let attrs = attributes ?? ConsoleAttributes(
+            color: .gray,
+            isItalic: true
+        )
+
+        let line = ConsoleLine(
+            type: .quote,
+            content: text,
+            attributes: attrs
+        )
+        addLine(line)
+    }
+
+    /// 添加代码块
+    public func addCode(
+        _ code: String,
+        language: String? = nil,
+        attributes: ConsoleAttributes? = nil
+    ) {
+        let attrs = attributes ?? ConsoleAttributes(
+            backgroundColor: .gray,
+            font: .monospace
+        )
+
+        let line = ConsoleLine(
+            type: .code,
+            content: code,
+            attributes: attrs,
+            codeLanguage: language
+        )
+        addLine(line)
+    }
+
+    /// 添加链接
+    public func addLink(
+        _ text: String,
+        url: String,
+        attributes: ConsoleAttributes? = nil,
+        action: (() -> Void)? = nil
+    ) {
+        var attrs = attributes ?? ConsoleAttributes()
+        attrs.color = .cyan
+        attrs.isUnderlined = true
+
+        let line = ConsoleLine(
+            type: .link,
+            content: text,
+            attributes: attrs,
+            buttonAction: action,
+            linkURL: url
+        )
+        addLine(line)
+    }
+
+    // MARK: - Image/Graphic Support (Legacy)
+
+    /// 添加图像占位符 (兼容旧代码)
+    public func addImageReference(_ imageName: String) {
+        addImage(imageName)
     }
 
     // MARK: - Process Integration
@@ -474,6 +661,46 @@ public final class EmueraConsole: ObservableObject {
     /// 更新状态（供Process使用）
     public func updateState(_ newState: ConsoleState) {
         self.state = newState
+    }
+
+    // MARK: - Theme Management
+
+    /// 切换主题
+    public func switchTheme(_ theme: ConsoleTheme) {
+        self.currentTheme = theme
+        printDebug("已切换到主题: \(theme.name)")
+    }
+
+    /// 通过名称切换主题
+    public func switchThemeByName(_ name: String) -> Bool {
+        let themes: [ConsoleTheme] = [
+            .classic, .dark, .light, .highContrast, .cyberpunk, .compact
+        ]
+
+        if let theme = themes.first(where: { $0.name == name }) {
+            switchTheme(theme)
+            return true
+        }
+
+        printError("未找到主题: \(name)")
+        return false
+    }
+
+    /// 获取所有可用主题名称
+    public func getAvailableThemeNames() -> [String] {
+        return [ConsoleTheme.classic, .dark, .light, .highContrast, .cyberpunk, .compact].map { $0.name }
+    }
+
+    /// 使用主题样式打印文本
+    public func printThemedText(_ text: String, style: TextStyle = .normal) {
+        let line = ConsoleLine.themedText(text, theme: currentTheme, style: style)
+        addLine(line)
+    }
+
+    /// 添加分隔线
+    public func addSeparator() {
+        let line = ConsoleLine(type: .separator, content: "")
+        addLine(line)
     }
 }
 
