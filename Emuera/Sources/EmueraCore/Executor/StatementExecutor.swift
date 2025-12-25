@@ -494,6 +494,129 @@ public class StatementExecutor: StatementVisitor {
         case .FONTBOLD, .FONTITALIC, .FONTREGULAR, .SETFONT:
             context.output.append("[字体设置: \(statement.command)]\n")
 
+        // Priority 2: 输入命令扩展
+        case .TINPUT, .TINPUTS, .TONEINPUT, .TONEINPUTS:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[命令: \(statement.command) 参数: \(values)]\n")
+            if statement.command.uppercased().hasSuffix("S") {
+                context.setVariable("RESULTS", value: .string(""))
+            } else {
+                context.setVariable("RESULT", value: .integer(0))
+            }
+
+        case .AWAIT:
+            context.output.append("[等待输入]\n")
+
+        // Priority 2: 位运算命令
+        case .SETBIT:
+            if statement.arguments.count >= 2 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let varName) = statement.arguments[0],
+                   case .integer(let bit) = args[1] {
+                    let current = context.getVariable(varName)
+                    if case .integer(let currentVal) = current {
+                        let newValue = currentVal | (1 << bit)
+                        context.setVariable(varName, value: .integer(newValue))
+                        context.lastResult = .integer(newValue)
+                    }
+                }
+            }
+
+        case .CLEARBIT:
+            if statement.arguments.count >= 2 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let varName) = statement.arguments[0],
+                   case .integer(let bit) = args[1] {
+                    let current = context.getVariable(varName)
+                    if case .integer(let currentVal) = current {
+                        let newValue = currentVal & ~(1 << bit)
+                        context.setVariable(varName, value: .integer(newValue))
+                        context.lastResult = .integer(newValue)
+                    }
+                }
+            }
+
+        case .INVERTBIT:
+            if statement.arguments.count >= 2 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let varName) = statement.arguments[0],
+                   case .integer(let bit) = args[1] {
+                    let current = context.getVariable(varName)
+                    if case .integer(let currentVal) = current {
+                        let newValue = currentVal ^ (1 << bit)
+                        context.setVariable(varName, value: .integer(newValue))
+                        context.lastResult = .integer(newValue)
+                    }
+                }
+            }
+
+        // Priority 2: 数组操作命令
+        case .ARRAYSHIFT:
+            if statement.arguments.count >= 2 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let arrayName) = statement.arguments[0],
+                   case .integer(let shift) = args[1] {
+                    // 获取数组
+                    if case .array(let arr) = context.variables[arrayName] {
+                        // 执行移位
+                        let shiftInt = Int(shift)
+                        if shiftInt > 0 && shiftInt < arr.count {
+                            let shifted = Array(arr[shiftInt...] + arr[0..<shiftInt])
+                            context.variables[arrayName] = .array(shifted)
+                        }
+                    }
+                }
+            }
+
+        case .ARRAYREMOVE:
+            if statement.arguments.count >= 2 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let arrayName) = statement.arguments[0],
+                   case .integer(let index) = args[1] {
+                    // 获取数组
+                    if case .array(let arr) = context.variables[arrayName] {
+                        // 移除指定索引
+                        if index >= 0 && index < arr.count {
+                            var newArr = arr
+                            newArr.remove(at: Int(index))
+                            context.variables[arrayName] = .array(newArr)
+                        }
+                    }
+                }
+            }
+
+        case .ARRAYSORT:
+            if statement.arguments.count >= 1 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let arrayName) = statement.arguments[0] {
+                    // 获取数组
+                    if case .array(let arr) = context.variables[arrayName] {
+                        // 排序（升序）
+                        let sorted = arr.sorted { a, b in
+                            switch (a, b) {
+                            case (.integer(let la), .integer(let lb)): return la < lb
+                            case (.string(let la), .string(let lb)): return la < lb
+                            default: return false
+                            }
+                        }
+                        context.variables[arrayName] = .array(sorted)
+                    }
+                }
+            }
+
+        case .ARRAYCOPY:
+            if statement.arguments.count >= 1 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let arrayName) = statement.arguments[0] {
+                    // 获取数组
+                    if case .array(let arr) = context.variables[arrayName] {
+                        // 复制数组（结果存储在RESULT数组中）
+                        context.variables["RESULT"] = .array(arr)
+                        context.lastResult = .array(arr)
+                    }
+                }
+            }
+
         case .DEBUGPRINT:
             let values = try evaluateArguments(statement.arguments)
             context.output.append("[DEBUG] \(values.joined(separator: " "))")
@@ -698,7 +821,7 @@ public class StatementExecutor: StatementVisitor {
         let indexValues = try indices.map { try evaluateExpression($0) }
 
         // 检查数组是否存在，如果不存在则创建
-        var arrayValue = context.variables[base] ?? .array([])
+        let arrayValue = context.variables[base] ?? .array([])
 
         // 确保是数组类型
         guard case .array(var arr) = arrayValue else {

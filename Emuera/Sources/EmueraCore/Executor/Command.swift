@@ -42,6 +42,9 @@ public enum CommandType: String, CaseIterable {
     case WAITANYKEY     // 等待任意键
     case ONEINPUT       // 单键输入
     case ONEINPUTS      // 单键字符串输入
+    case TONEINPUT      // 带超时单键输入
+    case TONEINPUTS     // 带超时单键字符串输入
+    case AWAIT          // 等待（输入不可用）
 
     case CLEARLINE      // 清除行
     case REUSELASTLINE  // 重用最后一行

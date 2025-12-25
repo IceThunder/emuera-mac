@@ -122,7 +122,12 @@
       "Bash(.build/debug/DebugTryCExecute:*)",
       "Bash(.build/debug/Test1Debug:*)",
       "Bash(.build/debug/DebugNestedTryC:*)",
-      "Bash(.build/debug/DebugTest9:*)"
+      "Bash(.build/debug/DebugTest9:*)",
+      "Bash(.build/debug/StringFunctionsTest:*)",
+      "Bash(.build/debug/Priority2Test:*)",
+      "Bash(.build/debug/DebugPriority2Parse:*)",
+      "Bash(.build/debug/DebugParseDetail:*)",
+      "Bash(.build/debug/Priority3Test:*)"
     ]
   }
 }

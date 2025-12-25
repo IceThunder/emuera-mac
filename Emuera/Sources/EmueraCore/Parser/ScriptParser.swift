@@ -266,6 +266,26 @@ public class ScriptParser {
         case "TRYGOTOLIST":
             return try parseTryGotoListStatement()
 
+        // Priority 2: 绘图命令
+        case "DRAWLINE", "CUSTOMDRAWLINE", "DRAWLINEFORM", "BAR", "BARL":
+            return try parseDrawCommand(upperCmd)
+
+        // Priority 2: 颜色命令
+        case "SETCOLOR", "RESETCOLOR", "SETBGCOLOR", "RESETBGCOLOR":
+            return try parseColorCommand(upperCmd)
+
+        // Priority 2: 输入命令扩展
+        case "TINPUT", "TINPUTS", "TONEINPUT", "TONEINPUTS", "AWAIT":
+            return try parseInputCommand(upperCmd)
+
+        // Priority 2: 位运算命令
+        case "SETBIT", "CLEARBIT", "INVERTBIT":
+            return try parseBitCommand(upperCmd)
+
+        // Priority 2: 数组操作命令
+        case "ARRAYSHIFT", "ARRAYREMOVE", "ARRAYSORT", "ARRAYCOPY":
+            return try parseArrayCommand(upperCmd)
+
         default:
             // 其他命令，作为通用命令处理
             let args = try parseArguments()
@@ -299,6 +319,245 @@ public class ScriptParser {
 
         // 其他情况，默认开启
         return PersistStatement(enabled: true, position: startPos)
+    }
+
+    // MARK: - Priority 2 命令解析
+
+    /// 解析绘图命令（DRAWLINE, CUSTOMDRAWLINE, DRAWLINEFORM, BAR, BARL）
+    private func parseDrawCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意：parseCommandStatement 已经跳过了命令token
+
+        switch cmd {
+        case "DRAWLINE":
+            return CommandStatement(command: cmd, arguments: [], position: startPos)
+
+        case "CUSTOMDRAWLINE":
+            // CUSTOMDRAWLINE 可选参数：自定义字符
+            let args = try parseSpaceSeparatedArguments(maxCount: 1)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "DRAWLINEFORM":
+            // DRAWLINEFORM 参数：多个字符串，用空格连接
+            let args = try parseSpaceSeparatedArguments()
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "BAR", "BARL":
+            // BAR/BARL 参数：value, max, length
+            let args = try parseSpaceSeparatedArguments(exactCount: 3)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        default:
+            throw EmueraError.scriptParseError(message: "未知绘图命令: \\(cmd)", position: startPos)
+        }
+    }
+
+    /// 解析颜色命令（SETCOLOR, RESETCOLOR, SETBGCOLOR, RESETBGCOLOR）
+    private func parseColorCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意：parseCommandStatement 已经跳过了命令token
+
+        switch cmd {
+        case "SETCOLOR", "SETBGCOLOR":
+            // 需要一个颜色参数
+            let args = try parseSpaceSeparatedArguments(exactCount: 1)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "RESETCOLOR", "RESETBGCOLOR":
+            // 无参数
+            return CommandStatement(command: cmd, arguments: [], position: startPos)
+
+        default:
+            throw EmueraError.scriptParseError(message: "未知颜色命令: \\(cmd)", position: startPos)
+        }
+    }
+
+    /// 解析输入命令扩展（TINPUT, TINPUTS, TONEINPUT, TONEINPUTS, AWAIT）
+    private func parseInputCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意：parseCommandStatement 已经跳过了命令token
+
+        switch cmd {
+        case "TINPUT", "TINPUTS", "TONEINPUT", "TONEINPUTS":
+            // 需要一个超时参数
+            let args = try parseSpaceSeparatedArguments(exactCount: 1)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "AWAIT":
+            // 无参数
+            return CommandStatement(command: cmd, arguments: [], position: startPos)
+
+        default:
+            throw EmueraError.scriptParseError(message: "未知输入命令: \\(cmd)", position: startPos)
+        }
+    }
+
+    /// 解析位运算命令（SETBIT, CLEARBIT, INVERTBIT）
+    private func parseBitCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意：parseCommandStatement 已经跳过了命令token
+
+        // SETBIT value, bit
+        let args = try parseSpaceSeparatedArguments(exactCount: 2)
+        return CommandStatement(command: cmd, arguments: args, position: startPos)
+    }
+
+    /// 解析数组操作命令（ARRAYSHIFT, ARRAYREMOVE, ARRAYSORT, ARRAYCOPY）
+    private func parseArrayCommand(_ cmd: String) throws -> StatementNode {
+        let startPos = getCurrentPosition()
+        // 注意：parseCommandStatement 已经跳过了命令token
+
+        switch cmd {
+        case "ARRAYSHIFT", "ARRAYREMOVE":
+            // 需要数组名和参数
+            let args = try parseSpaceSeparatedArguments(exactCount: 2)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "ARRAYSORT", "ARRAYCOPY":
+            // 只需要数组名
+            let args = try parseSpaceSeparatedArguments(exactCount: 1)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        default:
+            throw EmueraError.scriptParseError(message: "未知数组命令: \\(cmd)", position: startPos)
+        }
+    }
+
+    /// 解析空格分隔的参数（用于BAR, TINPUT等命令）
+    /// 关键词：词法分析器不生成空白token，所以需要通过token类型判断参数边界
+    /// 例如: \"BAR 50 100 20\" -> 3个参数 [50], [100], [20]
+    ///       \"BAR 50 + 100 20\" -> 2个参数 [50 + 100], [20]
+    private func parseSpaceSeparatedArguments(exactCount: Int? = nil, maxCount: Int? = nil) throws -> [ExpressionNode] {
+        var arguments: [ExpressionNode] = []
+
+        while currentIndex < tokens.count {
+            // 跳过空白
+            skipWhitespaceAndNewlines()
+
+            guard currentIndex < tokens.count else { break }
+
+            let token = tokens[currentIndex]
+
+            // 检查是否结束（遇到命令、关键字或行尾）
+            switch token.type {
+            case .command, .keyword:
+                break
+            case .lineBreak:
+                currentIndex += 1
+                break
+            default:
+                // 收集单个参数的token
+                let argTokens = collectSingleArgumentForSpaceSeparated()
+                if argTokens.isEmpty {
+                    break
+                }
+
+                // 特殊情况：如果只有一个运算符token，作为字符串处理
+                // 例如: CUSTOMDRAWLINE * 中的 * 应该作为字符而不是乘法运算符
+                if argTokens.count == 1,
+                   case .operatorSymbol(let op) = argTokens[0].type {
+                    arguments.append(.string(op.rawValue))
+                    continue
+                }
+
+                // 特殊情况：如果只有一个比较器token，作为字符串处理
+                if argTokens.count == 1,
+                   case .comparator(let comp) = argTokens[0].type {
+                    arguments.append(.string(comp.rawValue))
+                    continue
+                }
+
+                // 解析为表达式
+                let parser = ExpressionParser()
+                let arg = try parser.parse(argTokens)
+                arguments.append(arg)
+                continue
+            }
+
+            break
+        }
+
+        // 验证参数数量
+        if let expected = exactCount, arguments.count != expected {
+            throw EmueraError.scriptParseError(message: "需要 \\(expected) 个参数，但得到 \\(arguments.count)", position: nil)
+        }
+
+        if let max = maxCount, arguments.count > max {
+            throw EmueraError.scriptParseError(message: "最多需要 \\(max) 个参数，但得到 \\(arguments.count)", position: nil)
+        }
+
+        return arguments
+    }
+
+    /// 为space-separated参数收集单个参数的tokens
+    /// 核心逻辑：收集一个参数的token，遇到边界或下一个参数开始时返回
+    private func collectSingleArgumentForSpaceSeparated() -> [TokenType.Token] {
+        var argTokens: [TokenType.Token] = []
+        var parenDepth = 0
+
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+
+            // 处理括号深度
+            if case .parenthesisOpen = token.type {
+                parenDepth += 1
+                argTokens.append(token)
+                currentIndex += 1
+                continue
+            }
+            if case .parenthesisClose = token.type {
+                parenDepth -= 1
+                argTokens.append(token)
+                currentIndex += 1
+                continue
+            }
+
+            // 在括号外，检查是否应该结束当前参数
+            if parenDepth == 0 {
+                switch token.type {
+                case .command, .keyword:
+                    return argTokens
+                case .lineBreak:
+                    currentIndex += 1
+                    return argTokens
+                case .comma:
+                    currentIndex += 1
+                    return argTokens
+                default:
+                    break
+                }
+            }
+
+            // 添加当前token到参数
+            argTokens.append(token)
+            currentIndex += 1
+
+            // 检查下一个token来决定是否继续收集
+            if currentIndex >= tokens.count {
+                return argTokens
+            }
+
+            let nextToken = tokens[currentIndex]
+
+            // 在括号外，检查下一个token
+            if parenDepth == 0 {
+                switch nextToken.type {
+                case .command, .keyword, .lineBreak, .comma:
+                    return argTokens
+                case .operatorSymbol, .comparator:
+                    // 下一个token是运算符，表达式继续
+                    continue
+                default:
+                    // 下一个token是普通值，返回当前参数
+                    return argTokens
+                }
+            } else {
+                // 在括号内，继续收集
+                continue
+            }
+        }
+
+        return argTokens
     }
 
     // MARK: - 关键字语句解析

@@ -28,6 +28,7 @@ public enum FunctionType: String, CaseIterable {
     case MAX            // 最大值
     case LIMIT          // 限制范围
     case SUM            // 求和
+    case PI             // 圆周率常量
 
     // MARK: - 随机函数
     case RAND           // 随机数
@@ -114,6 +115,26 @@ public enum FunctionType: String, CaseIterable {
     case HOUR           // 时
     case MINUTE         // 分
     case SECOND         // 秒
+    case GETDATE        // 获取日期字符串
+    case GETDATETIME    // 获取日期时间字符串
+    case TIMESTAMP      // 时间戳
+    case DATE           // 日期字符串
+    case DATEFORM       // 格式化日期
+    case GETTIMES       // 获取时间戳（毫秒）
+
+    // MARK: - 文件操作
+    case FILEEXISTS     // 文件是否存在
+    case FILEDELETE     // 删除文件
+    case FILECOPY       // 复制文件
+    case FILEREAD       // 读取文件
+    case FILEWRITE      // 写入文件
+    case DIRECTORYLIST  // 目录列表
+
+    // MARK: - 系统信息
+    case GETTYPE        // 获取类型
+    case GETS           // 获取字符串
+    case GETDATA        // 获取数据
+    case GETERROR       // 获取错误信息
 
     // MARK: - 其他
     case ISNUMERIC      // 是否数字
@@ -310,6 +331,10 @@ public class BuiltInFunctions {
                 }
             }
             return .integer(sum)
+
+        case "PI":
+            // PI常量，返回314159（表示3.14159，乘以100000）
+            return .integer(314159)
 
         // MARK: - 随机函数
         case "RAND":
@@ -854,6 +879,174 @@ public class BuiltInFunctions {
             let calendar = Calendar.current
             return .integer(Int64(calendar.component(.second, from: now)))
 
+        case "GETDATE":
+            // 返回格式: YYYYMMDD
+            let now = Date()
+            let calendar = Calendar.current
+            let year = calendar.component(.year, from: now)
+            let month = calendar.component(.month, from: now)
+            let day = calendar.component(.day, from: now)
+            return .string(String(format: "%04d%02d%02d", year, month, day))
+
+        case "GETDATETIME":
+            // 返回格式: YYYYMMDDHHMMSS
+            let now = Date()
+            let calendar = Calendar.current
+            let year = calendar.component(.year, from: now)
+            let month = calendar.component(.month, from: now)
+            let day = calendar.component(.day, from: now)
+            let hour = calendar.component(.hour, from: now)
+            let minute = calendar.component(.minute, from: now)
+            let second = calendar.component(.second, from: now)
+            return .string(String(format: "%04d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second))
+
+        case "TIMESTAMP":
+            // 返回当前时间戳（秒）
+            return .integer(Int64(Date().timeIntervalSince1970))
+
+        case "DATE":
+            // 返回格式: YYYY/MM/DD
+            let now = Date()
+            let calendar = Calendar.current
+            let year = calendar.component(.year, from: now)
+            let month = calendar.component(.month, from: now)
+            let day = calendar.component(.day, from: now)
+            return .string(String(format: "%04d/%02d/%02d", year, month, day))
+
+        case "DATEFORM":
+            // 格式化日期，支持自定义格式
+            // 简化实现：返回YYYY/MM/DD HH:MM:SS
+            let now = Date()
+            let calendar = Calendar.current
+            let year = calendar.component(.year, from: now)
+            let month = calendar.component(.month, from: now)
+            let day = calendar.component(.day, from: now)
+            let hour = calendar.component(.hour, from: now)
+            let minute = calendar.component(.minute, from: now)
+            let second = calendar.component(.second, from: now)
+            return .string(String(format: "%04d/%02d/%02d %02d:%02d:%02d", year, month, day, hour, minute, second))
+
+        case "GETTIMES":
+            // 返回当前时间戳（毫秒）
+            let time = Date().timeIntervalSince1970
+            return .integer(Int64(time * 1000))
+
+        // MARK: - 文件操作
+        case "FILEEXISTS":
+            // 检查文件是否存在
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .string(let filename) = arg {
+                let fileURL = getFileURL(filename)
+                return .integer(FileManager.default.fileExists(atPath: fileURL.path) ? 1 : 0)
+            }
+            return .integer(0)
+
+        case "FILEDELETE":
+            // 删除文件
+            guard let arg = arguments.first else { return .integer(0) }
+            if case .string(let filename) = arg {
+                let fileURL = getFileURL(filename)
+                do {
+                    if FileManager.default.fileExists(atPath: fileURL.path) {
+                        try FileManager.default.removeItem(at: fileURL)
+                        return .integer(1)
+                    }
+                    return .integer(0)
+                } catch {
+                    return .integer(0)
+                }
+            }
+            return .integer(0)
+
+        case "FILECOPY":
+            // 复制文件
+            guard arguments.count >= 2 else { return .integer(0) }
+            if case .string(let src) = arguments[0],
+               case .string(let dst) = arguments[1] {
+                let srcURL = getFileURL(src)
+                let dstURL = getFileURL(dst)
+                do {
+                    if FileManager.default.fileExists(atPath: srcURL.path) {
+                        try FileManager.default.copyItem(at: srcURL, to: dstURL)
+                        return .integer(1)
+                    }
+                    return .integer(0)
+                } catch {
+                    return .integer(0)
+                }
+            }
+            return .integer(0)
+
+        case "FILEREAD":
+            // 读取文件内容
+            guard let arg = arguments.first else { return .string("") }
+            if case .string(let filename) = arg {
+                let fileURL = getFileURL(filename)
+                do {
+                    let content = try String(contentsOf: fileURL, encoding: .utf8)
+                    return .string(content)
+                } catch {
+                    return .string("")
+                }
+            }
+            return .string("")
+
+        case "FILEWRITE":
+            // 写入文件
+            guard arguments.count >= 2 else { return .integer(0) }
+            if case .string(let filename) = arguments[0],
+               case .string(let content) = arguments[1] {
+                let fileURL = getFileURL(filename)
+                do {
+                    try content.write(to: fileURL, atomically: true, encoding: .utf8)
+                    return .integer(1)
+                } catch {
+                    return .integer(0)
+                }
+            }
+            return .integer(0)
+
+        case "DIRECTORYLIST":
+            // 列出目录中的文件
+            guard let arg = arguments.first else { return .array([]) }
+            if case .string(let dirname) = arg {
+                let dirURL = getDirectoryURL(dirname)
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(at: dirURL, includingPropertiesForKeys: nil)
+                    let fileNames = contents.map { VariableValue.string($0.lastPathComponent) }
+                    return .array(fileNames)
+                } catch {
+                    return .array([])
+                }
+            }
+            return .array([])
+
+        // MARK: - 系统信息
+        case "GETTYPE":
+            // 获取变量类型
+            guard let arg = arguments.first else { return .string("UNKNOWN") }
+            switch arg {
+            case .integer: return .string("INTEGER")
+            case .string: return .string("STRING")
+            case .array: return .string("ARRAY")
+            case .character: return .string("CHARACTER")
+            case .null: return .string("NULL")
+            }
+
+        case "GETS":
+            // 获取字符串表示
+            guard let arg = arguments.first else { return .string("") }
+            return .string(arg.description)
+
+        case "GETDATA":
+            // 获取数据（简化实现，返回参数值）
+            guard let arg = arguments.first else { return .integer(0) }
+            return arg
+
+        case "GETERROR":
+            // 获取错误信息（当前无错误）
+            return .string("")
+
         // MARK: - 类型转换
         case "TO_STRING":
             guard let arg = arguments.first else { return .string("") }
@@ -1017,5 +1210,31 @@ public class BuiltInFunctions {
     /// 获取所有可用函数名
     public static var allFunctionNames: [String] {
         return FunctionType.allCases.map { $0.rawValue }
+    }
+
+    /// 获取文件URL（保存在应用目录下的data文件夹）
+    private static func getFileURL(_ filename: String) -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsURL = paths[0]
+        let dataURL = documentsURL.appendingPathComponent("EmueraData")
+
+        // 确保目录存在
+        try? FileManager.default.createDirectory(at: dataURL, withIntermediateDirectories: true)
+
+        // 自动添加扩展名如果未指定
+        let finalFilename = filename.hasSuffix(".txt") ? filename : "\(filename).txt"
+        return dataURL.appendingPathComponent(finalFilename)
+    }
+
+    /// 获取目录URL
+    private static func getDirectoryURL(_ dirname: String) -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsURL = paths[0]
+        let dataURL = documentsURL.appendingPathComponent("EmueraData")
+
+        // 确保目录存在
+        try? FileManager.default.createDirectory(at: dataURL, withIntermediateDirectories: true)
+
+        return dataURL
     }
 }

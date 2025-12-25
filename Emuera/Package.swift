@@ -125,14 +125,6 @@ let package = Package(
             sources: ["PrintTest.swift"]
         ),
 
-        // Debug Collect Target
-        .executableTarget(
-            name: "DebugCollect",
-            dependencies: ["EmueraCore"],
-            path: "Sources/DebugTest",
-            sources: ["DebugCollect.swift"]
-        ),
-
         // Debug Lexical Target
         .executableTarget(
             name: "DebugLexical",
@@ -799,6 +791,86 @@ let package = Package(
             dependencies: ["EmueraCore"],
             path: "Sources/Phase7Debug",
             sources: ["DebugStringFuncs.swift"]
+        ),
+
+        // Priority 2 Test Target
+        .executableTarget(
+            name: "Priority2Test",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["Priority2Test.swift"]
+        ),
+
+        // Priority 3 Test Target
+        .executableTarget(
+            name: "Priority3Test",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["Priority3Test.swift"]
+        ),
+
+        // Debug Priority 2 Parse Target
+        .executableTarget(
+            name: "DebugPriority2Parse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugPriority2Parse.swift"]
+        ),
+
+        // Debug Parse Step Target
+        .executableTarget(
+            name: "DebugParseStep",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugParseStep.swift"]
+        ),
+
+        // Debug Parse Detail Target
+        .executableTarget(
+            name: "DebugParseDetail",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugParseDetail.swift"]
+        ),
+
+        // Debug Collect Target
+        .executableTarget(
+            name: "DebugCollect",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugCollect.swift"]
+        ),
+
+        // Debug Collect 2 Target
+        .executableTarget(
+            name: "DebugCollect2",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugCollect2.swift"]
+        ),
+
+        // Debug Collect 3 Target
+        .executableTarget(
+            name: "DebugCollect3",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugCollect3.swift"]
+        ),
+
+        // Debug Collect 4 Target
+        .executableTarget(
+            name: "DebugCollect4",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugCollect4.swift"]
+        ),
+
+        // Debug Real Parser Target
+        .executableTarget(
+            name: "DebugRealParser",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugRealParser.swift"]
         ),
     ],
     swiftLanguageVersions: [.v5]
