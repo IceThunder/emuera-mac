@@ -56,6 +56,11 @@ public class ScriptParser {
     private func parseStatement() throws -> StatementNode? {
         let token = tokens[currentIndex]
 
+        // 特殊处理SIF命令（需要读取下一行）
+        if case .command(let cmd) = token.type, cmd.uppercased() == "SIF" {
+            return try parseSifStatement()
+        }
+
         switch token.type {
         case .directive(let directive):
             return try parseDirectiveStatement(directive)
@@ -226,6 +231,8 @@ public class ScriptParser {
             return try parsePrintFormDLCommand()
         case "PRINTFORMDW":
             return try parsePrintFormDWCommand()
+        case "SIF":
+            return try parseSifCommand()
 
         default:
             // 其他命令，作为通用命令处理
@@ -3366,6 +3373,71 @@ public class ScriptParser {
             waitInput: true,
             newLine: true,
             position: startPos
+        )
+    }
+
+    /// 解析SIF语句 - 单行条件输出
+    /// SIF 条件
+    ///     下一行命令
+    /// 如果条件为真（非0），执行下一行的命令；如果条件为假（0），跳过下一行
+    private func parseSifStatement() throws -> StatementNode {
+        let startPos = getCurrentPosition()
+
+        // 跳过SIF命令token
+        currentIndex += 1
+
+        // 解析条件表达式
+        let conditionArguments = try parseArguments()
+        guard !conditionArguments.isEmpty else {
+            throw EmueraError.scriptParseError(
+                message: "SIF需要条件表达式",
+                position: getCurrentPosition()
+            )
+        }
+
+        let condition = conditionArguments[0]
+
+        // parseArguments已经消耗了直到lineBreak的所有token
+        // 现在currentIndex指向lineBreak之后的第一个token（下一行的开始）
+
+        // 跳过可能的空行（多个连续的lineBreak）
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+            if case .lineBreak = token.type {
+                currentIndex += 1
+            } else {
+                break
+            }
+        }
+
+        if currentIndex >= tokens.count {
+            throw EmueraError.scriptParseError(
+                message: "SIF后面需要有命令行",
+                position: startPos
+            )
+        }
+
+        // 解析下一行的语句（目标命令）
+        guard let targetStatement = try parseStatement() else {
+            throw EmueraError.scriptParseError(
+                message: "SIF后面需要有有效的命令",
+                position: getCurrentPosition()
+            )
+        }
+
+        return SifStatement(
+            condition: condition,
+            targetStatement: targetStatement,
+            position: startPos
+        )
+    }
+
+    /// 解析SIF命令 - 单行条件输出（备用方法，如果需要支持同一行格式）
+    private func parseSifCommand() throws -> StatementNode {
+        // 这个方法应该不会被调用，因为parseStatement会特殊处理SIF
+        throw EmueraError.scriptParseError(
+            message: "SIF应该通过parseSifStatement解析",
+            position: getCurrentPosition()
         )
     }
 }

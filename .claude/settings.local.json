@@ -115,7 +115,9 @@
       "Bash(.build/debug/CharacterManagerTest:*)",
       "Bash(.build/debug/Phase6ParserTest:*)",
       "Bash(.build/debug/DebugParser:*)",
-      "Bash(.build/debug/DebugPhase6Parser:*)"
+      "Bash(.build/debug/DebugPhase6Parser:*)",
+      "Bash(.build/debug/PrintDTest:*)",
+      "Bash(.build/debug/DebugPrintFormD:*)"
     ]
   }
 }

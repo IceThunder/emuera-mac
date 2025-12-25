@@ -46,6 +46,9 @@ public enum CommandType: String, CaseIterable {
     case CLEARLINE      // 清除行
     case REUSELASTLINE  // 重用最后一行
 
+    // MARK: - 条件输出命令
+    case SIF            // 单行条件输出
+
     // MARK: - 流程控制 (注意: 这些在词法分析中被识别为关键字，不是命令)
 
     // MARK: - 变量操作

@@ -92,7 +92,36 @@
 
 ### 🔴 Priority 1 (紧急 - 2025-12-25 ~ 2026-01-05)
 
-#### 1. D系列输出命令 (2天)
+#### ✅ 1. SIF命令 (1天) - **已完成** (2025-12-25)
+
+**目标**: 实现一行条件语句 ✅
+
+| 命令 | 说明 | 状态 |
+|------|------|------|
+| **SIF** | 一行IF (条件满足时执行下一行) | ✅ |
+
+**实现内容**:
+- ✅ **Command.swift**: 添加SIF枚举值
+- ✅ **StatementAST.swift**: 添加SifStatement AST节点
+- ✅ **ScriptParser.swift**: 添加parseSifStatement解析方法
+- ✅ **StatementExecutor.swift**: 添加visitSifStatement执行方法
+- ✅ **SifTest.swift**: 6项完整测试（条件真/假、变量、表达式、多行、嵌套）
+- ✅ **Package.swift**: 添加SifTest测试目标
+
+**测试结果**: ✅ **全部通过** (6/6)
+
+**示例用法**:
+```swift
+A = 10
+SIF A > 5
+    PRINTL 条件成立  // 会执行
+SIF A < 5
+    PRINTL 不执行    // 跳过
+```
+
+---
+
+#### 2. D系列输出命令 (2天)
 **目标**: 实现带变量格式化的输出命令
 
 | 命令 | 说明 | 状态 |
@@ -117,19 +146,71 @@
 4. 在StatementExecutor.swift中添加executePrintD方法
 5. 编写测试用例验证功能
 
-#### 2. SIF命令 (1天)
-**目标**: 实现一行条件语句
+#### 3. TRYC系列异常处理 (3天)
+**目标**: 完整的TRYC异常处理系统
 
 | 命令 | 说明 | 状态 |
 |------|------|------|
-| **SIF** | 一行IF (条件满足时执行下一行) | ⏳ |
+| **TRYCCALL** | 带CATCH的函数调用 | ⏳ |
+| **TRYCGOTO** | 带CATCH的跳转 | ⏳ |
+| **TRYCJUMP** | 带CATCH的JUMP | ⏳ |
+| **TRYCCALLFORM** | 格式化函数调用 | ⏳ |
+| **TRYCGOTOFORM** | 格式化跳转 | ⏳ |
+| **TRYCJUMPFORM** | 格式化JUMP | ⏳ |
+| **TRYCALLLIST** | 函数调用列表 | ⏳ |
+| **TRYJUMPLIST** | JUMP列表 | ⏳ |
+| **TRYGOTOLIST** | GOTO列表 | ⏳ |
 
 **实现步骤**:
-1. 添加SIF命令到Command.swift
-2. 在ScriptParser中添加parseSIFStatement方法
-3. 设计SIFStatement AST节点
-4. 在执行器中实现特殊逻辑 (下一行执行控制)
-5. 编写测试用例
+1. 扩展TryCatchStatement支持CATCH标签
+2. 添加TRYC系列命令到Command.swift
+3. 在ScriptParser中添加解析方法
+4. 在StatementExecutor中实现CATCH逻辑
+5. 编写完整的异常处理测试
+
+#### 4. 字符串高级函数 (3天)
+**目标**: 增强字符串处理能力
+
+| 函数 | 说明 | 状态 |
+|------|------|------|
+| **STRLENS** | 字符串长度 (字符数) | ⏳ |
+| **SUBSTRING** | 子字符串 | ⏳ |
+| **STRFIND** | 字符串查找 | ⏳ |
+| **STRCOUNT** | 字符串计数 | ⏳ |
+| **REPLACE** | 字符串替换 | ⏳ |
+| **ESCAPE** | 转义处理 | ⏳ |
+| **TOUPPER** | 转大写 | ⏳ |
+| **TOLOWER** | 转小写 | ⏳ |
+| **TRIM** | 去除空白 | ⏳ |
+| **BARSTRING** | 进度条字符串 | ⏳ |
+| **SPLIT** | 字符串分割 | ⏳ |
+
+**实现步骤**:
+1. 在BuiltInFunctions.swift中添加新函数
+2. 在FunctionRegistry中注册
+3. 在ExpressionEvaluator中支持调用
+4. 编写函数测试用例
+
+#### 5. 数组高级函数 (2天)
+**目标**: 增强数组处理能力
+
+| 函数 | 说明 | 状态 |
+|------|------|------|
+| **FINDELEMENT** | 查找元素 | ⏳ |
+| **FINDLAST** | 反向查找 | ⏳ |
+| **UNIQUE** | 去重 | ⏳ |
+| **SORT** | 排序 | ⏳ |
+| **REVERSE** | 反转 | ⏳ |
+| **VARSIZE** | 数组大小 | ⏳ |
+| **SUMARRAY** | 数组求和 | ⏳ |
+
+**实现步骤**:
+1. 在BuiltInFunctions.swift中添加数组函数
+2. 处理数组参数和返回值
+3. 在FunctionRegistry中注册
+4. 编写数组函数测试
+
+**Priority 1 总计**: **11天** (已完成1天，剩余10天)
 
 #### 3. TRYC系列异常处理 (3天)
 **目标**: 完整的TRYC异常处理系统

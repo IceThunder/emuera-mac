@@ -2,13 +2,46 @@
 
 > **"变量系统是引擎的血液，表达式是大脑，语法解析器是灵魂，命令是手脚，Process是神经系统。**\n> **ERH头文件系统是引擎的记忆，宏定义是它的词汇表。**\n> **UI系统是引擎的面孔，控制台是它的声音。**\n> **现在我们拥有了完整的生命体——可以思考、记忆、执行、管理调用栈、理解中文ERB脚本，并通过GUI与用户交互的引擎。"**
 
-**当前状态**: 🟢 **✅ Phase 2-6 完成，整体进度60%**
-**实际进度**: **60%** (核心引擎100% + Phase 3语法扩展100% + Phase 4数据持久化100% + Phase 5 GUI增强100% + Phase 6字符管理100%，代码量: ~35,000行)
-**测试状态**: **✅ 全部通过** (Phase 2: 64+项测试 + Phase 3: 53项测试 + Phase 4: 5项测试 + Phase 5: 17项测试 + Phase 6: 25项测试 + Phase 6 Parser: 17项测试)
+**当前状态**: 🟢 **✅ Phase 2-6 完成 + Priority 1 SIF，整体进度60.5%**
+**实际进度**: **60.5%** (核心引擎100% + Phase 3语法扩展100% + Phase 4数据持久化100% + Phase 5 GUI增强100% + Phase 6字符管理100% + Priority 1 SIF 5%，代码量: ~35,000行)
+**测试状态**: **✅ 全部通过** (Phase 2: 64+项测试 + Phase 3: 53项测试 + Phase 4: 5项测试 + Phase 5: 17项测试 + Phase 6: 25项测试 + Phase 6 Parser: 17项测试 + SIF: 6项测试)
 **预计完成**: **2026-01-15** (完整功能移植)
 
-**⚠️ 重要更新**: 与原版Emuera对比分析完成，当前移植进度约**60%**，剩余40%为Priority 1-3功能
-**最新里程碑**: **2025-12-24** - Phase 6完成，所有测试通过，原版对比分析完成
+**⚠️ 最新进展**: Priority 1开发正式开始！SIF命令已完成并通过测试 (2025-12-25)
+**最新里程碑**: **2025-12-25** - SIF命令完成，Priority 1开发启动
+
+---
+
+### 🎯 最新里程碑达成 (2025-12-25) - Priority 1 SIF命令完成 ✅
+
+**SIF命令实现完成！** ✅
+- ✅ **CommandType.SIF** - 命令枚举
+- ✅ **SifStatement** - AST节点定义
+- ✅ **parseSifStatement()** - 解析器实现
+- ✅ **visitSifStatement()** - 执行器实现
+- ✅ **6项测试** - 全部通过
+- ✅ **文档更新** - README/STATUS/DEVELOPMENT_PLAN
+
+**SIF功能特性**:
+- ✅ 单行条件输出命令
+- ✅ 条件为真时执行下一行
+- ✅ 条件为假时跳过下一行
+- ✅ 支持变量、表达式、数组
+- ✅ 支持嵌套使用
+- ✅ 支持多行连续SIF
+
+**测试覆盖**:
+- ✅ testSifConditionTrue - 条件为真测试
+- ✅ testSifConditionFalse - 条件为假测试
+- ✅ testSifWithVariable - 变量条件测试
+- ✅ testSifWithExpression - 表达式条件测试
+- ✅ testSifMultipleLines - 多行SIF测试
+- ✅ testSifNested - 嵌套SIF测试
+
+**代码变更**:
+- 新增文件: SifTest.swift (测试)
+- 修改文件: Command.swift, StatementAST.swift, ScriptParser.swift, StatementExecutor.swift, Package.swift
+- 总变更: 125行新增代码
 
 ---
 

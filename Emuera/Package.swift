@@ -688,6 +688,14 @@ let package = Package(
             path: "Sources/Phase7Debug",
             sources: ["DebugPrintFormD.swift"]
         ),
+
+        // SIF命令测试 Target (Priority 2)
+        .executableTarget(
+            name: "SifTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["SifTest.swift"]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )

@@ -434,6 +434,26 @@ public class PrintFormDStatement: StatementNode {
     }
 }
 
+// MARK: - 条件输出命令 (Priority 2)
+
+/// SIF语句 - 单行条件输出
+/// SIF 条件 命令
+/// 如果条件为真（非0），执行下一行的命令；如果条件为假（0），跳过下一行
+public class SifStatement: StatementNode {
+    public let condition: ExpressionNode
+    public let targetStatement: StatementNode  // 下一行要执行的语句
+
+    public init(condition: ExpressionNode, targetStatement: StatementNode, position: ScriptPosition? = nil) {
+        self.condition = condition
+        self.targetStatement = targetStatement
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSifStatement(self)
+    }
+}
+
 // MARK: - 特殊语句
 
 /// RESET语句
@@ -970,6 +990,9 @@ public protocol StatementVisitor {
     func visitPrintVStatement(_ statement: PrintVStatement) throws
     func visitPrintSStatement(_ statement: PrintSStatement) throws
     func visitPrintFormDStatement(_ statement: PrintFormDStatement) throws
+
+    // Priority 2: 条件输出命令
+    func visitSifStatement(_ statement: SifStatement) throws
 }
 
 // MARK: - 表达式节点 (复用现有ExpressionNode)

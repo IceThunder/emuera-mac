@@ -2453,6 +2453,22 @@ extension StatementExecutor {
         }
     }
 
+    // MARK: - 条件输出命令 (Priority 2)
+
+    /// 访问SIF语句 - 单行条件输出
+    /// 如果条件为真（非0），执行下一行的命令；如果条件为假（0），跳过下一行
+    public func visitSifStatement(_ statement: SifStatement) throws {
+        // 评估条件表达式
+        let conditionValue = try evaluateExpression(statement.condition)
+
+        // 检查条件是否为真（非0）
+        if toBool(conditionValue) {
+            // 条件为真，执行目标语句
+            try statement.targetStatement.accept(visitor: self)
+        }
+        // 条件为假，什么也不做（跳过目标语句）
+    }
+
     // MARK: - D系列输出命令执行 (Priority 1)
 
     /// 执行PRINTD系列命令 - 不解析{}和%
