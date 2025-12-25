@@ -784,6 +784,22 @@ let package = Package(
             path: "Sources/Phase7Debug",
             sources: ["DebugScriptParser.swift"]
         ),
+
+        // String Functions Test
+        .executableTarget(
+            name: "StringFunctionsTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["StringFunctionsTest.swift"]
+        ),
+
+        // Debug String Functions
+        .executableTarget(
+            name: "DebugStringFuncs",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugStringFuncs.swift"]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )

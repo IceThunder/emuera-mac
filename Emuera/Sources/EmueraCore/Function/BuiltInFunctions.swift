@@ -50,6 +50,8 @@ public enum FunctionType: String, CaseIterable {
     case STRCOUNT       // 统计出现次数
     case UPPER          // 转大写
     case LOWER          // 转小写
+    case TOUPPER        // 转大写（别名）
+    case TOLOWER        // 转小写（别名）
     case TRIM           // 去除空白
     case UNICODE        // Unicode转字符
     case ENCODETOUNI    // 编码到Unicode
@@ -392,14 +394,14 @@ public class BuiltInFunctions {
             }
             return .integer(-1)
 
-        case "UPPER":
+        case "UPPER", "TOUPPER":
             guard let arg = arguments.first else { return .string("") }
             if case .string(let str) = arg {
                 return .string(str.uppercased())
             }
             return .string("")
 
-        case "LOWER":
+        case "LOWER", "TOLOWER":
             guard let arg = arguments.first else { return .string("") }
             if case .string(let str) = arg {
                 return .string(str.lowercased())
