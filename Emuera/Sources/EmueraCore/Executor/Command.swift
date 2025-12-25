@@ -106,7 +106,7 @@ public enum CommandType: String, CaseIterable {
     case NOSKIP         // 禁止跳过
     case ENDNOSKIP      // 结束禁止跳过
 
-    // MARK: - 绘图命令
+    // MARK: - 绘图命令 (Priority 2)
     case DRAWLINE       // 绘制线
     case CUSTOMDRAWLINE // 自定义线
     case DRAWLINEFORM   // 格式化线
@@ -122,6 +122,18 @@ public enum CommandType: String, CaseIterable {
     case FONTITALIC     // 斜体
     case FONTREGULAR    // 正常字体
     case SETFONT        // 设置字体
+
+    // MARK: - 高级图形绘制 (Priority 4)
+    case DRAWSPRITE     // 绘制精灵/图片
+    case DRAWRECT       // 绘制矩形
+    case FILLRECT       // 填充矩形
+    case DRAWCIRCLE     // 绘制圆形
+    case FILLCIRCLE     // 填充圆形
+    case DRAWLINEEX     // 高级线条绘制
+    case DRAWGRADIENT   // 渐变填充
+    case SETBRUSH       // 设置画笔
+    case CLEARSCREEN    // 清屏
+    case SETBACKGROUNDCOLOR // 设置背景颜色
 
     // MARK: - 特殊命令
     case PERSIST        // 持久化开关
@@ -272,7 +284,8 @@ public enum CommandType: String, CaseIterable {
              .PRINTSINGLE, .PRINTSINGLEV, .PRINTSINGLES,
              .PRINTSINGLEFORM, .PRINTSINGLEFORMS,
              .PRINT_ABL, .PRINT_TALENT, .PRINT_MARK, .PRINT_EXP, .PRINT_PALAM, .PRINT_ITEM,
-             .DRAWLINE, .CUSTOMDRAWLINE, .DRAWLINEFORM, .BAR, .BARL:
+             .DRAWLINE, .CUSTOMDRAWLINE, .DRAWLINEFORM, .BAR, .BARL,
+             .DRAWSPRITE, .DRAWRECT, .FILLRECT, .DRAWCIRCLE, .FILLCIRCLE, .DRAWLINEEX, .DRAWGRADIENT:
             return true
         default:
             return false

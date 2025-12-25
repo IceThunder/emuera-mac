@@ -270,6 +270,10 @@ public class ScriptParser {
         case "DRAWLINE", "CUSTOMDRAWLINE", "DRAWLINEFORM", "BAR", "BARL":
             return try parseDrawCommand(upperCmd)
 
+        // Priority 4: 高级图形命令
+        case "DRAWSPRITE", "DRAWRECT", "FILLRECT", "DRAWCIRCLE", "FILLCIRCLE", "DRAWLINEEX", "DRAWGRADIENT", "SETBRUSH", "CLEARSCREEN", "SETBACKGROUNDCOLOR":
+            return try parseDrawCommand(upperCmd)
+
         // Priority 2: 颜色命令
         case "SETCOLOR", "RESETCOLOR", "SETBGCOLOR", "RESETBGCOLOR":
             return try parseColorCommand(upperCmd)
@@ -329,6 +333,7 @@ public class ScriptParser {
         // 注意：parseCommandStatement 已经跳过了命令token
 
         switch cmd {
+        // Priority 2: 基础绘图命令
         case "DRAWLINE":
             return CommandStatement(command: cmd, arguments: [], position: startPos)
 
@@ -345,6 +350,66 @@ public class ScriptParser {
         case "BAR", "BARL":
             // BAR/BARL 参数：value, max, length
             let args = try parseSpaceSeparatedArguments(exactCount: 3)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        // Priority 4: 高级图形命令
+        case "DRAWSPRITE":
+            // DRAWSPRITE filename, x, y, width, height
+            // 参数：文件名, x坐标, y坐标, 宽度, 高度
+            let args = try parseSpaceSeparatedArguments(maxCount: 5)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "DRAWRECT":
+            // DRAWRECT x, y, width, height, [color]
+            // 参数：x, y, 宽, 高, 可选颜色
+            let args = try parseSpaceSeparatedArguments(maxCount: 5)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "FILLRECT":
+            // FILLRECT x, y, width, height, [color]
+            // 参数：x, y, 宽, 高, 可选颜色
+            let args = try parseSpaceSeparatedArguments(maxCount: 5)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "DRAWCIRCLE":
+            // DRAWCIRCLE x, y, radius, [color]
+            // 参数：x, y, 半径, 可选颜色
+            let args = try parseSpaceSeparatedArguments(maxCount: 4)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "FILLCIRCLE":
+            // FILLCIRCLE x, y, radius, [color]
+            // 参数：x, y, 半径, 可选颜色
+            let args = try parseSpaceSeparatedArguments(maxCount: 4)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "DRAWLINEEX":
+            // DRAWLINEEX x1, y1, x2, y2, [color]
+            // 参数：起点x, 起点y, 终点x, 终点y, 可选颜色
+            let args = try parseSpaceSeparatedArguments(maxCount: 5)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "DRAWGRADIENT":
+            // DRAWGRADIENT x, y, width, height, color1, color2, [direction]
+            // 参数：x, y, 宽, 高, 颜色1, 颜色2, 可选方向(0=水平,1=垂直)
+            let args = try parseSpaceSeparatedArguments(maxCount: 7)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "SETBRUSH":
+            // SETBRUSH style, size, [color]
+            // 参数：样式(0=实线,1=虚线,2=点线), 大小, 可选颜色
+            let args = try parseSpaceSeparatedArguments(maxCount: 3)
+            return CommandStatement(command: cmd, arguments: args, position: startPos)
+
+        case "CLEARSCREEN":
+            // CLEARSCREEN
+            // 无参数
+            return CommandStatement(command: cmd, arguments: [], position: startPos)
+
+        case "SETBACKGROUNDCOLOR":
+            // SETBACKGROUNDCOLOR color
+            // 参数：颜色值
+            let args = try parseSpaceSeparatedArguments(exactCount: 1)
             return CommandStatement(command: cmd, arguments: args, position: startPos)
 
         default:
@@ -431,12 +496,18 @@ public class ScriptParser {
         var arguments: [ExpressionNode] = []
 
         while currentIndex < tokens.count {
-            // 跳过空白
+            // 跳过空白和逗号
             skipWhitespaceAndNewlines()
 
             guard currentIndex < tokens.count else { break }
 
             let token = tokens[currentIndex]
+
+            // 跳过逗号（参数分隔符）
+            if case .comma = token.type {
+                currentIndex += 1
+                continue
+            }
 
             // 检查是否结束（遇到命令、关键字或行尾）
             switch token.type {
@@ -491,6 +562,7 @@ public class ScriptParser {
 
     /// 为space-separated参数收集单个参数的tokens
     /// 核心逻辑：收集一个参数的token，遇到边界或下一个参数开始时返回
+    /// 注意：逗号由parseSpaceSeparatedArguments处理，这里不处理
     private func collectSingleArgumentForSpaceSeparated() -> [TokenType.Token] {
         var argTokens: [TokenType.Token] = []
         var parenDepth = 0
@@ -521,7 +593,8 @@ public class ScriptParser {
                     currentIndex += 1
                     return argTokens
                 case .comma:
-                    currentIndex += 1
+                    // 逗号现在由parseSpaceSeparatedArguments处理
+                    // 但这里仍然需要处理以防止死循环
                     return argTokens
                 default:
                     break
@@ -542,7 +615,10 @@ public class ScriptParser {
             // 在括号外，检查下一个token
             if parenDepth == 0 {
                 switch nextToken.type {
-                case .command, .keyword, .lineBreak, .comma:
+                case .command, .keyword, .lineBreak:
+                    return argTokens
+                case .comma:
+                    // 下一个是逗号，当前参数结束
                     return argTokens
                 case .operatorSymbol, .comparator:
                     // 下一个token是运算符，表达式继续

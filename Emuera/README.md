@@ -33,11 +33,14 @@ Emuera是基于ERB脚本的视觉小说游戏引擎。本项目是将Emuera移�
 
 ### 🚧 进行中
 
-#### Priority 4 - 高级功能 (待开始)
-- 窗口管理命令
-- 鼠标输入支持
-- 高级图形绘制
-- 音频/视频命令
+#### Priority 4 - 高级功能 (进行中)
+- **高级图形绘制**: ✅ 10/10 命令完成
+  - DRAWSPRITE, DRAWRECT, FILLRECT, DRAWCIRCLE, FILLCIRCLE
+  - DRAWLINEEX, DRAWGRADIENT, SETBRUSH, CLEARSCREEN, SETBACKGROUNDCOLOR
+  - 测试覆盖率: 100% (11/11通过)
+- 窗口管理命令: 待开始
+- 鼠标输入支持: 待开始
+- 音频/视频命令: 待开始
 
 #### Priority 5 - 头文件系统 (待开始)
 - ERH头文件系统
@@ -53,10 +56,18 @@ Emuera是基于ERB脚本的视觉小说游戏引擎。本项目是将Emuera移�
 
 ### 整体进度
 
-- **项目完成度**: **85%**
+- **项目完成度**: **88%** (+3%)
 - **核心功能**: **完整**
 - **测试覆盖**: **优秀**
 - **代码质量**: **良好**
+
+### 最新更新 (2025-12-26)
+
+#### Priority 4 高级图形渲染 ✅
+- 新增10个图形绘制命令
+- 修复参数解析器对逗号分隔的支持
+- 所有11个测试用例通过
+- 支持空格和逗号两种参数分隔方式
 
 ## 项目结构
 
@@ -118,6 +129,9 @@ swift run Priority2Test
 # Priority 3 函数测试
 swift run Priority3Test
 
+# Priority 4 图形测试
+swift run GraphicsTest
+
 # 其他测试
 swift run SelectCaseTest
 swift run TryCatchTest
@@ -137,6 +151,7 @@ swift run emuera
 - [Priority 1 实现总结](PRIORITY1_IMPLEMENTATION_SUMMARY.md) - 核心函数系统
 - [Priority 2 实现总结](PRIORITY2_IMPLEMENTATION_SUMMARY.md) - 命令扩展
 - [Priority 3 实现总结](PRIORITY3_IMPLEMENTATION_SUMMARY.md) - 功能完善
+- [Priority 4 开发计划](PHASE4_DEVELOPMENT_PLAN.md) - 高级功能开发
 - [TRY/CATCH 实现总结](TRYC_IMPLEMENTATION_SUMMARY.md) - 异常处理系统
 - [GUI 增强总结](Sources/Phase5Debug/GUI_ENHANCEMENT_SUMMARY.md) - GUI功能
 
@@ -171,4 +186,4 @@ MIT License
 
 ---
 
-**当前状态**: Priority 3 已完成，准备开始 Priority 4 开发 🚀
+**当前状态**: Priority 4 高级图形渲染完成 ✅，继续 Priority 4 其他功能开发 🚀

@@ -1,109 +1,38 @@
 import Foundation
 import EmueraCore
 
-print("=== ScriptParser Full Test ===")
-print("Testing function definition parsing...")
+print("=== BAR命令参数解析测试 ===\n")
 
 let parser = ScriptParser()
 
-// Test 1: Simple function definition
-let source1 = """
-@TEST_FUNC
-RETURNF 42
-"""
+// 测试BAR命令
+let testCases = [
+    "BAR 50 100 20",
+    "BAR 50, 100, 20",
+    "DRAWSPRITE character.png, 10, 20",
+    "DRAWSPRITE character.png 10 20"
+]
 
-print("\nTest 1: Simple function definition")
-print("Input: \(source1)")
-do {
-    let statements = try parser.parse(source1)
-    print("✓ Parsed \(statements.count) statements")
-    for (i, stmt) in statements.enumerated() {
-        print("  \(i): \(type(of: stmt))")
+for (i, script) in testCases.enumerated() {
+    print("测试 \(i+1): \(script)")
+    do {
+        let statements = try parser.parse(script)
+        print("  语句数: \(statements.count)")
+        for (j, stmt) in statements.enumerated() {
+            if let cmdStmt = stmt as? CommandStatement {
+                print("    [\(j)]: CommandStatement - \(cmdStmt.command)")
+                print("        参数: \(cmdStmt.arguments.count)个")
+                for (k, arg) in cmdStmt.arguments.enumerated() {
+                    print("          [\(k)]: \(arg)")
+                }
+            } else {
+                print("    [\(j)]: \(type(of: stmt))")
+            }
+        }
+    } catch {
+        print("  ✗ 错误: \(error)")
     }
-} catch {
-    print("✗ Error: \(error)")
+    print()
 }
 
-// Test 2: Function with parameters
-let source2 = """
-@TEST_FUNC, ARG1, ARG2
-RETURNF ARG1 + ARG2
-"""
-
-print("\nTest 2: Function with parameters")
-print("Input: \(source2)")
-do {
-    let statements = try parser.parse(source2)
-    print("✓ Parsed \(statements.count) statements")
-    for (i, stmt) in statements.enumerated() {
-        print("  \(i): \(type(of: stmt))")
-    }
-} catch {
-    print("✗ Error: \(error)")
-}
-
-// Test 3: Function with directives
-let source3 = """
-@TEST_FUNC
-#DIM LOCAL1
-LOCAL1 = 10
-RETURNF LOCAL1
-"""
-
-print("\nTest 3: Function with directives")
-print("Input: \(source3)")
-do {
-    let statements = try parser.parse(source3)
-    print("✓ Parsed \(statements.count) statements")
-    for (i, stmt) in statements.enumerated() {
-        print("  \(i): \(type(of: stmt))")
-    }
-} catch {
-    print("✗ Error: \(error)")
-}
-
-// Test 4: Multiple functions
-let source4 = """
-@FUNC1
-RETURNF 1
-
-@FUNC2
-RETURNF 2
-"""
-
-print("\nTest 4: Multiple functions")
-print("Input: \(source4)")
-do {
-    let statements = try parser.parse(source4)
-    print("✓ Parsed \(statements.count) statements")
-    for (i, stmt) in statements.enumerated() {
-        print("  \(i): \(type(of: stmt))")
-    }
-} catch {
-    print("✗ Error: \(error)")
-}
-
-// Test 5: Complex function with PRINT
-let source5 = """
-@COMPLEX_TEST
-PRINTL Start complex test
-LOCAL = 5
-IF LOCAL > 3
-    PRINTL Condition met!
-ENDIF
-RETURNF LOCAL
-"""
-
-print("\nTest 5: Complex function")
-print("Input: \(source5)")
-do {
-    let statements = try parser.parse(source5)
-    print("✓ Parsed \(statements.count) statements")
-    for (i, stmt) in statements.enumerated() {
-        print("  \(i): \(type(of: stmt))")
-    }
-} catch {
-    print("✗ Error: \(error)")
-}
-
-print("\n=== All tests completed ===")
+print("=== 测试完成 ===")

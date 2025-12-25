@@ -809,6 +809,14 @@ let package = Package(
             sources: ["Priority3Test.swift"]
         ),
 
+        // Priority 4 Graphics Test Target
+        .executableTarget(
+            name: "GraphicsTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["GraphicsTest.swift"]
+        ),
+
         // Debug Priority 2 Parse Target
         .executableTarget(
             name: "DebugPriority2Parse",
@@ -871,6 +879,14 @@ let package = Package(
             dependencies: ["EmueraCore"],
             path: "Sources/Phase7Debug",
             sources: ["DebugRealParser.swift"]
+        ),
+
+        // Debug Graphics Parse Target
+        .executableTarget(
+            name: "DebugGraphicsParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugGraphicsParse.swift"]
         ),
     ],
     swiftLanguageVersions: [.v5]

@@ -164,8 +164,8 @@ public struct LexicalAnalyzer {
                         identifier.append(ch)
                         hasNonASCII = true
                         current = source.index(after: current)
-                    } else if ch.isLetter || ch.isNumber || ch == "_" || ch == "$" || ch == "%" || ch == "@" {
-                        // ASCII字母、数字、符号（包括@用于标签）
+                    } else if ch.isLetter || ch.isNumber || ch == "_" || ch == "$" || ch == "%" || ch == "@" || ch == "." {
+                        // ASCII字母、数字、符号（包括@用于标签，.用于文件名）
                         identifier.append(ch)
                         current = source.index(after: current)
                     } else {

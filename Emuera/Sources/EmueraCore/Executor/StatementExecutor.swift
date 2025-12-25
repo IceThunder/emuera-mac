@@ -488,6 +488,127 @@ public class StatementExecutor: StatementVisitor {
                 }
             }
 
+        // Priority 4: 高级图形命令
+        case .DRAWSPRITE:
+            // DRAWSPRITE filename, x, y, width, height
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 3 {
+                let filename = values[0].description
+                let x = values.count >= 2 ? values[1].description : "0"
+                let y = values.count >= 3 ? values[2].description : "0"
+                let width = values.count >= 4 ? values[3].description : "auto"
+                let height = values.count >= 5 ? values[4].description : "auto"
+                context.output.append("[绘制精灵: \(filename) @ (\(x), \(y)) 尺寸: \(width)x\(height)]\n")
+            }
+
+        case .DRAWRECT:
+            // DRAWRECT x, y, width, height, [color]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 4 {
+                let x = values[0].description
+                let y = values[1].description
+                let w = values[2].description
+                let h = values[3].description
+                let color = values.count >= 5 ? values[4].description : "default"
+                let rect = generateRectArt(Int(w) ?? 10, Int(h) ?? 5, color)
+                context.output.append("[绘制矩形 @ (\(x), \(y)) 颜色: \(color)]\n")
+                context.output.append(rect)
+            }
+
+        case .FILLRECT:
+            // FILLRECT x, y, width, height, [color]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 4 {
+                let x = values[0].description
+                let y = values[1].description
+                let w = values[2].description
+                let h = values[3].description
+                let color = values.count >= 5 ? values[4].description : "default"
+                let rect = generateFilledRectArt(Int(w) ?? 10, Int(h) ?? 5, color)
+                context.output.append("[填充矩形 @ (\(x), \(y)) 颜色: \(color)]\n")
+                context.output.append(rect)
+            }
+
+        case .DRAWCIRCLE:
+            // DRAWCIRCLE x, y, radius, [color]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 3 {
+                let x = values[0].description
+                let y = values[1].description
+                let r = values[2].description
+                let color = values.count >= 4 ? values[3].description : "default"
+                let circle = generateCircleArt(Int(r) ?? 5, color, false)
+                context.output.append("[绘制圆形 @ (\(x), \(y)) 半径: \(r) 颜色: \(color)]\n")
+                context.output.append(circle)
+            }
+
+        case .FILLCIRCLE:
+            // FILLCIRCLE x, y, radius, [color]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 3 {
+                let x = values[0].description
+                let y = values[1].description
+                let r = values[2].description
+                let color = values.count >= 4 ? values[3].description : "default"
+                let circle = generateCircleArt(Int(r) ?? 5, color, true)
+                context.output.append("[填充圆形 @ (\(x), \(y)) 半径: \(r) 颜色: \(color)]\n")
+                context.output.append(circle)
+            }
+
+        case .DRAWLINEEX:
+            // DRAWLINEEX x1, y1, x2, y2, [color]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 4 {
+                let x1 = values[0].description
+                let y1 = values[1].description
+                let x2 = values[2].description
+                let y2 = values[3].description
+                let color = values.count >= 5 ? values[4].description : "default"
+                context.output.append("[绘制线条: (\(x1), \(y1)) -> (\(x2), \(y2)) 颜色: \(color)]\n")
+                let line = generateLineArt(Int(x1) ?? 0, Int(y1) ?? 0, Int(x2) ?? 10, Int(y2) ?? 5)
+                context.output.append(line)
+            }
+
+        case .DRAWGRADIENT:
+            // DRAWGRADIENT x, y, width, height, color1, color2, [direction]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 6 {
+                let x = values[0].description
+                let y = values[1].description
+                let w = values[2].description
+                let h = values[3].description
+                let c1 = values[4].description
+                let c2 = values[5].description
+                let dir = values.count >= 7 ? values[6].description : "0"
+                let gradient = generateGradientArt(Int(w) ?? 10, Int(h) ?? 5, c1, c2, Int(dir) ?? 0)
+                context.output.append("[渐变填充 @ (\(x), \(y)) 尺寸: \(w)x\(h) \(c1)->\(c2) 方向: \(dir)]\n")
+                context.output.append(gradient)
+            }
+
+        case .SETBRUSH:
+            // SETBRUSH style, size, [color]
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 1 {
+                let style = values[0].description
+                let size = values.count >= 2 ? values[1].description : "1"
+                let color = values.count >= 3 ? values[2].description : "default"
+                let styleName = style == "0" ? "实线" : style == "1" ? "虚线" : "点线"
+                context.output.append("[设置画笔: \(styleName) 大小: \(size) 颜色: \(color)]\n")
+            }
+
+        case .CLEARSCREEN:
+            // CLEARSCREEN
+            context.output.append("[清屏]\n")
+            context.output.append(String(repeating: "\n", count: 20))
+
+        case .SETBACKGROUNDCOLOR:
+            // SETBACKGROUNDCOLOR color
+            let values = try evaluateArguments(statement.arguments)
+            if values.count >= 1 {
+                let color = values[0].description
+                context.output.append("[设置背景颜色: \(color)]\n")
+            }
+
         case .SETCOLOR, .RESETCOLOR, .SETBGCOLOR, .RESETBGCOLOR:
             context.output.append("[颜色设置: \(statement.command)]\n")
 
@@ -3227,5 +3348,153 @@ extension StatementExecutor {
         }
 
         context.lastResult = .integer(1)
+    }
+
+    // MARK: - Priority 4 图形渲染辅助函数
+
+    /// 生成矩形ASCII艺术
+    private func generateRectArt(_ width: Int, _ height: Int, _ color: String) -> String {
+        let w = max(2, min(width, 50))
+        let h = max(2, min(height, 20))
+        var result = ""
+
+        // 顶部边框
+        result += "┌" + String(repeating: "─", count: w - 2) + "┐\n"
+
+        // 中间部分
+        for _ in 1..<(h-1) {
+            result += "│" + String(repeating: " ", count: w - 2) + "│\n"
+        }
+
+        // 底部边框
+        result += "└" + String(repeating: "─", count: w - 2) + "┘\n"
+
+        return result
+    }
+
+    /// 生成填充矩形ASCII艺术
+    private func generateFilledRectArt(_ width: Int, _ height: Int, _ color: String) -> String {
+        let w = max(1, min(width, 50))
+        let h = max(1, min(height, 20))
+        var result = ""
+
+        // 选择填充字符基于颜色
+        let fillChar: Character
+        switch color.lowercased() {
+        case "red": fillChar = "█"
+        case "blue": fillChar = "▓"
+        case "green": fillChar = "▒"
+        case "yellow": fillChar = "░"
+        default: fillChar = "■"
+        }
+
+        for _ in 0..<h {
+            result += String(repeating: fillChar, count: w) + "\n"
+        }
+
+        return result
+    }
+
+    /// 生成圆形ASCII艺术
+    private func generateCircleArt(_ radius: Int, _ color: String, _ filled: Bool) -> String {
+        let r = max(2, min(radius, 15))
+        var result = ""
+
+        // 使用简单的圆形算法
+        for y in -r...r {
+            var line = ""
+            for x in -r...r {
+                let distance = Double(x * x + y * y).squareRoot()
+                if filled {
+                    if distance <= Double(r) {
+                        line += "●"
+                    } else {
+                        line += " "
+                    }
+                } else {
+                    if abs(distance - Double(r)) < 1.5 {
+                        line += "●"
+                    } else {
+                        line += " "
+                    }
+                }
+            }
+            result += line + "\n"
+        }
+
+        return result
+    }
+
+    /// 生成线条ASCII艺术
+    private func generateLineArt(_ x1: Int, _ y1: Int, _ x2: Int, _ y2: Int) -> String {
+        let width = max(abs(x2 - x1), 10)
+        let height = max(abs(y2 - y1), 5)
+
+        // 创建画布
+        var canvas = Array(repeating: Array(repeating: " ", count: width), count: height)
+
+        // 简单的直线绘制（Bresenham算法简化版）
+        let dx = abs(x2 - x1)
+        let dy = abs(y2 - y1)
+        let sx = x1 < x2 ? 1 : -1
+        let sy = y1 < y2 ? 1 : -1
+        var err = dx - dy
+
+        var x = x1
+        var y = y1
+
+        // 将坐标映射到画布
+        let offsetX = min(x1, x2)
+        let offsetY = min(y1, y2)
+
+        while true {
+            let canvasX = x - offsetX
+            let canvasY = y - offsetY
+            if canvasX >= 0 && canvasX < width && canvasY >= 0 && canvasY < height {
+                canvas[canvasY][canvasX] = "█"
+            }
+
+            if x == x2 && y == y2 { break }
+
+            let e2 = 2 * err
+            if e2 > -dy {
+                err -= dy
+                x += sx
+            }
+            if e2 < dx {
+                err += dx
+                y += sy
+            }
+        }
+
+        // 转换为字符串
+        return canvas.map { $0.joined() }.joined(separator: "\n") + "\n"
+    }
+
+    /// 生成渐变ASCII艺术
+    private func generateGradientArt(_ width: Int, _ height: Int, _ color1: String, _ color2: String, _ direction: Int) -> String {
+        let w = max(3, min(width, 40))
+        let h = max(2, min(height, 15))
+        var result = ""
+
+        // 渐变字符集
+        let gradientChars = [" ", "░", "▒", "▓", "█"]
+
+        for y in 0..<h {
+            for x in 0..<w {
+                let progress: Double
+                if direction == 0 { // 水平
+                    progress = Double(x) / Double(w - 1)
+                } else { // 垂直
+                    progress = Double(y) / Double(h - 1)
+                }
+
+                let index = Int(progress * Double(gradientChars.count - 1))
+                result += gradientChars[min(index, gradientChars.count - 1)]
+            }
+            result += "\n"
+        }
+
+        return result
     }
 }
