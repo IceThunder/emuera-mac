@@ -59,6 +59,8 @@ public enum FunctionType: String, CaseIterable {
     case FINDELEMENT    // 查找元素
     case FINDLAST       // 查找最后一个
     case SORT           // 排序
+    case UNIQUE         // 去重
+    case REVERSE        // 反转
     case REPEAT         // 重复
     case VARSIZE        // 数组大小
     case ARRAYSHIFT     // 数组移位
@@ -67,7 +69,7 @@ public enum FunctionType: String, CaseIterable {
     case ARRAYCOPY      // 数组复制
     case ARRAYMULTISORT // 多数组排序
     case INRANGE        // 范围检查
-    case INRANGEARRAY   // // 数组范围检查
+    case INRANGEARRAY   // 数组范围检查
 
     // MARK: - 位运算
     case GETBIT         // 获取位
@@ -556,6 +558,131 @@ public class BuiltInFunctions {
                 return .array(sorted)
             }
             return .null
+
+        case "UNIQUE":
+            // 数组去重
+            guard arguments.count >= 1 else { return .array([]) }
+            if case .array(let arr) = arguments[0] {
+                var seen: [VariableValue] = []
+                var result: [VariableValue] = []
+                for item in arr {
+                    if !seen.contains(where: { $0 == item }) {
+                        seen.append(item)
+                        result.append(item)
+                    }
+                }
+                return .array(result)
+            }
+            return .array([])
+
+        case "SORT":
+            // 数组排序
+            guard arguments.count >= 1 else { return .array([]) }
+            if case .array(let arr) = arguments[0] {
+                let ascending = arguments.count < 2 || {
+                    if case .integer(let order) = arguments[1] { return order >= 0 }
+                    if case .string(let order) = arguments[1] { return order.uppercased() != "DESC" }
+                    return true
+                }()
+
+                let sorted = arr.sorted { a, b in
+                    let comparison: Bool
+                    switch (a, b) {
+                    case (.integer(let ia), .integer(let ib)):
+                        comparison = ia < ib
+                    case (.string(let sa), .string(let sb)):
+                        comparison = sa < sb
+                    default:
+                        comparison = false
+                    }
+                    return ascending ? comparison : !comparison
+                }
+                return .array(sorted)
+            }
+            return .array([])
+
+        case "REVERSE":
+            // 数组反转
+            guard arguments.count >= 1 else { return .array([]) }
+            if case .array(let arr) = arguments[0] {
+                return .array(Array(arr.reversed()))
+            }
+            return .array([])
+
+        case "ARRAYSHIFT":
+            // 数组元素移动
+            guard arguments.count >= 2 else { return .array([]) }
+            if case .array(let arr) = arguments[0], case .integer(let shift) = arguments[1] {
+                let count = Int(shift)
+                if count == 0 { return .array(arr) }
+
+                var result = arr
+                if count > 0 {
+                    // 向右移动，末尾元素移到开头
+                    for _ in 0..<count {
+                        if let last = result.popLast() {
+                            result.insert(last, at: 0)
+                        }
+                    }
+                } else {
+                    // 向左移动，开头元素移到末尾
+                    for _ in 0..<(-count) {
+                        if let first = result.first {
+                            result.remove(at: 0)
+                            result.append(first)
+                        }
+                    }
+                }
+                return .array(result)
+            }
+            return .array([])
+
+        case "ARRAYREMOVE":
+            // 移除数组元素
+            guard arguments.count >= 2 else { return .array([]) }
+            if case .array(let arr) = arguments[0], case .integer(let index) = arguments[1] {
+                let idx = Int(index)
+                if idx >= 0 && idx < arr.count {
+                    var result = arr
+                    result.remove(at: idx)
+                    return .array(result)
+                }
+            }
+            return .array([])
+
+        case "ARRAYCOPY":
+            // 复制数组
+            guard arguments.count >= 1 else { return .array([]) }
+            if case .array(let arr) = arguments[0] {
+                return .array(arr)
+            }
+            return .array([])
+
+        case "ARRAYSORT":
+            // 数组排序（兼容ARRAYMULTISORT）
+            guard arguments.count >= 1 else { return .array([]) }
+            if case .array(let arr) = arguments[0] {
+                let ascending = arguments.count < 2 || {
+                    if case .integer(let order) = arguments[1] { return order >= 0 }
+                    if case .string(let order) = arguments[1] { return order.uppercased() != "DESC" }
+                    return true
+                }()
+
+                let sorted = arr.sorted { a, b in
+                    let comparison: Bool
+                    switch (a, b) {
+                    case (.integer(let ia), .integer(let ib)):
+                        comparison = ia < ib
+                    case (.string(let sa), .string(let sb)):
+                        comparison = sa < sb
+                    default:
+                        comparison = false
+                    }
+                    return ascending ? comparison : !comparison
+                }
+                return .array(sorted)
+            }
+            return .array([])
 
         case "INRANGE":
             // 检查值是否在范围内

@@ -1099,6 +1099,11 @@ public class ScriptParser {
                 exprTokens.append(token)
                 currentIndex += 1
 
+            case .command:
+                // 命令在表达式中作为函数调用使用（如 ARRAYSHIFT(A, 1)）
+                exprTokens.append(token)
+                currentIndex += 1
+
             default:
                 // 遇到其他token，表达式结束
                 return exprTokens

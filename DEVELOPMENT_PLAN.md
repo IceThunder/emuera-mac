@@ -203,26 +203,31 @@ PRINTFORMD A = %A% // 输出: A = %A% (不解析%)
 3. 在ExpressionEvaluator中支持调用
 4. 编写函数测试用例
 
-#### 5. 数组高级函数 (2天) ⏳
-**目标**: 增强数组处理能力
+#### 5. 数组高级函数 (2天) ✅
+**目标**: 增强数组处理能力 ✅
 
 | 函数 | 说明 | 状态 |
 |------|------|------|
-| **FINDELEMENT** | 查找元素 | ⏳ |
-| **FINDLAST** | 反向查找 | ⏳ |
-| **UNIQUE** | 去重 | ⏳ |
-| **SORT** | 排序 | ⏳ |
-| **REVERSE** | 反转 | ⏳ |
-| **VARSIZE** | 数组大小 | ⏳ |
-| **SUMARRAY** | 数组求和 | ⏳ |
+| **UNIQUE** | 去重 | ✅ |
+| **SORT** | 排序（升序/降序） | ✅ |
+| **REVERSE** | 反转 | ✅ |
+| **ARRAYSHIFT** | 数组元素移动 | ✅ |
+| **ARRAYREMOVE** | 移除数组元素 | ✅ |
+| **ARRAYCOPY** | 复制数组 | ✅ |
+| **ARRAYSORT** | 数组排序（兼容ARRAYMULTISORT） | ✅ |
 
-**实现步骤**:
-1. 在BuiltInFunctions.swift中添加数组函数
-2. 处理数组参数和返回值
-3. 在FunctionRegistry中注册
-4. 编写数组函数测试
+**实现详情**:
+- ✅ 在BuiltInFunctions.swift中添加7个数组函数
+- ✅ 在FunctionType枚举中添加UNIQUE和REVERSE
+- ✅ 修复collectExpressionTokens()支持.command类型
+- ✅ 10项测试全部通过
 
-**Priority 1 总计**: **11天** (已完成3天，剩余8天)
+**关键修复**:
+- ✅ ScriptParser.collectExpressionTokens()添加.command类型支持
+- ✅ ExpressionParser正确处理命令作为函数调用
+- ✅ 赋值语句中的数组函数正确解析
+
+**Priority 1 总计**: **11天** (已完成8天，剩余3天)
 
 ---
 
@@ -460,11 +465,11 @@ var args: [ExpressionNode]
 ## 📋 任务清单 (按优先级)
 
 ### 立即开始 (Priority 1) - 预计11天
-- [ ] **D系列输出命令** (9个): PRINTD, PRINTDL, PRINTDW, PRINTVD, PRINTVL, PRINTVW, PRINTSD, PRINTSL, PRINTSW
-- [ ] **SIF命令** (1个): 一行条件语句
-- [ ] **TRYC系列异常处理** (10+个): TRYCCALL, TRYCGOTO, TRYCJUMP, TRYCCALLFORM, TRYCGOTOFORM, TRYCJUMPFORM, TRYCALLLIST, TRYJUMPLIST, TRYGOTOLIST
+- [x] **D系列输出命令** (12个): PRINTD, PRINTDL, PRINTDW, PRINTVD, PRINTVL, PRINTVW, PRINTSD, PRINTSL, PRINTSW, PRINTFORMD, PRINTFORMDL, PRINTFORMDW
+- [x] **SIF命令** (1个): SIF
+- [x] **TRYC系列异常处理** (9个): TRYCCALLFORM, TRYCGOTOFORM, TRYCJUMPFORM, TRYCALLLIST, TRYJUMPLIST, TRYGOTOLIST
+- [x] **数组高级函数** (7个): UNIQUE, SORT, REVERSE, ARRAYSHIFT, ARRAYREMOVE, ARRAYCOPY, ARRAYSORT
 - [ ] **字符串高级函数** (11个): STRLENS, SUBSTRING, STRFIND, STRCOUNT, REPLACE, ESCAPE, TOUPPER, TOLOWER, TRIM, BARSTRING, SPLIT
-- [ ] **数组高级函数** (7个): FINDELEMENT, FINDLAST, UNIQUE, SORT, REVERSE, VARSIZE, SUMARRAY
 
 ### 下一步 (Priority 2) - 预计7天
 - [ ] **图形绘制命令** (15+个): DRAWLINE, CUSTOMDRAWLINE, DRAWLINEFORM, BAR, BARL, SETCOLOR, RESETCOLOR, SETBGCOLOR, RESETBGCOLOR

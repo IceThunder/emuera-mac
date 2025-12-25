@@ -752,6 +752,38 @@ let package = Package(
             path: "Sources/Phase7Debug",
             sources: ["DebugTest9.swift"]
         ),
+
+        // Array Functions Test Target (Priority 1)
+        .executableTarget(
+            name: "ArrayFunctionsTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["ArrayFunctionsTest.swift"]
+        ),
+
+        // Debug Array Functions
+        .executableTarget(
+            name: "DebugArrayFuncs",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugArrayFuncs.swift"]
+        ),
+
+        // Debug Tokenize
+        .executableTarget(
+            name: "DebugTokenize",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugTokenize.swift"]
+        ),
+
+        // Debug Script Parser
+        .executableTarget(
+            name: "DebugScriptParser",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugScriptParser.swift"]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )
