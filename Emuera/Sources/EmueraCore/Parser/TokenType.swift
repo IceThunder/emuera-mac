@@ -32,6 +32,8 @@ public enum TokenType: CustomStringConvertible {
     case parenthesisClose
     case bracketOpen
     case bracketClose
+    case braceOpen
+    case braceClose
 
     // Function directives (Phase 2)
     case directive(String)  // #DIM, #DIMS, #FUNCTION, #FUNCTIONS
@@ -225,6 +227,8 @@ public enum TokenType: CustomStringConvertible {
         case .parenthesisClose: return "parenClose"
         case .bracketOpen: return "bracketOpen"
         case .bracketClose: return "bracketClose"
+        case .braceOpen: return "braceOpen"
+        case .braceClose: return "braceClose"
         case .directive(let s): return "directive(\(s))"
         case .selectcase: return "selectcase"
         case .caseKeyword: return "caseKeyword"

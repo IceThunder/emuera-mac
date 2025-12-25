@@ -117,7 +117,12 @@
       "Bash(.build/debug/DebugParser:*)",
       "Bash(.build/debug/DebugPhase6Parser:*)",
       "Bash(.build/debug/PrintDTest:*)",
-      "Bash(.build/debug/DebugPrintFormD:*)"
+      "Bash(.build/debug/DebugPrintFormD:*)",
+      "Bash(.build/debug/TryCTest:*)",
+      "Bash(.build/debug/DebugTryCExecute:*)",
+      "Bash(.build/debug/Test1Debug:*)",
+      "Bash(.build/debug/DebugNestedTryC:*)",
+      "Bash(.build/debug/DebugTest9:*)"
     ]
   }
 }

@@ -201,6 +201,7 @@ public struct LexicalAnalyzer {
                          "BREAK", "CONTINUE", "RETURN", "RESTART", "RETURNF",
                          "GOTO", "CALL", "JUMP", "TRYCALL", "TRYCALLFORM",
                          "TRY", "CATCH", "ENDTRY", "TRYJUMP", "TRYGOTO", "TRYJUMPLIST", "TRYGOTOLIST",
+                         "TRYCCALLFORM", "TRYCGOTOFORM", "TRYCJUMPFORM", "TRYCALLLIST",
                          "TO", "PRINTDATA", "DATALIST", "ENDLIST", "ENDDATA",
                          "SAVEDATA", "LOADDATA", "DELDATA", "SAVEVAR", "LOADVAR",
                          "SAVECHARA", "LOADCHARA", "SAVEGAME", "LOADGAME",
@@ -275,6 +276,10 @@ public struct LexicalAnalyzer {
                 tokens.append(TokenType.Token(type: .parenthesisOpen, value: "(", position: ScriptPosition(filename: "script", lineNumber: line)))
             case ")":
                 tokens.append(TokenType.Token(type: .parenthesisClose, value: ")", position: ScriptPosition(filename: "script", lineNumber: line)))
+            case "{":
+                tokens.append(TokenType.Token(type: .braceOpen, value: "{", position: ScriptPosition(filename: "script", lineNumber: line)))
+            case "}":
+                tokens.append(TokenType.Token(type: .braceClose, value: "}", position: ScriptPosition(filename: "script", lineNumber: line)))
             default:
                 // 处理非ASCII字符（如中文），作为字符串处理
                 if c.isASCII == false {

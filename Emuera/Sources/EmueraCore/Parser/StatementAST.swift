@@ -571,6 +571,134 @@ public struct ExceptionContext {
     public let catchLabel: String
 }
 
+// MARK: - TRYC系列异常处理扩展 (Priority 1)
+
+/// TRYCCALLFORM语句 - 格式化函数调用
+/// TRYCCALLFORM "FUNCTION_%A%", arg1, arg2... CATCH @label
+public class TryCallFormStatement: StatementNode {
+    public let formatExpression: ExpressionNode
+    public let arguments: [ExpressionNode]
+    public let catchLabel: String?
+
+    public init(formatExpression: ExpressionNode,
+                arguments: [ExpressionNode] = [],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.formatExpression = formatExpression
+        self.arguments = arguments
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryCallFormStatement(self)
+    }
+}
+
+/// TRYCGOTOFORM语句 - 格式化跳转
+/// TRYCGOTOFORM "LABEL_%A%" CATCH @label
+public class TryGotoFormStatement: StatementNode {
+    public let formatExpression: ExpressionNode
+    public let catchLabel: String?
+
+    public init(formatExpression: ExpressionNode,
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.formatExpression = formatExpression
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryGotoFormStatement(self)
+    }
+}
+
+/// TRYCJUMPFORM语句 - 格式化JUMP
+/// TRYCJUMPFORM "LABEL_%A%", arg1, arg2... CATCH @label
+public class TryJumpFormStatement: StatementNode {
+    public let formatExpression: ExpressionNode
+    public let arguments: [ExpressionNode]
+    public let catchLabel: String?
+
+    public init(formatExpression: ExpressionNode,
+                arguments: [ExpressionNode] = [],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.formatExpression = formatExpression
+        self.arguments = arguments
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryJumpFormStatement(self)
+    }
+}
+
+/// TRYCALLLIST语句 - 函数调用列表
+/// TRYCALLLIST func1, func2, func3 CATCH @label
+public class TryCallListStatement: StatementNode {
+    public let functionNames: [String]
+    public let arguments: [ExpressionNode]
+    public let catchLabel: String?
+
+    public init(functionNames: [String],
+                arguments: [ExpressionNode] = [],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.functionNames = functionNames
+        self.arguments = arguments
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryCallListStatement(self)
+    }
+}
+
+/// TRYJUMPLIST语句 - JUMP列表
+/// TRYJUMPLIST label1, label2, label3 CATCH @label
+public class TryJumpListStatement: StatementNode {
+    public let targets: [String]
+    public let arguments: [ExpressionNode]
+    public let catchLabel: String?
+
+    public init(targets: [String],
+                arguments: [ExpressionNode] = [],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.targets = targets
+        self.arguments = arguments
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryJumpListStatement(self)
+    }
+}
+
+/// TRYGOTOLIST语句 - GOTO列表
+/// TRYGOTOLIST label1, label2, label3 CATCH @label
+public class TryGotoListStatement: StatementNode {
+    public let labels: [String]
+    public let catchLabel: String?
+
+    public init(labels: [String],
+                catchLabel: String? = nil,
+                position: ScriptPosition? = nil) {
+        self.labels = labels
+        self.catchLabel = catchLabel
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitTryGotoListStatement(self)
+    }
+}
+
 // MARK: - PRINTDATA/DATALIST (Phase 3)
 
 /// PRINTDATA语句 - 随机选择一个DATALIST块执行
@@ -929,6 +1057,14 @@ public protocol StatementVisitor {
     func visitTryCallStatement(_ statement: TryCallStatement) throws
     func visitTryJumpStatement(_ statement: TryJumpStatement) throws
     func visitTryGotoStatement(_ statement: TryGotoStatement) throws
+
+    // Priority 1: TRYC系列扩展
+    func visitTryCallFormStatement(_ statement: TryCallFormStatement) throws
+    func visitTryGotoFormStatement(_ statement: TryGotoFormStatement) throws
+    func visitTryJumpFormStatement(_ statement: TryJumpFormStatement) throws
+    func visitTryCallListStatement(_ statement: TryCallListStatement) throws
+    func visitTryJumpListStatement(_ statement: TryJumpListStatement) throws
+    func visitTryGotoListStatement(_ statement: TryGotoListStatement) throws
 
     // Phase 3: PRINTDATA/DATALIST
     func visitPrintDataStatement(_ statement: PrintDataStatement) throws

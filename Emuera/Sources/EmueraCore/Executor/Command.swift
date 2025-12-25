@@ -155,10 +155,13 @@ public enum CommandType: String, CaseIterable {
     case CALLTRAIN      // 调用训练
     case STOPCALLTRAIN  // 停止训练
 
-    // MARK: - 异常处理 (现在在关键字中处理，不是命令)
-    // case CATCH       // 移到关键字 (Phase 3)
-    // case ENDCATCH    // 移到关键字 (Phase 3)
-    // TRY相关命令在关键字中处理
+    // MARK: - 异常处理 (Priority 1扩展)
+    case TRYCCALLFORM    // 格式化函数调用
+    case TRYCGOTOFORM    // 格式化跳转
+    case TRYCJUMPFORM    // 格式化JUMP
+    case TRYCALLLIST     // 函数调用列表
+    case TRYJUMPLIST     // JUMP列表
+    case TRYGOTOLIST     // GOTO列表
 
     // MARK: - 函数定义
     case FUNC           // 函数开始

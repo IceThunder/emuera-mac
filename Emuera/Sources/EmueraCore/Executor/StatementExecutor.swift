@@ -382,7 +382,11 @@ public class StatementExecutor: StatementVisitor {
 
         case .PRINTL:
             let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " ") + "\n")
+            let outputText = values.joined(separator: " ") + "\n"
+            context.output.append(outputText)
+            if let console = context.console {
+                console.addLine(ConsoleLine(type: .print, content: outputText, attributes: ConsoleAttributes()))
+            }
 
         case .PRINTW:
             let values = try evaluateArguments(statement.arguments)
@@ -604,7 +608,11 @@ public class StatementExecutor: StatementVisitor {
             return .integer(value)
 
         case .string(let value):
-            return .string(value)
+            // 替换字符串中的变量引用 %变量名%
+            let substituted = replaceVariablesInString(value)
+            // 替换字符串中的参数引用 {参数名}
+            let final = replaceParametersInString(substituted)
+            return .string(final)
 
         case .variable(let name):
             // 如果变量已定义，返回其值
@@ -943,9 +951,72 @@ public class StatementExecutor: StatementVisitor {
         var results: [String] = []
         for arg in arguments {
             let value = try evaluateExpression(arg)
-            results.append(value.description)
+            // 也替换参数引用 {参数名}
+            let finalValue = replaceParametersInString(value.description)
+            results.append(finalValue)
         }
         return results
+    }
+
+    /// 替换字符串中的变量引用 %变量名%
+    private func replaceVariablesInString(_ input: String) -> String {
+        var result = input
+        let pattern = "%([A-Za-z_][A-Za-z0-9_]*)%"
+
+        // 使用正则表达式查找所有变量引用
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return input
+        }
+
+        let matches = regex.matches(in: input, range: NSRange(input.startIndex..., in: input))
+
+        // 从后往前替换，避免索引偏移
+        for match in matches.reversed() {
+            if let range = Range(match.range(at: 1), in: input) {
+                let varName = String(input[range])
+                if let value = context.variables[varName] {
+                    let replacement = value.toString()
+                    if let swiftRange = Range(match.range, in: input) {
+                        result.replaceSubrange(swiftRange, with: replacement)
+                    }
+                }
+            }
+        }
+
+        return result
+    }
+
+    /// 替换字符串中的参数引用 {参数名}
+    private func replaceParametersInString(_ input: String) -> String {
+        var result = input
+        let pattern = "\\{([A-Za-z_][A-Za-z0-9_]*)\\}"
+
+        // 使用正则表达式查找所有参数引用
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return input
+        }
+
+        let matches = regex.matches(in: input, range: NSRange(input.startIndex..., in: input))
+
+        // 从后往前替换，避免索引偏移
+        for match in matches.reversed() {
+            if let range = Range(match.range(at: 1), in: input) {
+                let paramName = String(input[range])
+                // 先尝试从currentParameters获取，如果没有则从variables获取
+                var value = context.currentParameters[paramName]
+                if value == nil {
+                    value = context.variables[paramName]
+                }
+                if let finalValue = value {
+                    let replacement = finalValue.toString()
+                    if let swiftRange = Range(match.range, in: input) {
+                        result.replaceSubrange(swiftRange, with: replacement)
+                    }
+                }
+            }
+        }
+
+        return result
     }
 
     // MARK: - 标签收集
@@ -1004,10 +1075,18 @@ public class StatementExecutor: StatementVisitor {
 
     /// 执行用户定义函数
     private func executeUserFunction(_ definition: FunctionDefinition, arguments: [VariableValue]) throws -> VariableValue {
+        // 保存当前上下文
+        let oldContext = self.context
+
         // 创建新的执行上下文
-        let oldContext = context
         let newContext = ExecutionContext()
         newContext.callStack = oldContext.callStack
+        newContext.labels = oldContext.labels  // 继承标签
+        newContext.varData = oldContext.varData  // 继承变量数据
+        newContext.console = oldContext.console  // 继承控制台
+        newContext.variables = oldContext.variables  // 继承全局变量
+        // 关键：继承函数注册表，这样嵌套函数调用才能工作
+        newContext.functionRegistry = oldContext.functionRegistry
 
         // 设置参数
         for (index, param) in definition.parameters.enumerated() {
@@ -1018,25 +1097,38 @@ public class StatementExecutor: StatementVisitor {
             }
         }
 
+        // 切换到新上下文
+        self.context = newContext
+
         // 执行函数体
         let bodyStatements = definition.body
+        var result: VariableValue = .integer(0)  // 默认返回0
+
         for stmt in bodyStatements {
             try stmt.accept(visitor: self)
 
             // 检查是否有返回值
-            if let returnValue = context.returnValue {
-                context.returnValue = nil  // 清除返回值
-                return returnValue
+            if let returnValue = self.context.returnValue {
+                result = returnValue
+                self.context.returnValue = nil  // 清除返回值
+                break
             }
 
             // 检查是否需要退出
-            if context.shouldQuit {
+            if self.context.shouldQuit {
                 break
             }
         }
 
-        // 默认返回0
-        return .integer(0)
+        // 恢复旧上下文
+        self.context = oldContext
+
+        return result
+    }
+
+    /// 调试：打印当前执行状态（仅在需要时启用）
+    private func debugPrint(_ message: String) {
+        // print("[DEBUG] \(message)")  // 调试时取消注释
     }
 
     /// 访问函数定义语句
@@ -1262,6 +1354,386 @@ public class StatementExecutor: StatementVisitor {
             } else {
                 // 没有CATCH标签或标签未找到，异常向上传播
                 throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYCALLFORM语句
+    public func visitTryCallFormStatement(_ statement: TryCallFormStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 评估格式表达式
+            let formatValue = try evaluateExpression(statement.formatExpression)
+            let functionName = formatValue.toString()
+
+            // 评估参数
+            let evaluatedArgs = try statement.arguments.map { try evaluateExpression($0) }
+
+            // 首先尝试内置函数
+            if let builtInResult = try? BuiltInFunctions.execute(
+                name: functionName,
+                arguments: evaluatedArgs,
+                context: context
+            ) {
+                context.lastResult = builtInResult
+            } else if let functionDefinition = context.functionRegistry.resolveFunction(functionName) {
+                // 执行用户定义函数
+                let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                context.lastResult = result
+            } else {
+                // 函数未找到，抛出异常
+                throw EmueraError.functionNotFound(name: functionName)
+            }
+        } catch {
+            // 发生异常时跳转到CATCH标签
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            } else {
+                // 没有CATCH标签或标签未找到，异常向上传播
+                throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYCGOTOFORM语句
+    public func visitTryGotoFormStatement(_ statement: TryGotoFormStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 评估格式表达式
+            let formatValue = try evaluateExpression(statement.formatExpression)
+            var labelName = formatValue.toString()
+
+            // 如果标签名不以@开头，自动添加@前缀
+            if !labelName.hasPrefix("@") {
+                labelName = "@" + labelName
+            }
+
+            // 尝试跳转
+            if let targetIndex = context.labels[labelName] {
+                currentStatementIndex = targetIndex
+            } else {
+                throw EmueraError.runtimeError(
+                    message: "标签未找到: \(labelName)",
+                    position: statement.position
+                )
+            }
+        } catch {
+            // 发生异常时跳转到CATCH标签
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            } else {
+                // 没有CATCH标签或标签未找到，异常向上传播
+                throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYCJUMPFORM语句
+    public func visitTryJumpFormStatement(_ statement: TryJumpFormStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        do {
+            // 评估格式表达式
+            let formatValue = try evaluateExpression(statement.formatExpression)
+            var targetName = formatValue.toString()
+
+            // 评估参数
+            let evaluatedArgs = try statement.arguments.map { try evaluateExpression($0) }
+
+            // 查找目标（函数或标签）
+            if let functionDefinition = context.functionRegistry.resolveFunction(targetName) {
+                // 执行用户定义函数
+                let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                context.lastResult = result
+            } else {
+                // 如果不是函数，尝试作为标签查找，添加@前缀
+                if !targetName.hasPrefix("@") {
+                    targetName = "@" + targetName
+                }
+                if let targetIndex = context.labels[targetName] {
+                    // 设置参数（如果有）
+                    if !evaluatedArgs.isEmpty {
+                        for (index, arg) in evaluatedArgs.enumerated() {
+                            context.setVariable("ARG:\(index)", value: arg)
+                        }
+                    }
+
+                    // 保存当前调用栈
+                    context.callStack.append("\(currentStatementIndex)")
+                    currentStatementIndex = targetIndex
+
+                    // 执行目标函数
+                    while currentStatementIndex < statements.count {
+                        let stmt = statements[currentStatementIndex]
+                        try stmt.accept(visitor: self)
+
+                        if context.returnValue != nil {
+                            // 获取返回地址
+                            let returnAddress = context.callStack.removeLast()
+                            if let callerIndex = Int(returnAddress) {
+                                currentStatementIndex = callerIndex
+                            }
+                            return
+                        }
+
+                        if context.shouldQuit {
+                            context.callStack.removeLast()
+                            return
+                        }
+
+                        currentStatementIndex += 1
+                    }
+
+                    context.callStack.removeLast()
+                } else {
+                    // 目标未找到，抛出异常
+                    throw EmueraError.runtimeError(
+                        message: "函数或标签未找到: \(targetName)",
+                        position: statement.position
+                    )
+                }
+            }
+        } catch {
+            // 发生异常时跳转到CATCH标签
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            } else {
+                // 没有CATCH标签或标签未找到，异常向上传播
+                throw error
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYCALLLIST语句
+    public func visitTryCallListStatement(_ statement: TryCallListStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        var hasError = false
+        var hasSuccess = false
+
+        // 遍历所有函数
+        for funcName in statement.functionNames {
+            do {
+                // 首先尝试内置函数
+                if let builtInResult = try? BuiltInFunctions.execute(
+                    name: funcName,
+                    arguments: [],
+                    context: context
+                ) {
+                    context.lastResult = builtInResult
+                    hasSuccess = true
+                } else if let functionDefinition = context.functionRegistry.resolveFunction(funcName) {
+                    // 执行用户定义函数
+                    let result = try executeUserFunction(functionDefinition, arguments: [])
+                    context.lastResult = result
+                    hasSuccess = true
+                } else {
+                    // 函数未找到，抛出异常
+                    throw EmueraError.functionNotFound(name: funcName)
+                }
+            } catch {
+                // 记录错误但继续执行下一个函数
+                hasError = true
+                continue
+            }
+        }
+
+        // 只有当所有函数都失败（没有成功）且有CATCH标签时，才跳转到CATCH
+        if hasError && !hasSuccess {
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            }
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYJUMPLIST语句
+    public func visitTryJumpListStatement(_ statement: TryJumpListStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+        let originalStatementIndex = currentStatementIndex  // 保存TRYJUMPLIST的位置
+
+        var hasError = false
+        var hasSuccess = false
+
+        // 遍历所有目标
+        for targetName in statement.targets {
+            do {
+                // 尝试跳转到标签 - 添加@前缀
+                var labelName = targetName
+                if !labelName.hasPrefix("@") {
+                    labelName = "@" + labelName
+                }
+                if let targetIndex = context.labels[labelName] {
+                    // 保存当前调用栈
+                    context.callStack.append("\(currentStatementIndex)")
+                    currentStatementIndex = targetIndex
+
+                    // 执行目标标签
+                    while currentStatementIndex < statements.count {
+                        let stmt = statements[currentStatementIndex]
+                        try stmt.accept(visitor: self)
+
+                        if context.returnValue != nil {
+                            // 获取返回地址
+                            context.callStack.removeLast()
+                            context.returnValue = nil  // 清除返回值，继续下一个标签
+                            hasSuccess = true
+                            break  // 退出while循环，继续for循环的下一个标签
+                        }
+
+                        if context.shouldQuit {
+                            context.callStack.removeLast()
+                            hasSuccess = true
+                            // QUIT应该结束整个执行
+                            return
+                        }
+
+                        currentStatementIndex += 1
+                    }
+
+                    // 恢复调用栈（如果还没有恢复）
+                    if !context.callStack.isEmpty {
+                        let last = context.callStack.last
+                        if let savedIndex = Int(last ?? ""), savedIndex == originalStatementIndex {
+                            context.callStack.removeLast()
+                        }
+                    }
+                } else {
+                    // 标签未找到，抛出异常
+                    throw EmueraError.runtimeError(
+                        message: "标签未找到: \(targetName)",
+                        position: statement.position
+                    )
+                }
+            } catch {
+                // 记录错误但继续执行下一个标签
+                hasError = true
+                continue
+            }
+        }
+
+        // 只有当所有标签都失败（没有成功）且有CATCH标签时，才跳转到CATCH
+        if hasError && !hasSuccess {
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
+            }
+        } else {
+            // 有成功的标签或全部成功，恢复到TRYJUMPLIST之后
+            // execute主循环会自动+1，所以设置为原始位置
+            currentStatementIndex = originalStatementIndex
+        }
+
+        // 恢复之前的异常处理上下文
+        context.currentCatchLabel = oldCatchLabel
+        context.shouldCatch = oldShouldCatch
+    }
+
+    /// 访问TRYGOTOLIST语句
+    public func visitTryGotoListStatement(_ statement: TryGotoListStatement) throws {
+        // 保存当前的异常处理上下文
+        let oldCatchLabel = context.currentCatchLabel
+        let oldShouldCatch = context.shouldCatch
+
+        var hasError = false
+        var executed = false
+
+        // 遍历所有标签
+        for labelName in statement.labels {
+            do {
+                // 尝试跳转到标签 - 添加@前缀
+                var name = labelName
+                if !name.hasPrefix("@") {
+                    name = "@" + name
+                }
+                if let targetIndex = context.labels[name] {
+                    currentStatementIndex = targetIndex
+                    executed = true
+                    break  // 成功跳转，停止遍历
+                } else {
+                    // 标签未找到，抛出异常
+                    throw EmueraError.runtimeError(
+                        message: "标签未找到: \(labelName)",
+                        position: statement.position
+                    )
+                }
+            } catch {
+                // 记录错误但继续尝试下一个标签
+                hasError = true
+                continue
+            }
+        }
+
+        // 如果所有标签都失败且有CATCH标签，跳转到CATCH
+        if hasError && !executed {
+            if let catchLabel = statement.catchLabel,
+               let targetIndex = context.labels[catchLabel] {
+                // 设置异常处理上下文
+                context.currentCatchLabel = catchLabel
+                context.shouldCatch = true
+
+                // 跳转到CATCH标签
+                currentStatementIndex = targetIndex
             }
         }
 

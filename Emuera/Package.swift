@@ -696,6 +696,62 @@ let package = Package(
             path: "Sources/Phase7Debug",
             sources: ["SifTest.swift"]
         ),
+
+        // TRYC系列异常处理测试 Target (Priority 1)
+        .executableTarget(
+            name: "TryCTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["TryCTest.swift"]
+        ),
+
+        // Debug Parameter Substitution
+        .executableTarget(
+            name: "DebugParamSub",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugParamSub.swift"]
+        ),
+
+        // Test 1 Debug Target
+        .executableTarget(
+            name: "Test1Debug",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["Test1Debug.swift"]
+        ),
+
+        // TRYC解析调试 Target
+        .executableTarget(
+            name: "DebugTryCParse",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugTryCParse.swift"]
+        ),
+
+        // TRYC执行调试 Target
+        .executableTarget(
+            name: "DebugTryCExecute",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugTryCExecute.swift"]
+        ),
+
+        // Debug Test 3 Target
+        .executableTarget(
+            name: "DebugTest3",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugTest3.swift"]
+        ),
+
+        // Debug Test 9 Target
+        .executableTarget(
+            name: "DebugTest9",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase7Debug",
+            sources: ["DebugTest9.swift"]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )
