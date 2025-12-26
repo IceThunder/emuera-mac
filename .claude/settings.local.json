@@ -131,7 +131,9 @@
       "Bash(.build/debug/DebugGraphicsParse:*)",
       "Bash(comm:*)",
       "Bash(sort:*)",
-      "Bash(.build/debug/DebugSelectCase:*)"
+      "Bash(.build/debug/DebugSelectCase:*)",
+      "Bash(.build/debug/CommandVerification:*)",
+      "Bash(.build/debug/DebugParserTest:*)"
     ]
   }
 }

@@ -23,13 +23,9 @@ struct DebugTokens {
 
         for (i, script) in scripts.enumerated() {
             print("Test \(i+1): \(script.replacingOccurrences(of: "\n", with: "\\n"))")
-            do {
-                let tokens = try LexicalAnalyzer.analyze(script)
-                for (j, token) in tokens.enumerated() {
-                    print("  \(j+1). \(token)")
-                }
-            } catch {
-                print("  Error: \(error)")
+            let tokens = LexicalAnalyzer().tokenize(script)
+            for (j, token) in tokens.enumerated() {
+                print("  \(j+1). \(token)")
             }
             print()
         }

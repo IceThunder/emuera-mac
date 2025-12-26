@@ -424,8 +424,8 @@ public class ScriptParser {
 
         switch cmd {
         case "SETCOLOR", "SETBGCOLOR":
-            // 需要一个颜色参数
-            let args = try parseSpaceSeparatedArguments(exactCount: 1)
+            // 支持1个参数（颜色值）或3个参数（RGB）
+            let args = try parseSpaceSeparatedArguments(minCount: 1, maxCount: 3)
             return CommandStatement(command: cmd, arguments: args, position: startPos)
 
         case "RESETCOLOR", "RESETBGCOLOR":
@@ -444,8 +444,8 @@ public class ScriptParser {
 
         switch cmd {
         case "TINPUT", "TINPUTS", "TONEINPUT", "TONEINPUTS":
-            // 需要一个超时参数
-            let args = try parseSpaceSeparatedArguments(exactCount: 1)
+            // 支持1-4个参数: timeout, default, display_time, timeout_message
+            let args = try parseSpaceSeparatedArguments(minCount: 1, maxCount: 4)
             return CommandStatement(command: cmd, arguments: args, position: startPos)
 
         case "AWAIT":
@@ -492,7 +492,7 @@ public class ScriptParser {
     /// 关键词：词法分析器不生成空白token，所以需要通过token类型判断参数边界
     /// 例如: \"BAR 50 100 20\" -> 3个参数 [50], [100], [20]
     ///       \"BAR 50 + 100 20\" -> 2个参数 [50 + 100], [20]
-    private func parseSpaceSeparatedArguments(exactCount: Int? = nil, maxCount: Int? = nil) throws -> [ExpressionNode] {
+    private func parseSpaceSeparatedArguments(exactCount: Int? = nil, minCount: Int? = nil, maxCount: Int? = nil) throws -> [ExpressionNode] {
         var arguments: [ExpressionNode] = []
 
         while currentIndex < tokens.count {
@@ -551,6 +551,10 @@ public class ScriptParser {
         // 验证参数数量
         if let expected = exactCount, arguments.count != expected {
             throw EmueraError.scriptParseError(message: "需要 \\(expected) 个参数，但得到 \\(arguments.count)", position: nil)
+        }
+
+        if let min = minCount, arguments.count < min {
+            throw EmueraError.scriptParseError(message: "至少需要 \\(min) 个参数，但得到 \\(arguments.count)", position: nil)
         }
 
         if let max = maxCount, arguments.count > max {

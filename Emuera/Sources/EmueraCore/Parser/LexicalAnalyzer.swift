@@ -187,11 +187,7 @@ public struct LexicalAnalyzer {
                 if identifier.hasPrefix("#") {
                     tokenType = .directive(identifier)
                 }
-                // 检查是否是命令
-                else if CommandType.fromString(identifier) != .UNKNOWN {
-                    tokenType = .command(identifier)
-                }
-                // 检查是否是关键字
+                // 检查是否是关键字 (优先于命令检查，避免WHILE/DO/FOR等被识别为命令)
                 else if ["IF", "ELSE", "ELSEIF", "ENDIF",
                          "WHILE", "ENDWHILE",
                          "FOR", "ENDFOR",
@@ -208,6 +204,10 @@ public struct LexicalAnalyzer {
                          "SAVELIST", "SAVEEXISTS", "AUTOSAVE", "SAVEINFO",
                          "RESETDATA", "RESETGLOBAL", "PERSIST"].contains(upper) {
                     tokenType = .keyword(identifier)
+                }
+                // 检查是否是命令 (在关键字检查之后)
+                else if CommandType.fromString(identifier) != .UNKNOWN {
+                    tokenType = .command(identifier)
                 }
                 // 检查是否是内置函数
                 else if BuiltInFunctions.exists(identifier) {
