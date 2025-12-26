@@ -630,29 +630,6 @@ let package = Package(
             sources: ["GUIIntegrationTest.swift"]
         ),
 
-        // Character Manager Test Target (Phase 6)
-        .executableTarget(
-            name: "CharacterManagerTest",
-            dependencies: ["EmueraCore"],
-            path: "Sources/Phase6Debug",
-            sources: ["CharacterManagerTest.swift"]
-        ),
-
-        // Phase 6 Parser Test Target
-        .executableTarget(
-            name: "Phase6ParserTest",
-            dependencies: ["EmueraCore"],
-            path: "Sources/Phase6Debug",
-            sources: ["Phase6ParserTest.swift"]
-        ),
-
-        // Debug Parser Target
-        .executableTarget(
-            name: "DebugParser",
-            dependencies: ["EmueraCore"],
-            path: "Sources/Phase6Debug",
-            sources: ["DebugParser.swift"]
-        ),
 
         // Unit Tests
         .testTarget(
@@ -887,6 +864,22 @@ let package = Package(
             dependencies: ["EmueraCore"],
             path: "Sources/Phase7Debug",
             sources: ["DebugGraphicsParse.swift"]
+        ),
+
+        // Command Verification Target
+        .executableTarget(
+            name: "CommandVerification",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Test",
+            sources: ["CommandVerification.swift"]
+        ),
+
+        // Debug Parser Test Target
+        .executableTarget(
+            name: "DebugParserTest",
+            dependencies: ["EmueraCore"],
+            path: "Sources/Phase2Test",
+            sources: ["DebugParserTest.swift"]
         ),
     ],
     swiftLanguageVersions: [.v5]

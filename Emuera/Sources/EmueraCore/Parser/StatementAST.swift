@@ -1028,6 +1028,278 @@ public class GlobalVariableStatement: StatementNode {
     }
 }
 
+// MARK: - Phase 6: 字符管理系统增强语句
+
+/// ADDCHARA - 添加角色语句
+public class AddCharaStatement: StatementNode {
+    public let idExpression: ExpressionNode?
+    public let nameExpression: ExpressionNode?
+
+    public init(idExpression: ExpressionNode? = nil, nameExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.idExpression = idExpression
+        self.nameExpression = nameExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitAddCharaStatement(self)
+    }
+}
+
+/// DELCHARA - 删除角色语句
+public class DelCharaStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+
+    public init(targetExpression: ExpressionNode, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitDelCharaStatement(self)
+    }
+}
+
+/// SWAPCHARA - 交换角色语句
+public class SwapCharaStatement: StatementNode {
+    public let index1Expression: ExpressionNode
+    public let index2Expression: ExpressionNode
+
+    public init(index1Expression: ExpressionNode, index2Expression: ExpressionNode, position: ScriptPosition? = nil) {
+        self.index1Expression = index1Expression
+        self.index2Expression = index2Expression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSwapCharaStatement(self)
+    }
+}
+
+/// COPYCHARA - 复制角色语句
+public class CopyCharaStatement: StatementNode {
+    public let srcExpression: ExpressionNode
+    public let dstExpression: ExpressionNode?
+
+    public init(srcExpression: ExpressionNode, dstExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.srcExpression = srcExpression
+        self.dstExpression = dstExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitCopyCharaStatement(self)
+    }
+}
+
+/// SORTCHARA - 排序角色语句
+public class SortCharaStatement: StatementNode {
+    public let keyExpression: ExpressionNode
+    public let orderExpression: ExpressionNode?
+
+    public init(keyExpression: ExpressionNode, orderExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.keyExpression = keyExpression
+        self.orderExpression = orderExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSortCharaStatement(self)
+    }
+}
+
+/// FINDCHARA - 查找角色语句
+public class FindCharaStatement: StatementNode {
+    public let conditionExpression: ExpressionNode
+    public let resultVariable: String?
+
+    public init(conditionExpression: ExpressionNode, resultVariable: String? = nil, position: ScriptPosition? = nil) {
+        self.conditionExpression = conditionExpression
+        self.resultVariable = resultVariable
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitFindCharaStatement(self)
+    }
+}
+
+/// CHARAOPERATE - 角色操作语句
+public class CharaOperateStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+    public let operationExpression: ExpressionNode
+    public let valueExpression: ExpressionNode?
+
+    public init(targetExpression: ExpressionNode, operationExpression: ExpressionNode, valueExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        self.operationExpression = operationExpression
+        self.valueExpression = valueExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitCharaOperateStatement(self)
+    }
+}
+
+/// CHARAMODIFY - 批量修改角色语句
+public class CharaModifyStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+    public let variableExpression: ExpressionNode
+    public let valueExpression: ExpressionNode
+    public let indicesExpression: ExpressionNode?
+
+    public init(targetExpression: ExpressionNode, variableExpression: ExpressionNode, valueExpression: ExpressionNode, indicesExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        self.variableExpression = variableExpression
+        self.valueExpression = valueExpression
+        self.indicesExpression = indicesExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitCharaModifyStatement(self)
+    }
+}
+
+/// CHARAFILTER - 角色过滤语句
+public class CharaFilterStatement: StatementNode {
+    public let conditionExpression: ExpressionNode
+    public let resultVariable: String?
+
+    public init(conditionExpression: ExpressionNode, resultVariable: String? = nil, position: ScriptPosition? = nil) {
+        self.conditionExpression = conditionExpression
+        self.resultVariable = resultVariable
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitCharaFilterStatement(self)
+    }
+}
+
+/// SHOWCHARACARD - 显示角色卡片语句
+public class ShowCharaCardStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+    public let styleExpression: ExpressionNode?
+
+    public init(targetExpression: ExpressionNode, styleExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        self.styleExpression = styleExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitShowCharaCardStatement(self)
+    }
+}
+
+/// SHOWCHARALIST - 显示角色列表语句
+public class ShowCharaListStatement: StatementNode {
+    public let indicesExpression: ExpressionNode?
+
+    public init(indicesExpression: ExpressionNode? = nil, position: ScriptPosition? = nil) {
+        self.indicesExpression = indicesExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitShowCharaListStatement(self)
+    }
+}
+
+/// SHOWBATTLESTATUS - 显示战斗状态语句
+public class ShowBattleStatusStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+
+    public init(targetExpression: ExpressionNode, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitShowBattleStatusStatement(self)
+    }
+}
+
+/// SHOWPROGRESSBARS - 显示进度条语句
+public class ShowProgressBarsStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+    public let barsExpression: ExpressionNode
+
+    public init(targetExpression: ExpressionNode, barsExpression: ExpressionNode, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        self.barsExpression = barsExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitShowProgressBarsStatement(self)
+    }
+}
+
+/// SHOWCHARATAGS - 显示角色标签语句
+public class ShowCharaTagsStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+
+    public init(targetExpression: ExpressionNode, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitShowCharaTagsStatement(self)
+    }
+}
+
+/// BATCHMODIFY - 批量修改语句
+public class BatchModifyStatement: StatementNode {
+    public let indicesExpression: ExpressionNode
+    public let operationExpression: ExpressionNode
+    public let valueExpression: ExpressionNode
+
+    public init(indicesExpression: ExpressionNode, operationExpression: ExpressionNode, valueExpression: ExpressionNode, position: ScriptPosition? = nil) {
+        self.indicesExpression = indicesExpression
+        self.operationExpression = operationExpression
+        self.valueExpression = valueExpression
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitBatchModifyStatement(self)
+    }
+}
+
+/// CHARACOUNT - 获取角色数量语句
+public class CharaCountStatement: StatementNode {
+    public let resultVariable: String?
+
+    public init(resultVariable: String? = nil, position: ScriptPosition? = nil) {
+        self.resultVariable = resultVariable
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitCharaCountStatement(self)
+    }
+}
+
+/// CHARAEXISTS - 检查角色是否存在语句
+public class CharaExistsStatement: StatementNode {
+    public let targetExpression: ExpressionNode
+    public let resultVariable: String?
+
+    public init(targetExpression: ExpressionNode, resultVariable: String? = nil, position: ScriptPosition? = nil) {
+        self.targetExpression = targetExpression
+        self.resultVariable = resultVariable
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitCharaExistsStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议

@@ -112,10 +112,7 @@ public enum CommandType: String, CaseIterable {
     case TRYCALLLIST    // 尝试调用列表
     case TRYJUMPLIST    // 尝试跳转列表
     case TRYGOTOLIST    // 尝试GOTO列表
-    case SELECTCASE     // 选择分支开始
-    case CASE           // 分支条件
-    case CASEELSE       // 默认分支
-    case ENDSELECT      // 结束选择分支
+    // SELECTCASE, CASE, CASEELSE, ENDSELECT - handled as keywords, not commands
     case IF            // 条件开始
     case ELSEIF        // 否则如果
     case ELSE          // 否则
@@ -467,7 +464,6 @@ public enum CommandType: String, CaseIterable {
              .TRYCALL, .TRYJUMP, .TRYGOTO, .TRYCALLFORM, .TRYJUMPFORM, .TRYGOTOFORM,
              .CATCH, .ENDCATCH, .TRYCCALL, .TRYCJUMP, .TRYCGOTO, .TRYCCALLFORM, .TRYCJUMPFORM, .TRYCGOTOFORM,
              .TRYCALLLIST, .TRYJUMPLIST, .TRYGOTOLIST,
-             .SELECTCASE, .CASE, .CASEELSE, .ENDSELECT,
              .IF, .ELSEIF, .ELSE, .ENDIF:
             return true
         default:

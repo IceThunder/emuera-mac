@@ -128,7 +128,10 @@
       "Bash(.build/debug/DebugPriority2Parse:*)",
       "Bash(.build/debug/DebugParseDetail:*)",
       "Bash(.build/debug/Priority3Test:*)",
-      "Bash(.build/debug/DebugGraphicsParse:*)"
+      "Bash(.build/debug/DebugGraphicsParse:*)",
+      "Bash(comm:*)",
+      "Bash(sort:*)",
+      "Bash(.build/debug/DebugSelectCase:*)"
     ]
   }
 }

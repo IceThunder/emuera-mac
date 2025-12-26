@@ -9,6 +9,10 @@
 
 import Foundation
 
+// MARK: - External Type Imports (Phase 6 Character Management)
+// These types are defined in other modules but used by command execution
+
+
 // MARK: - 执行上下文
 
 /// 执行上下文
@@ -1441,183 +1445,426 @@ public class StatementExecutor: StatementVisitor {
         case .CLEARTEXTBOX:
             context.output.append("[清空文本框]\n")
 
-        case .TIMES:
-            if statement.arguments.count >= 2 {
-                context.output.append("[TIMES计算]\n")
-            }
-
-        case .POWER:
-            if statement.arguments.count >= 3 {
-                let args = try statement.arguments.map { try evaluateExpression($0) }
-                if case .integer(let base) = args[1],
-                   case .integer(let exp) = args[2] {
-                    let result = Int64(pow(Double(base), Double(exp)))
-                    if case .variable(let varName) = statement.arguments[0] {
-                        context.setVariable(varName, value: .integer(result))
-                    }
-                }
-            }
-
-        case .RANDOMIZE:
-            context.output.append("[随机种子设置]\n")
-
-        case .DUMPRAND:
-            context.output.append("[转储随机状态]\n")
-
-        case .INITRAND:
-            context.output.append("[初始化随机]\n")
 
         case .GETTIME:
             let time = Date().timeIntervalSince1970
             context.setVariable("RESULT", value: .integer(Int64(time)))
             context.output.append("[时间: \(Int64(time))]\n")
 
-        case .PRINT_ABL, .PRINT_TALENT, .PRINT_MARK, .PRINT_EXP, .PRINT_PALAM, .PRINT_ITEM:
-            let value = try evaluateArguments(statement.arguments)
-            context.output.append("[数据: \(value)]\n")
+        case .UNKNOWN:
+            context.output.append("[未知命令: \(statement.command)]\n")
 
-        // MARK: - 变量输出命令 (新增22个命令)
-        case .PRINTV:
-            // 输出变量内容
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " "))
+        // MARK: - 流程控制命令 (42个)
 
-        case .PRINTVL:
-            // 变量内容换行
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " ") + "\n")
+        case .BREAK:
+            // 跳出循环
+            context.shouldBreak = true
 
-        case .PRINTVW:
-            // 变量内容等待
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " "))
-            context.output.append("按回车继续...\n")
+        case .CONTINUE:
+            // 继续下一次循环
+            context.shouldContinue = true
 
-        case .PRINTS:
-            // 输出字符串变量
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " "))
-
-        case .PRINTSL:
-            // 字符串变量换行
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " ") + "\n")
-
-        case .PRINTSW:
-            // 字符串变量等待
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " "))
-            context.output.append("按回车继续...\n")
-
-        case .PRINTFORMS:
-            // 格式化字符串输出
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " "))
-
-        case .PRINTFORMSL:
-            // 格式化字符串输出换行
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " ") + "\n")
-
-        case .PRINTFORMSW:
-            // 格式化字符串输出等待
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append(values.joined(separator: " "))
-            context.output.append("按回车继续...\n")
-
-        // MARK: - 数据块命令
-        case .PRINTDATA:
-            // 数据块开始 - 随机选择一条数据输出
-            context.output.append("[数据块开始]\n")
-
-        case .PRINTDATAL:
-            // 数据块开始（换行）
-            context.output.append("[数据块开始(换行)]\n")
-
-        case .PRINTDATAW:
-            // 数据块开始（等待）
-            context.output.append("[数据块开始(等待)]\n")
-
-        case .PRINTDATAK:
-            // 数据块开始（K模式）
-            context.output.append("[数据块开始(K模式)]\n")
-
-        case .PRINTDATAKL:
-            // 数据块开始（K模式换行）
-            context.output.append("[数据块开始(K模式换行)]\n")
-
-        case .PRINTDATAKW:
-            // 数据块开始（K模式等待）
-            context.output.append("[数据块开始(K模式等待)]\n")
-
-        case .PRINTDATAD:
-            // 数据块开始（D模式）
-            context.output.append("[数据块开始(D模式)]\n")
-
-        case .PRINTDATADL:
-            // 数据块开始（D模式换行）
-            context.output.append("[数据块开始(D模式换行)]\n")
-
-        case .PRINTDATADW:
-            // 数据块开始（D模式等待）
-            context.output.append("[数据块开始(D模式等待)]\n")
-
-        case .DATALIST:
-            // 数据列表
-            context.output.append("[数据列表]\n")
-
-        case .ENDLIST:
-            // 结束列表
-            context.output.append("[结束列表]\n")
-
-        case .ENDDATA:
-            // 结束数据
-            context.output.append("[结束数据]\n")
-
-        // MARK: - 变量操作命令
-        case .VARSIZE:
-            // 数组大小
-            let values = try evaluateArguments(statement.arguments)
-            if let arrayName = values.first,
-               case .array(let arr) = context.getVariable(arrayName) {
-                context.lastResult = .integer(Int64(arr.count))
-                context.output.append("[数组大小: \(arr.count)]\n")
-            } else {
-                context.lastResult = .integer(0)
-                context.output.append("[数组大小: 0]\n")
+        case .CALL:
+            // CALL函数调用 - 在visitCallStatement中已实现
+            if statement.arguments.count >= 1 {
+                if case .string(let target) = try evaluateExpression(statement.arguments[0]) {
+                    // 尝试作为标签调用
+                    if let targetIndex = context.labels[target] {
+                        context.callStack.append("\(currentStatementIndex)")
+                        currentStatementIndex = targetIndex
+                        return
+                    }
+                    // 尝试作为函数调用
+                    if let functionDefinition = context.functionRegistry.resolveFunction(target) {
+                        let args = statement.arguments.count > 1 ? Array(statement.arguments[1...]) : []
+                        let evaluatedArgs = try args.map { try evaluateExpression($0) }
+                        let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                        context.lastResult = result
+                        return
+                    }
+                }
             }
+            context.output.append("[CALL: 参数不足或目标未找到]\n")
 
-        case .SWAP:
-            // 变量交换
-            if statement.arguments.count >= 2 {
-                let args = statement.arguments
-                if case .variable(let var1) = args[0],
-                   case .variable(let var2) = args[1] {
-                    let val1 = context.getVariable(var1)
-                    let val2 = context.getVariable(var2)
-                    context.setVariable(var1, value: val2)
-                    context.setVariable(var2, value: val1)
-                    context.output.append("[交换: \(var1) <-> \(var2)]\n")
+        case .JUMP:
+            // JUMP跳转 - 类似CALL但不返回
+            if statement.arguments.count >= 1 {
+                if case .string(let target) = try evaluateExpression(statement.arguments[0]) {
+                    if let targetIndex = context.labels[target] {
+                        // 设置参数
+                        if statement.arguments.count > 1 {
+                            for i in 1..<statement.arguments.count {
+                                let value = try evaluateExpression(statement.arguments[i])
+                                context.setVariable("ARG:\(i-1)", value: value)
+                            }
+                        }
+                        context.callStack.append("\(currentStatementIndex)")
+                        currentStatementIndex = targetIndex
+                        return
+                    }
+                }
+            }
+            context.output.append("[JUMP: 目标未找到]\n")
+
+        case .GOTO:
+            // GOTO跳转 - 在visitGotoStatement中已实现
+            if statement.arguments.count >= 1 {
+                if case .string(let label) = try evaluateExpression(statement.arguments[0]) {
+                    if let targetIndex = context.labels[label] {
+                        currentStatementIndex = targetIndex
+                        return
+                    }
+                }
+            }
+            context.output.append("[GOTO: 标签未找到]\n")
+
+        case .CALLFORM:
+            // 格式化函数调用
+            if statement.arguments.count >= 1 {
+                let formatValue = try evaluateExpression(statement.arguments[0])
+                let functionName = formatValue.toString()
+                let args = statement.arguments.count > 1 ? Array(statement.arguments[1...]) : []
+                let evaluatedArgs = try args.map { try evaluateExpression($0) }
+
+                if let builtInResult = try? BuiltInFunctions.execute(name: functionName, arguments: evaluatedArgs, context: context) {
+                    context.lastResult = builtInResult
+                } else if let functionDefinition = context.functionRegistry.resolveFunction(functionName) {
+                    let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                    context.lastResult = result
+                } else {
+                    context.output.append("[CALLFORM: 函数未找到: \(functionName)]\n")
                 }
             }
 
-        case .REF:
-            // 引用
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append("[引用: \(values)]\n")
+        case .JUMPFORM:
+            // 格式化跳转
+            if statement.arguments.count >= 1 {
+                let formatValue = try evaluateExpression(statement.arguments[0])
+                let targetName = formatValue.toString()
 
-        case .REFBYNAME:
-            // 按名称引用
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append("[按名称引用: \(values)]\n")
+                if let targetIndex = context.labels[targetName] {
+                    // 设置参数
+                    if statement.arguments.count > 1 {
+                        for i in 1..<statement.arguments.count {
+                            let value = try evaluateExpression(statement.arguments[i])
+                            context.setVariable("ARG:\(i-1)", value: value)
+                        }
+                    }
+                    context.callStack.append("\(currentStatementIndex)")
+                    currentStatementIndex = targetIndex
+                    return
+                }
+            }
+            context.output.append("[JUMPFORM: 目标未找到]\n")
 
-        case .PUTFORM:
-            // 保存格式化信息
-            let values = try evaluateArguments(statement.arguments)
-            context.output.append("[保存格式化: \(values)]\n")
+        case .GOTOFORM:
+            // 格式化GOTO
+            if statement.arguments.count >= 1 {
+                let formatValue = try evaluateExpression(statement.arguments[0])
+                let labelName = formatValue.toString()
 
-        case .UNKNOWN:
-            context.output.append("[未知命令: \(statement.command)]\n")
+                if let targetIndex = context.labels[labelName] {
+                    currentStatementIndex = targetIndex
+                    return
+                }
+            }
+            context.output.append("[GOTOFORM: 标签未找到]\n")
+
+        case .CALLEVENT:
+            // 事件调用
+            context.output.append("[CALLEVENT: 事件调用]\n")
+
+        case .RETURN:
+            // RETURN返回 - 在visitReturnStatement中已实现
+            if statement.arguments.count >= 1 {
+                let value = try evaluateExpression(statement.arguments[0])
+                context.returnValue = value
+            } else {
+                context.returnValue = .null
+            }
+
+        case .RETURNFORM:
+            // 格式化返回
+            if statement.arguments.count >= 1 {
+                let value = try evaluateExpression(statement.arguments[0])
+                context.returnValue = value
+            } else {
+                context.returnValue = .null
+            }
+
+        case .RETURNF:
+            // 函数返回
+            if statement.arguments.count >= 1 {
+                let value = try evaluateExpression(statement.arguments[0])
+                context.returnValue = value
+            } else {
+                context.returnValue = .null
+            }
+
+        case .RESTART:
+            // 重启函数 - 跳回到函数开始位置
+            if let callerIndexStr = context.callStack.last,
+               let callerIndex = Int(callerIndexStr) {
+                // 找到函数开始位置（CALL之后的第一个语句）
+                currentStatementIndex = callerIndex + 1
+            } else {
+                // 如果不在函数中，重启整个脚本
+                currentStatementIndex = 0
+            }
+            context.output.append("[RESTART: 重启]\n")
+
+        case .DOTRAIN:
+            // 训练开始
+            context.output.append("[DOTRAIN: 训练开始]\n")
+
+        case .DO:
+            // DO循环开始 - 由visitDoLoopStatement处理
+            context.output.append("[DO: 循环开始]\n")
+
+        case .LOOP:
+            // DO循环结束 - 由visitDoLoopStatement处理
+            context.output.append("[LOOP: 循环结束]\n")
+
+        case .WHILE:
+            // WHILE循环开始 - 由visitWhileStatement处理
+            context.output.append("[WHILE: 循环开始]\n")
+
+        case .WEND:
+            // WHILE循环结束
+            context.output.append("[WEND: 循环结束]\n")
+
+        case .FOR:
+            // FOR循环开始 - 由visitForStatement处理
+            context.output.append("[FOR: 循环开始]\n")
+
+        case .NEXT:
+            // FOR循环结束
+            context.output.append("[NEXT: 循环结束]\n")
+
+        case .REPEAT:
+            // REPEAT循环开始 - 由visitRepeatStatement处理
+            context.output.append("[REPEAT: 循环开始]\n")
+
+        case .REND:
+            // REPEAT循环结束
+            context.output.append("[REND: 循环结束]\n")
+
+        case .TRYCALL:
+            // 尝试调用
+            if statement.arguments.count >= 1 {
+                if case .string(let functionName) = try evaluateExpression(statement.arguments[0]) {
+                    let args = statement.arguments.count > 1 ? Array(statement.arguments[1...]) : []
+                    let evaluatedArgs = try args.map { try evaluateExpression($0) }
+
+                    if let builtInResult = try? BuiltInFunctions.execute(name: functionName, arguments: evaluatedArgs, context: context) {
+                        context.lastResult = builtInResult
+                    } else if let functionDefinition = context.functionRegistry.resolveFunction(functionName) {
+                        let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                        context.lastResult = result
+                    } else {
+                        // TRYCALL失败时不抛出错误
+                        context.lastResult = .integer(0)
+                        context.output.append("[TRYCALL: 函数未找到: \(functionName)]\n")
+                    }
+                }
+            }
+
+        case .TRYJUMP:
+            // 尝试跳转
+            if statement.arguments.count >= 1 {
+                if case .string(let target) = try evaluateExpression(statement.arguments[0]) {
+                    if let targetIndex = context.labels[target] {
+                        // 设置参数
+                        if statement.arguments.count > 1 {
+                            for i in 1..<statement.arguments.count {
+                                let value = try evaluateExpression(statement.arguments[i])
+                                context.setVariable("ARG:\(i-1)", value: value)
+                            }
+                        }
+                        context.callStack.append("\(currentStatementIndex)")
+                        currentStatementIndex = targetIndex
+                        return
+                    } else {
+                        // TRYJUMP失败
+                        context.output.append("[TRYJUMP: 目标未找到: \(target)]\n")
+                    }
+                }
+            }
+
+        case .TRYGOTO:
+            // 尝试GOTO
+            if statement.arguments.count >= 1 {
+                if case .string(let label) = try evaluateExpression(statement.arguments[0]) {
+                    if let targetIndex = context.labels[label] {
+                        currentStatementIndex = targetIndex
+                        return
+                    } else {
+                        // TRYGOTO失败
+                        context.output.append("[TRYGOTO: 标签未找到: \(label)]\n")
+                    }
+                }
+            }
+
+        case .TRYCALLFORM:
+            // 尝试格式化调用
+            if statement.arguments.count >= 1 {
+                let formatValue = try evaluateExpression(statement.arguments[0])
+                let functionName = formatValue.toString()
+                let args = statement.arguments.count > 1 ? Array(statement.arguments[1...]) : []
+                let evaluatedArgs = try args.map { try evaluateExpression($0) }
+
+                if let builtInResult = try? BuiltInFunctions.execute(name: functionName, arguments: evaluatedArgs, context: context) {
+                    context.lastResult = builtInResult
+                } else if let functionDefinition = context.functionRegistry.resolveFunction(functionName) {
+                    let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                    context.lastResult = result
+                } else {
+                    context.lastResult = .integer(0)
+                    context.output.append("[TRYCALLFORM: 函数未找到: \(functionName)]\n")
+                }
+            }
+
+        case .TRYJUMPFORM:
+            // 尝试格式化跳转
+            if statement.arguments.count >= 1 {
+                let formatValue = try evaluateExpression(statement.arguments[0])
+                let targetName = formatValue.toString()
+
+                if let targetIndex = context.labels[targetName] {
+                    // 设置参数
+                    if statement.arguments.count > 1 {
+                        for i in 1..<statement.arguments.count {
+                            let value = try evaluateExpression(statement.arguments[i])
+                            context.setVariable("ARG:\(i-1)", value: value)
+                        }
+                    }
+                    context.callStack.append("\(currentStatementIndex)")
+                    currentStatementIndex = targetIndex
+                    return
+                } else {
+                    context.output.append("[TRYJUMPFORM: 目标未找到: \(targetName)]\n")
+                }
+            }
+
+        case .TRYGOTOFORM:
+            // 尝试格式化GOTO
+            if statement.arguments.count >= 1 {
+                let formatValue = try evaluateExpression(statement.arguments[0])
+                let labelName = formatValue.toString()
+
+                if let targetIndex = context.labels[labelName] {
+                    currentStatementIndex = targetIndex
+                    return
+                } else {
+                    context.output.append("[TRYGOTOFORM: 标签未找到: \(labelName)]\n")
+                }
+            }
+
+        case .TRYCCALL:
+            // 带捕获调用
+            if statement.arguments.count >= 2 {
+                if case .string(let functionName) = try evaluateExpression(statement.arguments[0]),
+                   case .string(let catchLabel) = try evaluateExpression(statement.arguments[1]) {
+                    let args = statement.arguments.count > 2 ? Array(statement.arguments[2...]) : []
+                    let evaluatedArgs = try args.map { try evaluateExpression($0) }
+
+                    do {
+                        if let builtInResult = try? BuiltInFunctions.execute(name: functionName, arguments: evaluatedArgs, context: context) {
+                            context.lastResult = builtInResult
+                        } else if let functionDefinition = context.functionRegistry.resolveFunction(functionName) {
+                            let result = try executeUserFunction(functionDefinition, arguments: evaluatedArgs)
+                            context.lastResult = result
+                        } else {
+                            throw EmueraError.functionNotFound(name: functionName)
+                        }
+                    } catch {
+                        if let targetIndex = context.labels[catchLabel] {
+                            context.currentCatchLabel = catchLabel
+                            context.shouldCatch = true
+                            currentStatementIndex = targetIndex
+                            return
+                        }
+                    }
+                }
+            }
+
+        case .TRYCJUMP:
+            // 带捕获跳转
+            if statement.arguments.count >= 2 {
+                if case .string(let target) = try evaluateExpression(statement.arguments[0]),
+                   case .string(let catchLabel) = try evaluateExpression(statement.arguments[1]) {
+                    do {
+                        if let targetIndex = context.labels[target] {
+                            // 设置参数
+                            if statement.arguments.count > 2 {
+                                for i in 2..<statement.arguments.count {
+                                    let value = try evaluateExpression(statement.arguments[i])
+                                    context.setVariable("ARG:\(i-2)", value: value)
+                                }
+                            }
+                            context.callStack.append("\(currentStatementIndex)")
+                            currentStatementIndex = targetIndex
+                            return
+                        } else {
+                            throw EmueraError.runtimeError(message: "标签未找到: \(target)", position: nil)
+                        }
+                    } catch {
+                        if let targetIndex = context.labels[catchLabel] {
+                            context.currentCatchLabel = catchLabel
+                            context.shouldCatch = true
+                            currentStatementIndex = targetIndex
+                            return
+                        }
+                    }
+                }
+            }
+
+        case .TRYCGOTO:
+            // 带捕获GOTO
+            if statement.arguments.count >= 2 {
+                if case .string(let label) = try evaluateExpression(statement.arguments[0]),
+                   case .string(let catchLabel) = try evaluateExpression(statement.arguments[1]) {
+                    do {
+                        if let targetIndex = context.labels[label] {
+                            currentStatementIndex = targetIndex
+                            return
+                        } else {
+                            throw EmueraError.runtimeError(message: "标签未找到: \(label)", position: nil)
+                        }
+                    } catch {
+                        if let targetIndex = context.labels[catchLabel] {
+                            context.currentCatchLabel = catchLabel
+                            context.shouldCatch = true
+                            currentStatementIndex = targetIndex
+                            return
+                        }
+                    }
+                }
+            }
+
+        case .ENDCATCH:
+            // 结束捕获
+            context.currentCatchLabel = nil
+            context.shouldCatch = false
+            context.output.append("[ENDCATCH: 捕获结束]\n")
+
+
+
+        // MARK: - 数据操作命令 (15个)
+
+        case .ADDCHARA:
+            // 添加角色 - 由visitAddCharaStatement处理
+            context.output.append("[ADDCHARA: 添加角色]\n")
+
+        case .ADDVOIDCHARA:
+            // 添加空角色
+            if let varData = context.varData {
+                let manager = CharacterManager(variableData: varData)
+                let character = manager.addCharacter(id: nil, name: "空角色")
+                context.lastResult = .integer(Int64(character.id))
+                context.output.append("[ADDVOIDCHARA: 添加空角色 ID=\(character.id)]\n")
+            }
+
 
         default:
             let value = try evaluateArguments(statement.arguments)
