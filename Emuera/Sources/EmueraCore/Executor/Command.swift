@@ -16,23 +16,43 @@ public enum CommandType: String, CaseIterable {
     case PRINTW         // 输出并等待输入
     case PRINTC         // 输出居中
     case PRINTLC        // 输出左对齐
+    case PRINTCR        // 输出右对齐
     case PRINTFORM      // 格式化输出
     case PRINTFORML     // 格式化输出并换行
     case PRINTFORMW     // 格式化输出并等待
+    case PRINTV         // 输出变量内容
+    case PRINTVL        // 变量内容换行
+    case PRINTVW        // 变量内容等待
+    case PRINTS         // 输出字符串变量
+    case PRINTSL        // 字符串变量换行
+    case PRINTSW        // 字符串变量等待
+    case PRINTFORMS     // 格式化字符串输出
+    case PRINTFORMSL    // 格式化字符串输出换行
+    case PRINTFORMSW    // 格式化字符串输出等待
+    case PRINTFORMC     // 格式化居中输出
+    case PRINTFORMLC    // 格式化左对齐输出
+    case PRINTFORMCR    // 格式化右对齐输出
 
     // MARK: - D系列输出命令 (不解析{}和%)
     case PRINTD         // 输出不换行 (不解析)
     case PRINTDL        // 输出并换行 (不解析)
     case PRINTDW        // 输出并等待输入 (不解析)
     case PRINTVD        // 输出变量内容 (不解析)
-    case PRINTVL        // 变量内容换行 (不解析)
-    case PRINTVW        // 变量内容等待 (不解析)
+    case PRINTVDL       // 变量内容换行 (不解析)
+    case PRINTVDW       // 变量内容等待 (不解析)
     case PRINTSD        // 输出字符串变量 (不解析)
-    case PRINTSL        // 字符串变量换行 (不解析)
-    case PRINTSW        // 字符串变量等待 (不解析)
+    case PRINTSDL       // 字符串变量换行 (不解析)
+    case PRINTSDW       // 字符串变量等待 (不解析)
     case PRINTFORMD     // 格式化输出 (不解析)
     case PRINTFORMDL    // 格式化输出换行 (不解析)
     case PRINTFORMDW    // 格式化输出等待 (不解析)
+    case PRINTFORMSD    // D格式化字符串输出
+    case PRINTFORMSDL   // D格式化字符串输出换行
+    case PRINTFORMSDW   // D格式化字符串输出等待
+    case PRINTCD        // D居中输出
+    case PRINTLCD       // D左对齐输出
+    case PRINTFORMCD    // D格式化居中输出
+    case PRINTFORMLCD   // D格式化左对齐输出
 
     case INPUT          // 整数输入
     case INPUTS         // 字符串输入
@@ -52,25 +72,79 @@ public enum CommandType: String, CaseIterable {
     // MARK: - 条件输出命令
     case SIF            // 单行条件输出
 
-    // MARK: - 流程控制 (注意: 这些在词法分析中被识别为关键字，不是命令)
+    // MARK: - 流程控制命令
+    case CALL           // 函数调用
+    case JUMP           // 函数跳转
+    case GOTO           // 标签跳转
+    case CALLFORM       // 格式化函数调用
+    case JUMPFORM       // 格式化跳转
+    case GOTOFORM       // 格式化标签跳转
+    case CALLEVENT      // 事件调用
+    case RETURN         // 返回
+    case RETURNFORM     // 格式化返回
+    case RETURNF        // 函数返回
+    case RESTART        // 重启函数
+    case DOTRAIN        // 训练开始
+    case DO             // DO循环开始
+    case LOOP           // DO循环结束
+    case WHILE          // WHILE循环开始
+    case WEND           // WHILE循环结束
+    case FOR            // FOR循环开始
+    case NEXT           // FOR循环结束
+    case REPEAT         // REPEAT循环开始
+    case REND           // REPEAT循环结束
+    case CONTINUE       // 继续循环
+    case BREAK          // 跳出循环
+    case TRYCALL        // 尝试调用
+    case TRYJUMP        // 尝试跳转
+    case TRYGOTO        // 尝试GOTO
+    case TRYCALLFORM    // 尝试格式化调用
+    case TRYJUMPFORM    // 尝试格式化跳转
+    case TRYGOTOFORM    // 尝试格式化GOTO
+    case CATCH          // 捕获异常
+    case ENDCATCH       // 结束捕获
+    case TRYCCALL       // 带捕获调用
+    case TRYCJUMP       // 带捕获跳转
+    case TRYCGOTO       // 带捕获GOTO
+    case TRYCCALLFORM   // 带捕获格式化调用
+    case TRYCJUMPFORM   // 带捕获格式化跳转
+    case TRYCGOTOFORM   // 带捕获格式化GOTO
+    case TRYCALLLIST    // 尝试调用列表
+    case TRYJUMPLIST    // 尝试跳转列表
+    case TRYGOTOLIST    // 尝试GOTO列表
+    case SELECTCASE     // 选择分支开始
+    case CASE           // 分支条件
+    case CASEELSE       // 默认分支
+    case ENDSELECT      // 结束选择分支
+    case IF            // 条件开始
+    case ELSEIF        // 否则如果
+    case ELSE          // 否则
+    case ENDIF         // 结束条件
 
     // MARK: - 变量操作
     case SET            // 变量赋值
     case VARSET         // 批量初始化
+    case VARSIZE        // 数组大小
+    case SWAP           // 变量交换
+    case REF            // 引用
+    case REFBYNAME      // 按名称引用
 
     // MARK: - 数据操作
     case ADDCHARA       // 添加角色
+    case ADDDEFCHARA    // 添加默认角色
+    case ADDSPCHARA     // 添加特殊角色
+    case ADDVOIDCHARA   // 添加空角色
+    case ADDCOPYCHARA   // 添加复制角色
     case DELCHARA       // 删除角色
+    case DELALLCHARA    // 删除所有角色
     case SWAPCHARA      // 交换角色
     case COPYCHARA      // 复制角色
     case SORTCHARA      // 角色排序
+    case PICKUPCHARA    // 挑选角色
     case FINDCHARA      // 查找角色
     case CHARAOPERATE   // 角色操作
     case CHARAMODIFY    // 批量修改
     case CHARAFILTER    // 角色过滤
-
-    case ADDVOIDCHARA   // 添加空角色
-    case DELALLCHARA    // 删除所有角色
 
     // MARK: - 数组操作
     case ARRAYSHIFT     // 数组移位
@@ -85,7 +159,11 @@ public enum CommandType: String, CaseIterable {
 
     // MARK: - 字符串操作
     case STRLEN         // 字符串长度
+    case STRLENFORM     // 格式化字符串长度
+    case STRLENU        // Unicode字符串长度
+    case STRLENFORMU    // 格式化Unicode长度
     case SPLIT          // 字符串分割
+    case ENCODETOUNI    // 编码转换
 
     // MARK: - 文件操作
     case SAVEGAME       // 保存游戏
@@ -94,17 +172,27 @@ public enum CommandType: String, CaseIterable {
     case LOADVAR        // 加载变量
     case SAVECHARA      // 保存角色
     case LOADCHARA      // 加载角色
+    case SAVEDATA       // 保存数据
+    case LOADDATA       // 加载数据
+    case DELDATA        // 删除数据
+    case SAVEGLOBAL     // 保存全局
+    case LOADGLOBAL     // 加载全局
+    case SAVENOS        // 保存编号
 
     // MARK: - 系统命令
     case QUIT           // 退出游戏
     case BEGIN          // 开始系统函数
     case RESETDATA      // 重置数据
     case RESETGLOBAL    // 重置全局
+    case RESET_STAIN    // 重置污渍
 
     case REDRAW         // 重绘控制
     case SKIPDISP       // 跳过显示
     case NOSKIP         // 禁止跳过
     case ENDNOSKIP      // 结束禁止跳过
+    case OUTPUTLOG      // 输出日志
+    case FORCEWAIT      // 强制等待
+    case TWAIT          // 定时等待
 
     // MARK: - 绘图命令 (Priority 2)
     case DRAWLINE       // 绘制线
@@ -121,6 +209,7 @@ public enum CommandType: String, CaseIterable {
     case FONTBOLD       // 粗体
     case FONTITALIC     // 斜体
     case FONTREGULAR    // 正常字体
+    case FONTSTYLE      // 字体样式
     case SETFONT        // 设置字体
 
     // MARK: - 高级图形绘制 (Priority 4)
@@ -141,18 +230,25 @@ public enum CommandType: String, CaseIterable {
     case RANDOMIZE      // 随机种子
     case DUMPRAND       // 转储随机状态
     case INITRAND       // 初始化随机
+    case PUTFORM        // 保存格式化信息
 
     // MARK: - 调试命令
     case DEBUGPRINT     // 调试输出
     case DEBUGPRINTL    // 调试输出换行
+    case DEBUGPRINTFORM // 调试格式化输出
+    case DEBUGPRINTFORML // 调试格式化换行
     case DEBUGCLEAR     // 调试清空
     case ASSERT         // 断言
     case THROW          // 抛出异常
+    case CVARSET        // 变量批量设置
 
     // MARK: - 其他
     case TIMES          // 小数计算
     case POWER          // 幂运算
     case GETTIME        // 获取时间
+    case GETTIMES       // 获取时间戳
+    case GETMILLISECOND // 获取毫秒
+    case GETSECOND      // 获取秒
 
     // MARK: - 数据打印
     case PRINT_ABL      // 打印能力
@@ -161,6 +257,7 @@ public enum CommandType: String, CaseIterable {
     case PRINT_EXP      // 打印经验
     case PRINT_PALAM    // 打印参数
     case PRINT_ITEM     // 打印物品
+    case PRINT_SHOPITEM // 打印商店物品
 
     // MARK: - 未分类
     case UPCHECK        // 参数检查
@@ -170,14 +267,6 @@ public enum CommandType: String, CaseIterable {
     case CALLTRAIN      // 调用训练
     case STOPCALLTRAIN  // 停止训练
 
-    // MARK: - 异常处理 (Priority 1扩展)
-    case TRYCCALLFORM    // 格式化函数调用
-    case TRYCGOTOFORM    // 格式化跳转
-    case TRYCJUMPFORM    // 格式化JUMP
-    case TRYCALLLIST     // 函数调用列表
-    case TRYJUMPLIST     // JUMP列表
-    case TRYGOTOLIST     // GOTO列表
-
     // MARK: - 函数定义
     case FUNC           // 函数开始
     case ENDFUNC        // 函数结束
@@ -185,19 +274,40 @@ public enum CommandType: String, CaseIterable {
     case CALLFORMF      // 格式化函数调用
 
     // MARK: - 数据块
-    // PRINTDATA, DATALIST, ENDLIST, ENDDATA 现在在关键字中处理 (Phase 3)
+    case PRINTDATA      // 数据块开始
+    case PRINTDATAL     // 数据块开始（换行）
+    case PRINTDATAW     // 数据块开始（等待）
+    case PRINTDATAK     // 数据块开始（K模式）
+    case PRINTDATAKL    // 数据块开始（K模式换行）
+    case PRINTDATAKW    // 数据块开始（K模式等待）
+    case PRINTDATAD     // 数据块开始（D模式）
+    case PRINTDATADL    // 数据块开始（D模式换行）
+    case PRINTDATADW    // 数据块开始（D模式等待）
+    case DATALIST       // 数据列表
+    case ENDLIST        // 结束列表
+    case ENDDATA        // 结束数据
     case DATA           // 数据
     case DATAFORM       // 格式化数据
     case STRDATA        // 字符串数据
 
-    // MARK: - 其他特殊
-    case OUTPUTLOG      // 输出日志
-    case SAVEDATA       // 保存数据
-    case LOADDATA       // 加载数据
-    case DELDATA        // 删除数据
+    // MARK: - HTML和工具提示
+    case HTML_PRINT          // HTML打印
+    case HTML_TAGSPLIT       // HTML标签分割
+    case HTML_GETPRINTEDSTR  // 获取打印字符串
+    case HTML_POPPRINTINGSTR // 弹出打印字符串
+    case HTML_TOPLAINTEXT    // HTML转纯文本
+    case HTML_ESCAPE         // HTML转义
+    case TOOLTIP_SETCOLOR    // 工具提示颜色
+    case TOOLTIP_SETDELAY    // 工具提示延迟
+    case TOOLTIP_SETDURATION // 工具提示持续时间
+
+    // MARK: - 鼠标和输入
+    case INPUTMOUSEKEY  // 鼠标按键输入
+    case FORCEKANA      // 强制假名
 
     // MARK: - 颜色扩展
     case SETCOLORBYNAME // 按名称设置颜色
+    case SETBGCOLORBYNAME // 按名称设置背景颜色
 
     // MARK: - 对齐
     case ALIGNMENT      // 对齐方式
@@ -207,11 +317,6 @@ public enum CommandType: String, CaseIterable {
 
     // MARK: - 随机
     case RANDOM         // 随机数（函数形式）
-
-    // MARK: - 字符串格式化
-    case PRINTFORMS     // 格式化字符串输出
-    case PRINTFORMSL    // 格式化字符串输出换行
-    case PRINTFORMSW    // 格式化字符串输出等待
 
     // MARK: - 按钮
     case PRINTBUTTON    // 按钮
@@ -261,6 +366,23 @@ public enum CommandType: String, CaseIterable {
     case PRINTLCK       // K左对齐输出
     case PRINTFORMCK    // K格式化居中输出
     case PRINTFORMLCK   // K格式化左对齐输出
+    case PRINTSINGLEK   // K单行输出
+    case PRINTSINGLEVK  // K单行变量输出
+    case PRINTSINGLESK  // K单行字符串输出
+    case PRINTSINGLEFORMK  // K单行格式化输出
+    case PRINTSINGLEFORMSK // K单行格式化字符串输出
+    case PRINTSINGLED   // D单行输出
+    case PRINTSINGLEVD  // D单行变量输出
+    case PRINTSINGLESD  // D单行字符串输出
+    case PRINTSINGLEFORMD  // D单行格式化输出
+    case PRINTSINGLEFORMSD // D单行格式化字符串输出
+
+    // MARK: - 打印扩展命令
+    case PRINT_IMG      // 打印图片
+    case PRINT_RECT     // 打印矩形
+    case PRINT_SPACE    // 打印空格
+    case PRINTCPERLINE  // 每行字符数
+    case PRINTCLENGTH   // 打印长度
 
     // MARK: - 未知/通用
     case UNKNOWN        // 未知命令
@@ -277,15 +399,49 @@ public enum CommandType: String, CaseIterable {
     /// 判断是否是打印类命令
     public var isPrint: Bool {
         switch self {
-        case .PRINT, .PRINTL, .PRINTW, .PRINTC, .PRINTLC,
+        // 基础打印
+        case .PRINT, .PRINTL, .PRINTW, .PRINTC, .PRINTLC, .PRINTCR,
              .PRINTFORM, .PRINTFORML, .PRINTFORMW,
-             .PRINTBUTTON, .PRINTBUTTONC, .PRINTBUTTONLC,
+             .PRINTV, .PRINTVL, .PRINTVW,
+             .PRINTS, .PRINTSL, .PRINTSW,
+             .PRINTFORMS, .PRINTFORMSL, .PRINTFORMSW,
+             .PRINTFORMC, .PRINTFORMLC, .PRINTFORMCR,
              .PRINTPLAIN, .PRINTPLAINFORM,
              .PRINTSINGLE, .PRINTSINGLEV, .PRINTSINGLES,
              .PRINTSINGLEFORM, .PRINTSINGLEFORMS,
-             .PRINT_ABL, .PRINT_TALENT, .PRINT_MARK, .PRINT_EXP, .PRINT_PALAM, .PRINT_ITEM,
+             .PRINTBUTTON, .PRINTBUTTONC, .PRINTBUTTONLC,
+             .PRINT_IMG, .PRINT_RECT, .PRINT_SPACE,
+             .PRINTCPERLINE, .PRINTCLENGTH,
+             // K模式
+             .PRINTK, .PRINTKL, .PRINTKW,
+             .PRINTVK, .PRINTVKL, .PRINTVKW,
+             .PRINTSK, .PRINTSKL, .PRINTSKW,
+             .PRINTFORMK, .PRINTFORMKL, .PRINTFORMKW,
+             .PRINTFORMSK, .PRINTFORMSKL, .PRINTFORMSKW,
+             .PRINTCK, .PRINTLCK, .PRINTFORMCK, .PRINTFORMLCK,
+             .PRINTSINGLEK, .PRINTSINGLEVK, .PRINTSINGLESK,
+             .PRINTSINGLEFORMK, .PRINTSINGLEFORMSK,
+             // D模式
+             .PRINTD, .PRINTDL, .PRINTDW,
+             .PRINTVD, .PRINTVDL, .PRINTVDW,
+             .PRINTSD, .PRINTSDL, .PRINTSDW,
+             .PRINTFORMD, .PRINTFORMDL, .PRINTFORMDW,
+             .PRINTFORMSD, .PRINTFORMSDL, .PRINTFORMSDW,
+             .PRINTCD, .PRINTLCD, .PRINTFORMCD, .PRINTFORMLCD,
+             .PRINTSINGLED, .PRINTSINGLEVD, .PRINTSINGLESD,
+             .PRINTSINGLEFORMD, .PRINTSINGLEFORMSD,
+             // 数据块
+             .PRINTDATA, .PRINTDATAL, .PRINTDATAW,
+             .PRINTDATAK, .PRINTDATAKL, .PRINTDATAKW,
+             .PRINTDATAD, .PRINTDATADL, .PRINTDATADW,
+             .DATA, .DATAFORM, .STRDATA,
+             // 数据打印
+             .PRINT_ABL, .PRINT_TALENT, .PRINT_MARK, .PRINT_EXP, .PRINT_PALAM, .PRINT_ITEM, .PRINT_SHOPITEM,
+             // 绘图
              .DRAWLINE, .CUSTOMDRAWLINE, .DRAWLINEFORM, .BAR, .BARL,
-             .DRAWSPRITE, .DRAWRECT, .FILLRECT, .DRAWCIRCLE, .FILLCIRCLE, .DRAWLINEEX, .DRAWGRADIENT:
+             .DRAWSPRITE, .DRAWRECT, .FILLRECT, .DRAWCIRCLE, .FILLCIRCLE, .DRAWLINEEX, .DRAWGRADIENT,
+             // HTML
+             .HTML_PRINT:
             return true
         default:
             return false
@@ -295,22 +451,34 @@ public enum CommandType: String, CaseIterable {
     /// 判断是否是输入类命令
     public var isInput: Bool {
         switch self {
-        case .INPUT, .INPUTS, .TINPUT, .TINPUTS, .ONEINPUT, .ONEINPUTS, .WAIT, .WAITANYKEY:
+        case .INPUT, .INPUTS, .TINPUT, .TINPUTS, .ONEINPUT, .ONEINPUTS, .WAIT, .WAITANYKEY, .TWAIT, .FORCEWAIT:
             return true
         default:
             return false
         }
     }
 
-    /// 判断是否是流程控制命令 (注意: 流程控制关键字现在是关键字类型，不是命令)
+    /// 判断是否是流程控制命令
     public var isFlowControl: Bool {
-        return false
+        switch self {
+        case .CALL, .JUMP, .GOTO, .CALLFORM, .JUMPFORM, .GOTOFORM, .CALLEVENT,
+             .RETURN, .RETURNFORM, .RETURNF, .RESTART, .DOTRAIN,
+             .DO, .LOOP, .WHILE, .WEND, .FOR, .NEXT, .REPEAT, .REND, .CONTINUE, .BREAK,
+             .TRYCALL, .TRYJUMP, .TRYGOTO, .TRYCALLFORM, .TRYJUMPFORM, .TRYGOTOFORM,
+             .CATCH, .ENDCATCH, .TRYCCALL, .TRYCJUMP, .TRYCGOTO, .TRYCCALLFORM, .TRYCJUMPFORM, .TRYCGOTOFORM,
+             .TRYCALLLIST, .TRYJUMPLIST, .TRYGOTOLIST,
+             .SELECTCASE, .CASE, .CASEELSE, .ENDSELECT,
+             .IF, .ELSEIF, .ELSE, .ENDIF:
+            return true
+        default:
+            return false
+        }
     }
 
     /// 判断是否是调试命令
     public var isDebug: Bool {
         switch self {
-        case .DEBUGPRINT, .DEBUGPRINTL, .DEBUGCLEAR, .ASSERT, .THROW:
+        case .DEBUGPRINT, .DEBUGPRINTL, .DEBUGPRINTFORM, .DEBUGPRINTFORML, .DEBUGCLEAR, .ASSERT, .THROW, .CVARSET:
             return true
         default:
             return false

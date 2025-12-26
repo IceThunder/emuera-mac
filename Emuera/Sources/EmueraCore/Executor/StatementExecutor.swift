@@ -406,6 +406,668 @@ public class StatementExecutor: StatementVisitor {
             context.output.append(values.joined(separator: " "))
             context.output.append("按回车继续...\n")
 
+        // MARK: - 打印命令扩展 (Week 1)
+        case .PRINTC:
+            // 居中打印
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + text
+            context.output.append(centered)
+
+        case .PRINTLC:
+            // 左对齐打印
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTCR:
+            // 右对齐打印
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, width - text.count)
+            let rightAligned = String(repeating: " ", count: padding) + text
+            context.output.append(rightAligned)
+
+        case .PRINTFORMC:
+            // 格式化居中打印
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + text
+            context.output.append(centered)
+
+        case .PRINTFORMLC:
+            // 格式化左对齐打印并换行
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTFORMCR:
+            // 格式化右对齐打印
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, width - text.count)
+            let rightAligned = String(repeating: " ", count: padding) + text
+            context.output.append(rightAligned + "\n")
+
+        case .PRINTPLAIN:
+            // 纯文本打印
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTPLAINFORM:
+            // 格式化纯文本打印
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLE:
+            // 单行输出
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEV:
+            // 单行变量输出
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLES:
+            // 单行字符串输出
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEFORM:
+            // 单行格式化输出
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEFORMS:
+            // 单行格式化字符串输出
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTBUTTON:
+            // 按钮打印
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[按钮: \(values.joined(separator: " "))]")
+
+        case .PRINTBUTTONC:
+            // 按钮居中
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + "[按钮: \(text)]"
+            context.output.append(centered)
+
+        case .PRINTBUTTONLC:
+            // 按钮左对齐
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[按钮: \(values.joined(separator: " "))]")
+
+        case .PRINT_IMG:
+            // 打印图片
+            let values = try evaluateArguments(statement.arguments)
+            if let filename = values.first {
+                context.output.append("[图片: \(filename)]\n")
+            }
+
+        case .PRINT_RECT:
+            // 打印矩形
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[矩形: \(values)]\n")
+
+        case .PRINT_SPACE:
+            // 打印空格
+            let values = try evaluateArguments(statement.arguments)
+            let count = values.first.flatMap { Int($0) } ?? 1
+            context.output.append(String(repeating: " ", count: max(0, count)))
+
+        case .PRINTCPERLINE:
+            // 每行字符数
+            context.output.append("[每行字符数: 80]\n")
+
+        case .PRINTCLENGTH:
+            // 打印长度
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            context.lastResult = .integer(Int64(text.count))
+            context.output.append("[长度: \(text.count)]\n")
+
+        // MARK: - K模式打印命令
+        case .PRINTK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTKL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTKW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTVK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTVKL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTVKW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTSK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSKL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTSKW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTFORMK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMKL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTFORMKW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTFORMSK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMSKL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTFORMSKW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTCK:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + text
+            context.output.append(centered)
+
+        case .PRINTLCK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMCK:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + text
+            context.output.append(centered)
+
+        case .PRINTFORMLCK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTSINGLEK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEVK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLESK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEFORMK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEFORMSK:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        // MARK: - D模式打印命令
+        case .PRINTD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTDL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTDW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTVD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTVDL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTVDW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTSD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSDL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTSDW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTFORMD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMDL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTFORMDW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTFORMSD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMSDL:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTFORMSDW:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTCD:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + text
+            context.output.append(centered)
+
+        case .PRINTLCD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMCD:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            let width = 80
+            let padding = max(0, (width - text.count) / 2)
+            let centered = String(repeating: " ", count: padding) + text
+            context.output.append(centered)
+
+        case .PRINTFORMLCD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTSINGLED:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEVD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLESD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEFORMD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSINGLEFORMSD:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        // MARK: - 数据块命令
+        case .DATA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .DATAFORM:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .STRDATA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        // MARK: - 数据操作命令
+        case .ADDDEFCHARA:
+            context.output.append("[添加默认角色]\n")
+            context.lastResult = .integer(1)
+
+        case .ADDSPCHARA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[添加特殊角色: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .ADDCOPYCHARA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[添加复制角色: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .DELALLCHARA:
+            context.output.append("[删除所有角色]\n")
+            context.lastResult = .integer(1)
+
+        case .PICKUPCHARA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[挑选角色: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .CHARAOPERATE:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[角色操作: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .CHARAMODIFY:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[角色修改: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .CHARAFILTER:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[角色过滤: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .FINDCHARA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[查找角色: \(values)]\n")
+            context.lastResult = .integer(0)
+
+        // MARK: - 字符串操作命令
+        case .STRLENFORM:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            context.lastResult = .integer(Int64(text.count))
+            context.output.append("[长度: \(text.count)]\n")
+
+        case .STRLENU:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            context.lastResult = .integer(Int64(text.count))
+            context.output.append("[Unicode长度: \(text.count)]\n")
+
+        case .STRLENFORMU:
+            let values = try evaluateArguments(statement.arguments)
+            let text = values.joined(separator: " ")
+            context.lastResult = .integer(Int64(text.count))
+            context.output.append("[Unicode长度: \(text.count)]\n")
+
+        case .ENCODETOUNI:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[编码转换: \(values)]\n")
+            context.lastResult = .string(values.first ?? "")
+
+        // MARK: - 数学计算命令
+        case .TIMES:
+            if statement.arguments.count >= 2 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let varName) = statement.arguments[0],
+                   case .integer(let value) = args[0],
+                   case .integer(let multiplier) = args[1] {
+                    let result = value * multiplier
+                    context.setVariable(varName, value: .integer(result))
+                    context.output.append("[TIMES: \(varName) = \(result)]\n")
+                }
+            }
+
+        // MARK: - 系统命令
+        case .BEGIN:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[开始系统函数: \(values.first ?? "UNKNOWN")]\n")
+
+        case .RESETDATA:
+            context.output.append("[重置数据]\n")
+            context.variables.removeAll()
+            context.variables["RESULT"] = .integer(0)
+            context.variables["RESULTS"] = .string("")
+
+        case .RESETGLOBAL:
+            context.output.append("[重置全局变量]\n")
+            for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+                context.variables[String(char)] = .array(Array(repeating: .integer(0), count: 100))
+            }
+
+        case .RESET_STAIN:
+            context.output.append("[重置污渍]\n")
+
+        case .GETMILLISECOND:
+            let milliseconds = Int64(Date().timeIntervalSince1970 * 1000)
+            context.setVariable("RESULT", value: .integer(milliseconds))
+            context.output.append("[毫秒: \(milliseconds)]\n")
+
+        case .GETSECOND:
+            let seconds = Int64(Date().timeIntervalSince1970)
+            context.setVariable("RESULT", value: .integer(seconds))
+            context.output.append("[秒: \(seconds)]\n")
+
+        // MARK: - 数据打印命令
+        case .PRINT_SHOPITEM:
+            context.output.append("[商店物品列表]\n")
+
+        // MARK: - HTML和工具提示命令
+        case .HTML_PRINT:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[HTML: \(values.joined(separator: " "))]\n")
+
+        case .HTML_TAGSPLIT:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[HTML标签分割: \(values)]\n")
+
+        case .HTML_GETPRINTEDSTR:
+            context.output.append("[获取打印字符串]\n")
+            context.lastResult = .string("")
+
+        case .HTML_POPPRINTINGSTR:
+            context.output.append("[弹出打印字符串]\n")
+            context.lastResult = .string("")
+
+        case .HTML_TOPLAINTEXT:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[HTML转纯文本: \(values)]\n")
+            context.lastResult = .string(values.first ?? "")
+
+        case .HTML_ESCAPE:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[HTML转义: \(values)]\n")
+            context.lastResult = .string(values.first ?? "")
+
+        case .TOOLTIP_SETCOLOR:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[工具提示颜色: \(values)]\n")
+
+        case .TOOLTIP_SETDELAY:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[工具提示延迟: \(values)]\n")
+
+        case .TOOLTIP_SETDURATION:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[工具提示持续时间: \(values)]\n")
+
+        // MARK: - 鼠标和输入命令
+        case .INPUTMOUSEKEY:
+            context.output.append("[鼠标按键输入]\n")
+            context.setVariable("RESULT", value: .integer(0))
+
+        case .FORCEKANA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[强制假名: \(values)]\n")
+
+        // MARK: - 窗口显示命令
+        case .FORCEWAIT:
+            context.output.append("按回车继续...\n")
+
+        case .TWAIT:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[定时等待: \(values)]\n")
+
+        case .OUTPUTLOG:
+            context.output.append("[输出日志]\n")
+
+        // MARK: - 字体样式命令
+        case .FONTSTYLE:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[字体样式: \(values)]\n")
+
+        case .SETCOLORBYNAME:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[按名称设置颜色: \(values)]\n")
+
+        case .SETBGCOLORBYNAME:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[按名称设置背景颜色: \(values)]\n")
+
+        // MARK: - 文件持久化命令
+        case .SAVEDATA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[保存数据: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .LOADDATA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[加载数据: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .DELDATA:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[删除数据: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        case .SAVEGLOBAL:
+            context.output.append("[保存全局]\n")
+            context.lastResult = .integer(1)
+
+        case .LOADGLOBAL:
+            context.output.append("[加载全局]\n")
+            context.lastResult = .integer(1)
+
+        case .SAVENOS:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[保存编号: \(values)]\n")
+            context.lastResult = .integer(1)
+
+        // MARK: - 调试命令扩展
+        case .DEBUGPRINTFORM:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[DEBUG FORM] \(values.joined(separator: " "))\n")
+
+        case .DEBUGPRINTFORML:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[DEBUG FORML] \(values.joined(separator: " "))\n")
+
+        case .CVARSET:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[变量批量设置: \(values)]\n")
+
+        // MARK: - 其他数学命令
+        case .POWER:
+            if statement.arguments.count >= 3 {
+                let args = try statement.arguments.map { try evaluateExpression($0) }
+                if case .variable(let varName) = statement.arguments[0],
+                   case .integer(let base) = args[1],
+                   case .integer(let exp) = args[2] {
+                    let result = Int64(pow(Double(base), Double(exp)))
+                    context.setVariable(varName, value: .integer(result))
+                    context.output.append("[POWER: \(varName) = \(result)]\n")
+                }
+            }
+
+        case .RANDOMIZE:
+            context.output.append("[随机种子设置]\n")
+
+        case .DUMPRAND:
+            context.output.append("[转储随机状态]\n")
+
+        case .INITRAND:
+            context.output.append("[初始化随机]\n")
+
+        // MARK: - 事件相关
+        case .CALLTRAIN:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[调用训练: \(values)]\n")
+
+        case .STOPCALLTRAIN:
+            context.output.append("[停止训练]\n")
+
+        // MARK: - 异常处理扩展
+        case .TRYCCALLFORM:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[TRYCCALLFORM: \(values)]\n")
+
+        case .TRYCGOTOFORM:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[TRYCGOTOFORM: \(values)]\n")
+
+        case .TRYCJUMPFORM:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[TRYCJUMPFORM: \(values)]\n")
+
+        case .TRYCALLLIST:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[TRYCALLLIST: \(values)]\n")
+
+        case .TRYJUMPLIST:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[TRYJUMPLIST: \(values)]\n")
+
+        case .TRYGOTOLIST:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[TRYGOTOLIST: \(values)]\n")
+
+        // MARK: - 函数定义
+        case .FUNC:
+            context.output.append("[函数开始]\n")
+
+        case .ENDFUNC:
+            context.output.append("[函数结束]\n")
+
+        case .CALLF:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[CALLF: \(values)]\n")
+
+        case .CALLFORMF:
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[CALLFORMF: \(values)]\n")
+
         case .INPUT:
             context.output.append("[等待输入: 整数]\n")
             context.setVariable("RESULT", value: .integer(0))
@@ -813,6 +1475,146 @@ public class StatementExecutor: StatementVisitor {
         case .PRINT_ABL, .PRINT_TALENT, .PRINT_MARK, .PRINT_EXP, .PRINT_PALAM, .PRINT_ITEM:
             let value = try evaluateArguments(statement.arguments)
             context.output.append("[数据: \(value)]\n")
+
+        // MARK: - 变量输出命令 (新增22个命令)
+        case .PRINTV:
+            // 输出变量内容
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTVL:
+            // 变量内容换行
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTVW:
+            // 变量内容等待
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTS:
+            // 输出字符串变量
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTSL:
+            // 字符串变量换行
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTSW:
+            // 字符串变量等待
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        case .PRINTFORMS:
+            // 格式化字符串输出
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+
+        case .PRINTFORMSL:
+            // 格式化字符串输出换行
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " ") + "\n")
+
+        case .PRINTFORMSW:
+            // 格式化字符串输出等待
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append(values.joined(separator: " "))
+            context.output.append("按回车继续...\n")
+
+        // MARK: - 数据块命令
+        case .PRINTDATA:
+            // 数据块开始 - 随机选择一条数据输出
+            context.output.append("[数据块开始]\n")
+
+        case .PRINTDATAL:
+            // 数据块开始（换行）
+            context.output.append("[数据块开始(换行)]\n")
+
+        case .PRINTDATAW:
+            // 数据块开始（等待）
+            context.output.append("[数据块开始(等待)]\n")
+
+        case .PRINTDATAK:
+            // 数据块开始（K模式）
+            context.output.append("[数据块开始(K模式)]\n")
+
+        case .PRINTDATAKL:
+            // 数据块开始（K模式换行）
+            context.output.append("[数据块开始(K模式换行)]\n")
+
+        case .PRINTDATAKW:
+            // 数据块开始（K模式等待）
+            context.output.append("[数据块开始(K模式等待)]\n")
+
+        case .PRINTDATAD:
+            // 数据块开始（D模式）
+            context.output.append("[数据块开始(D模式)]\n")
+
+        case .PRINTDATADL:
+            // 数据块开始（D模式换行）
+            context.output.append("[数据块开始(D模式换行)]\n")
+
+        case .PRINTDATADW:
+            // 数据块开始（D模式等待）
+            context.output.append("[数据块开始(D模式等待)]\n")
+
+        case .DATALIST:
+            // 数据列表
+            context.output.append("[数据列表]\n")
+
+        case .ENDLIST:
+            // 结束列表
+            context.output.append("[结束列表]\n")
+
+        case .ENDDATA:
+            // 结束数据
+            context.output.append("[结束数据]\n")
+
+        // MARK: - 变量操作命令
+        case .VARSIZE:
+            // 数组大小
+            let values = try evaluateArguments(statement.arguments)
+            if let arrayName = values.first,
+               case .array(let arr) = context.getVariable(arrayName) {
+                context.lastResult = .integer(Int64(arr.count))
+                context.output.append("[数组大小: \(arr.count)]\n")
+            } else {
+                context.lastResult = .integer(0)
+                context.output.append("[数组大小: 0]\n")
+            }
+
+        case .SWAP:
+            // 变量交换
+            if statement.arguments.count >= 2 {
+                let args = statement.arguments
+                if case .variable(let var1) = args[0],
+                   case .variable(let var2) = args[1] {
+                    let val1 = context.getVariable(var1)
+                    let val2 = context.getVariable(var2)
+                    context.setVariable(var1, value: val2)
+                    context.setVariable(var2, value: val1)
+                    context.output.append("[交换: \(var1) <-> \(var2)]\n")
+                }
+            }
+
+        case .REF:
+            // 引用
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[引用: \(values)]\n")
+
+        case .REFBYNAME:
+            // 按名称引用
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[按名称引用: \(values)]\n")
+
+        case .PUTFORM:
+            // 保存格式化信息
+            let values = try evaluateArguments(statement.arguments)
+            context.output.append("[保存格式化: \(values)]\n")
 
         case .UNKNOWN:
             context.output.append("[未知命令: \(statement.command)]\n")
