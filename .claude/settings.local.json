@@ -133,7 +133,9 @@
       "Bash(sort:*)",
       "Bash(.build/debug/DebugSelectCase:*)",
       "Bash(.build/debug/CommandVerification:*)",
-      "Bash(.build/debug/DebugParserTest:*)"
+      "Bash(.build/debug/DebugParserTest:*)",
+      "Bash(.build/debug/QuickStatusCheck:*)",
+      "Bash(.build/debug/StatusCheck:*)"
     ]
   }
 }
