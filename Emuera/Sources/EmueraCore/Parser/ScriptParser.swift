@@ -283,6 +283,10 @@ public class ScriptParser {
             return try parseInputCommand(upperCmd)
 
         // Priority 2: 位运算命令
+        case "SET":
+            return try parseSetCommand()
+
+        // Priority 2: 位运算命令
         case "SETBIT", "CLEARBIT", "INVERTBIT":
             return try parseBitCommand(upperCmd)
 
@@ -295,6 +299,63 @@ public class ScriptParser {
             let args = try parseArguments()
             return CommandStatement(command: cmd, arguments: args, position: startPos)
         }
+    }
+
+    /// 解析SET命令: SET variable = value
+    private func parseSetCommand() throws -> SetStatement {
+        let startPos = getCurrentPosition()
+
+        // 解析 variable = value
+        // 收集直到行结束的所有token
+        var tokensAfterSet: [TokenType.Token] = []
+        while currentIndex < tokens.count {
+            let token = tokens[currentIndex]
+            if case .lineBreak = token.type {
+                break
+            }
+            tokensAfterSet.append(token)
+            currentIndex += 1
+        }
+
+        // 现在需要解析 variable = value 格式
+        // 期望: 变量名, 等号, 表达式
+        guard tokensAfterSet.count >= 3 else {
+            throw EmueraError.scriptParseError(
+                message: "SET命令需要 variable = value 格式",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第一个token应该是变量名
+        let varToken = tokensAfterSet[0]
+        let variableName: String
+        if case .variable(let name) = varToken.type {
+            variableName = name
+        } else if case .function(let name) = varToken.type {
+            variableName = name
+        } else {
+            throw EmueraError.scriptParseError(
+                message: "SET命令第一个参数必须是变量名",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 第二个token应该是等号 (=)
+        guard tokensAfterSet.count >= 3,
+              case .operatorSymbol(let op) = tokensAfterSet[1].type,
+              op == .assign else {
+            throw EmueraError.scriptParseError(
+                message: "SET命令需要 = 操作符",
+                position: getCurrentPosition()
+            )
+        }
+
+        // 剩余的token是表达式
+        let exprTokens = Array(tokensAfterSet[2...])
+        let exprParser = ExpressionParser()
+        let value = try exprParser.parse(exprTokens)
+
+        return SetStatement(variable: variableName, value: value, position: startPos)
     }
 
     /// 解析PERSIST ON/OFF
@@ -882,12 +943,12 @@ public class ScriptParser {
         let step = params.count > 3 ? params[3] : nil
 
         // 解析循环体
-        let body = try parseBlock(until: ["ENDFOR"])
+        let body = try parseBlock(until: ["ENDFOR", "NEXT"])
 
         // 消耗ENDFOR
         if currentIndex < tokens.count,
            case .keyword(let k) = tokens[currentIndex].type,
-           k.uppercased() == "ENDFOR" {
+           k.uppercased() == "ENDFOR" || k.uppercased() == "NEXT" {
             currentIndex += 1
         } else {
             throw EmueraError.scriptParseError(
@@ -3095,16 +3156,16 @@ public class ScriptParser {
         let count = try parseExpression()
 
         // 解析循环体
-        let body = try parseBlock(until: ["ENDREPEAT"])
+        let body = try parseBlock(until: ["ENDREPEAT", "REND"])
 
-        // 消耗ENDREPEAT
+        // 消耗ENDREPEAT或REND
         if currentIndex < tokens.count,
            case .keyword(let k) = tokens[currentIndex].type,
-           k.uppercased() == "ENDREPEAT" {
+           k.uppercased() == "ENDREPEAT" || k.uppercased() == "REND" {
             currentIndex += 1
         } else {
             throw EmueraError.scriptParseError(
-                message: "REPEAT语句缺少ENDREPEAT",
+                message: "REPEAT语句缺少ENDREPEAT或REND",
                 position: getCurrentPosition()
             )
         }

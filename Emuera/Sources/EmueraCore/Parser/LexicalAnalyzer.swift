@@ -190,9 +190,9 @@ public struct LexicalAnalyzer {
                 // 检查是否是关键字 (优先于命令检查，避免WHILE/DO/FOR等被识别为命令)
                 else if ["IF", "ELSE", "ELSEIF", "ENDIF",
                          "WHILE", "ENDWHILE",
-                         "FOR", "ENDFOR",
+                         "FOR", "ENDFOR", "NEXT",
                          "DO", "LOOP", "UNTIL",
-                         "REPEAT", "ENDREPEAT",
+                         "REPEAT", "ENDREPEAT", "REND",
                          "SELECTCASE", "CASE", "CASEELSE", "ENDSELECT",
                          "BREAK", "CONTINUE", "RETURN", "RESTART", "RETURNF",
                          "GOTO", "CALL", "JUMP", "TRYCALL", "TRYCALLFORM",

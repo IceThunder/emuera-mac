@@ -1300,6 +1300,22 @@ public class CharaExistsStatement: StatementNode {
     }
 }
 
+/// SET命令语句: SET variable = value
+public class SetStatement: StatementNode {
+    public let variable: String
+    public let value: ExpressionNode
+
+    public init(variable: String, value: ExpressionNode, position: ScriptPosition? = nil) {
+        self.variable = variable
+        self.value = value
+        super.init(position: position)
+    }
+
+    public override func accept(visitor: StatementVisitor) throws {
+        try visitor.visitSetStatement(self)
+    }
+}
+
 // MARK: - 访问者模式接口
 
 /// 语句访问者协议
@@ -1392,6 +1408,9 @@ public protocol StatementVisitor {
     func visitBatchModifyStatement(_ statement: BatchModifyStatement) throws
     func visitCharaCountStatement(_ statement: CharaCountStatement) throws
     func visitCharaExistsStatement(_ statement: CharaExistsStatement) throws
+
+    // Priority 2: 变量赋值命令
+    func visitSetStatement(_ statement: SetStatement) throws
 
     // Priority 1: D系列输出命令
     func visitPrintDStatement(_ statement: PrintDStatement) throws

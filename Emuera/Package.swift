@@ -881,6 +881,14 @@ let package = Package(
             path: "Sources/Phase2Test",
             sources: ["DebugParserTest.swift"]
         ),
+
+        // Fix Verification Test Target
+        .executableTarget(
+            name: "FixVerificationTest",
+            dependencies: [ "EmueraCore" ],
+            path: "Sources/Phase2Test",
+            sources: [ "FixVerificationTest.swift" ]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )

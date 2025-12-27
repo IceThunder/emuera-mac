@@ -4218,6 +4218,18 @@ extension StatementExecutor {
         }
     }
 
+    // MARK: - 变量赋值命令 (Priority 2)
+
+    /// 访问SET语句 - SET variable = value
+    public func visitSetStatement(_ statement: SetStatement) throws {
+        guard let varData = context.varData else {
+            throw EmueraError.runtimeError(message: "VariableData未初始化", position: nil)
+        }
+
+        let value = try evaluateExpression(statement.value)
+        varData.setVariable(statement.variable, value: value)
+    }
+
     // MARK: - 条件输出命令 (Priority 2)
 
     /// 访问SIF语句 - 单行条件输出
