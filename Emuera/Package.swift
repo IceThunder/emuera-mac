@@ -889,6 +889,14 @@ let package = Package(
             path: "Sources/Phase2Test",
             sources: [ "FixVerificationTest.swift" ]
         ),
+
+        // Quick Stats Target
+        .executableTarget(
+            name: "QuickStats",
+            dependencies: [ "EmueraCore" ],
+            path: "Sources/Phase2Test",
+            sources: [ "QuickStats.swift" ]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )
