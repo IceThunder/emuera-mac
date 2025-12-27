@@ -897,6 +897,14 @@ let package = Package(
             path: "Sources/Phase2Test",
             sources: [ "QuickStats.swift" ]
         ),
+
+        // Jump Commands Test Target
+        .executableTarget(
+            name: "JumpCommandsTest",
+            dependencies: [ "EmueraCore" ],
+            path: "Sources/Phase2Test",
+            sources: [ "JumpCommandsTest.swift" ]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )

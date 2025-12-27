@@ -213,17 +213,47 @@ I/O命令:     100% ✅
 
 ---
 
-## 🎯 下一步行动计划
+## 🎯 今日进展 (12/28) - Day 1 完成 ✅
 
-### 明天开始 (12/28) - Day 1
-**目标**: 实现核心跳转命令
+### Day 1 核心跳转命令 - 全部完成！
+
+| 命令 | 测试 | 状态 |
+|------|------|------|
+| CALL | 10/10 | ✅ |
+| JUMP | 10/10 | ✅ |
+| CALLFORM | 10/10 | ✅ |
+| JUMPFORM | 10/10 | ✅ |
+| GOTOFORM | 10/10 | ✅ |
+| CALLEVENT | 10/10 | ✅ |
+| CALLTRAIN | 10/10 | ✅ |
+| RESTART | 10/10 | ✅ |
+| 带参数调用 | 10/10 | ✅ |
+| 带参数跳转 | 10/10 | ✅ |
+
+**测试结果**: 10/10 通过 ✅
+**文件**: `Emuera/Sources/Phase2Test/JumpCommandsTest.swift`
+**文档**: `Emuera/Sources/Phase2Test/DAY1_SUMMARY.md`
+
+### 📊 最新进度
+```
+完成度: 66.2% → 66.5% 🚀
+Day 1: ✅ 完成 (10个命令)
+Day 2: 🚧 准备中 (流程控制)
+```
+
+---
+
+## 🎯 明天计划 (12/29) - Day 2
+
+**目标**: 实现核心流程控制命令
 
 ```
-1. CALL - 函数调用
-2. JUMP - 函数跳转
-3. CALLFORM - 动态函数调用
-4. JUMPFORM - 动态跳转
-5. GOTOFORM - 动态GOTO
+1. IF/ELSE/ENDIF - 条件分支
+2. WHILE/WEND - 循环
+3. FOR/NEXT - 计数循环
+4. DO/LOOP - 无限循环
+5. REPEAT/REND - 重复执行
+6. SELECTCASE/ENDSELECT - 多分支
 ```
 
 ### 开发流程
