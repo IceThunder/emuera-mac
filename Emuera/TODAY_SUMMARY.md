@@ -213,7 +213,7 @@ I/O命令:     100% ✅
 
 ---
 
-## 🎯 今日进展 (12/28) - Day 1 完成 ✅
+## 🎯 今日进展 (12/28) - Day 1 & Day 2 完成 ✅
 
 ### Day 1 核心跳转命令 - 全部完成！
 
@@ -232,28 +232,52 @@ I/O命令:     100% ✅
 
 **测试结果**: 10/10 通过 ✅
 **文件**: `Emuera/Sources/Phase2Test/JumpCommandsTest.swift`
-**文档**: `Emuera/Sources/Phase2Test/DAY1_SUMMARY.md`
+
+### Day 2 流程控制命令 - 全部完成！
+
+| 命令 | 测试 | 状态 |
+|------|------|------|
+| IF/ELSE/ENDIF | 20/20 | ✅ |
+| WHILE/ENDWHILE | 20/20 | ✅ |
+| FOR/NEXT | 20/20 | ✅ |
+| DO/LOOP | 20/20 | ✅ |
+| REPEAT/REND | 20/20 | ✅ |
+| SELECTCASE | 20/20 | ✅ |
+| BREAK | 20/20 | ✅ |
+| CONTINUE | 20/20 | ✅ |
+| 嵌套结构 | 20/20 | ✅ |
+| 复杂条件 | 20/20 | ✅ |
+
+**测试结果**: 20/20 通过 ✅
+**文件**: `Emuera/Sources/Phase2Test/FlowControlTest.swift`
+**新增**: 支持WEND作为ENDWHILE别名
 
 ### 📊 最新进度
 ```
-完成度: 66.2% → 66.5% 🚀
+完成度: 66.2% → 67.0% 🚀
 Day 1: ✅ 完成 (10个命令)
-Day 2: 🚧 准备中 (流程控制)
+Day 2: ✅ 完成 (20个命令)
+Day 3: 🚧 准备中 (数据操作)
 ```
+
+**测试总计**: 61/61 通过 ✅
+- QuickTest: 20/20
+- FixVerification: 11/11
+- JumpCommandsTest: 10/10
+- FlowControlTest: 20/20
 
 ---
 
-## 🎯 明天计划 (12/29) - Day 2
+## 🎯 明天计划 (12/29) - Day 3
 
-**目标**: 实现核心流程控制命令
+**目标**: 实现数据操作和数组命令
 
 ```
-1. IF/ELSE/ENDIF - 条件分支
-2. WHILE/WEND - 循环
-3. FOR/NEXT - 计数循环
-4. DO/LOOP - 无限循环
-5. REPEAT/REND - 重复执行
-6. SELECTCASE/ENDSELECT - 多分支
+1. 数组操作: ARRAYCOPY, ARRAYREMOVE, ARRAYSHIFT, ARRAYSORT
+2. 位运算: SETBIT, CLEARBIT, INVERTBIT
+3. 字符串: SPLIT, STRLEN, STRLENFORM
+4. 数学: POWER, TIMES
+5. 随机: RANDOM, RANDOMIZE
 ```
 
 ### 开发流程

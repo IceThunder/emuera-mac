@@ -905,6 +905,14 @@ let package = Package(
             path: "Sources/Phase2Test",
             sources: [ "JumpCommandsTest.swift" ]
         ),
+
+        // Flow Control Test Target
+        .executableTarget(
+            name: "FlowControlTest",
+            dependencies: [ "EmueraCore" ],
+            path: "Sources/Phase2Test",
+            sources: [ "FlowControlTest.swift" ]
+        ),
     ],
     swiftLanguageVersions: [.v5]
 )

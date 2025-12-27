@@ -808,7 +808,7 @@ public class ScriptParser {
                 position: getCurrentPosition()
             )
 
-        case "ELSE", "ENDIF", "ENDWHILE", "ENDFOR", "ENDREPEAT", "CASE", "CASEELSE", "ENDSELECT":
+        case "ELSE", "ENDIF", "ENDWHILE", "WEND", "ENDFOR", "ENDREPEAT", "CASE", "CASEELSE", "ENDSELECT":
             // 这些应该在解析对应结构时处理，不应该单独出现
             throw EmueraError.scriptParseError(
                 message: "未匹配的结束关键字: \(keyword)",
@@ -891,16 +891,16 @@ public class ScriptParser {
         let condition = try parseExpression()
 
         // 解析循环体
-        let body = try parseBlock(until: ["ENDWHILE"])
+        let body = try parseBlock(until: ["ENDWHILE", "WEND"])
 
         // 消耗ENDWHILE
         if currentIndex < tokens.count,
            case .keyword(let k) = tokens[currentIndex].type,
-           k.uppercased() == "ENDWHILE" {
+           ["ENDWHILE", "WEND"].contains(k.uppercased()) {
             currentIndex += 1
         } else {
             throw EmueraError.scriptParseError(
-                message: "WHILE语句缺少ENDWHILE",
+                message: "WHILE语句缺少ENDWHILE或WEND",
                 position: getCurrentPosition()
             )
         }
